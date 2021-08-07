@@ -1,4 +1,4 @@
-[![codecov](https://codecov.io/gh/Amourspirit/python-kwargshelper/branch/master/graph/badge.svg)](https://codecov.io/gh/Amourspirit/python-kwargshelper) ![GitHub Workflow Status](https://img.shields.io/github/workflow/status/Amourspirit/python-kwargshelper/CodeCov) ![GitHub](https://img.shields.io/github/license/Amourspirit/python-kwargshelper) ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/kwargshelper) ![PyPI - Wheel](https://img.shields.io/pypi/wheel/kwargshelper)
+[![codecov](https://codecov.io/gh/Amourspirit/python-kwargshelper/branch/master/graph/badge.svg?token=mJ2HdGwSGy)](https://codecov.io/gh/Amourspirit/python-kwargshelper) ![GitHub Workflow Status](https://img.shields.io/github/workflow/status/Amourspirit/python-kwargshelper/CodeCov) ![GitHub](https://img.shields.io/github/license/Amourspirit/python-kwargshelper) ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/kwargshelper) ![PyPI - Wheel](https://img.shields.io/pypi/wheel/kwargshelper)
 
 # KwargsHelper Class
 
