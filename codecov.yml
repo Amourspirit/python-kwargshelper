@@ -6,3 +6,5 @@ comment:
   require_head: yes       # [yes :: must have a head report to post]
   branches:               # branch names that can post comment
     - "master"
+ignore:
+  - "tests"  # ignore folders and all its contents
