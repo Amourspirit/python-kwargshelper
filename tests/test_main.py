@@ -975,6 +975,25 @@ class TestKwArgsHelperAsList(unittest.TestCase):
         self.assertEqual(r._age, 2)
         self.assertEqual(r._name, 'unknown')
         self.assertEqual(r._city, 'Toronto')
+    
+    def test_builder_with_rules_helper(self):
+        args = AssignBuilder()
+        args.append_helper(HelperArgs(key="msg", types=['str'], require=True))
+        args.append_helper(HelperArgs(key="age", types=['int'], require=True))
+        args.append_helper(HelperArgs(key="name", rules=[rules.RuleStr], default="unknown"))
+        args.append_helper(HelperArgs(key="city", types=['str'], rules=[
+                    rules.RuleStr], default="North York"))
+        r = Runner(msg='Hello World', age=2, city='Toronto')
+        result = True
+        for arg in args:
+            result = r.kw.assign(**arg)
+            if result == False:
+                break
+        self.assertTrue(result)
+        self.assertEqual(r._msg, 'Hello World')
+        self.assertEqual(r._age, 2)
+        self.assertEqual(r._name, 'unknown')
+        self.assertEqual(r._city, 'Toronto')
 
     def test_non_require(self):
         self._loop_count = -1
