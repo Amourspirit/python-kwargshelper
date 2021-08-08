@@ -11,38 +11,25 @@ class HelperBase(ABC):
         '''Class Constructor'''
 
     # region private methods
+
     def _get_type_error_method_msg(self, method_name: str, arg: object, arg_name: str, expected_type: str) -> str:
         result = f"{self.__class__.__name__}.{method_name}() arg '{arg_name}' is expecting type of '{expected_type}'. Got type of '{type(arg).__name__}'"
-        return result
-
-    def _get_type_error_prop_msg(self, prop_name: str, value: object, expected_type: str) -> str:
-        result = f"{self.__class__.__name__}.{prop_name} is expecting type of '{expected_type}'. Got type of '{type(value).__name__}'"
         return result
 
     def _get_value_error_msg(self, method_name: str, arg: object, arg_name: str, msg: str) -> str:
         result = f"{self.__class__.__name__}.{method_name}() arg '{arg_name}' {msg}"
         return result
 
-    def _is_str(self, value: object, prop_name: str, raise_error: Optional[bool] = False) -> bool:
-        result = self._isinstance_prop(
-            value=value, prop_name=prop_name, prop_type=str, raise_error=raise_error)
-        return result
-
-    def _is_bool(self, value: object, prop_name: str, raise_error: Optional[bool] = False) -> bool:
-        result = self._isinstance_prop(
-            value=value, prop_name=prop_name, prop_type=bool, raise_error=raise_error)
-        return result
-
-    def _is_int(self, value: object, prop_name: str, raise_error: Optional[bool] = False) -> bool:
-        result = self._isinstance_prop(
-            value=value, prop_name=prop_name, prop_type=int, raise_error=raise_error)
+    # region Property Helpers
+    def _get_type_error_prop_msg(self, prop_name: str, value: object, expected_type: str) -> str:
+        result = f"{self.__class__.__name__}.{prop_name} is expecting type of '{expected_type}'. Got type of '{type(value).__name__}'"
         return result
 
     def _isinstance_prop(self, value: object, prop_name: str, prop_type: object, raise_error: Optional[bool] = False):
         result = isinstance(value, prop_type)
         if result == False and raise_error == True:
             self._prop_error(prop_name=prop_name,
-                             value=value, expected_type='int')
+                             value=value, expected_type=self._get_name_type_obj(prop_type))
         return result
 
     def _prop_error(self, prop_name: str, value: object, expected_type: str):
@@ -50,6 +37,56 @@ class HelperBase(ABC):
             prop_name=prop_name, value=value, expected_type=expected_type
         ))
 
+    def _is_prop_str(self, value: object, prop_name: str, raise_error: Optional[bool] = False) -> bool:
+        result = self._isinstance_prop(
+            value=value, prop_name=prop_name, prop_type=str, raise_error=raise_error)
+        return result
+
+    def _is_prop_bool(self, value: object, prop_name: str, raise_error: Optional[bool] = False) -> bool:
+        result = self._isinstance_prop(
+            value=value, prop_name=prop_name, prop_type=bool, raise_error=raise_error)
+        return result
+
+    def _is_prop_int(self, value: object, prop_name: str, raise_error: Optional[bool] = False) -> bool:
+        result = self._isinstance_prop(
+            value=value, prop_name=prop_name, prop_type=int, raise_error=raise_error)
+        return result
+    # endregion Property Helpers
+
+    # region method Arg Helpers
+    def _isinstance_method(self, method_name: str, arg: object, arg_name: str, arg_type: object, raise_error: Optional[bool] = False):
+        result = isinstance(arg, arg_type)
+        if result == False and raise_error == True:
+            self._arg_type_error(self._get_type_error_method_msg(
+                method_name=method_name, arg=arg, arg_name=arg_name,
+                expected_type=self._get_name_type_obj(
+                    arg_type)
+            ))
+        return result
+
+    def _is_arg_str(self, method_name: str, arg: object, arg_name: str, raise_error: Optional[bool] = False) -> bool:
+        result = self._isinstance_method(
+            method_name=method_name, arg=arg, arg_name=arg_name, arg_type=str, raise_error=raise_error)
+        return result
+    
+    def _is_arg_bool(self, method_name: str, arg: object, arg_name: str, raise_error: Optional[bool] = False) -> bool:
+        result = self._isinstance_method(
+            method_name=method_name, arg=arg, arg_name=arg_name, arg_type=bool, raise_error=raise_error)
+        return result
+    # endregion method Arg Helpers
+
+    def _arg_type_error(self, method_name: str, arg: object, arg_name: str, expected_type: str):
+        raise TypeError(self._get_type_error_method_msg(
+            method_name=method_name, arg=arg, arg_name=arg_name, expected_type=expected_type
+        ))
+
+    def _get_name_type_obj(self, obj: object) -> str:
+        '''
+        Gets the name of an object instance name or type name
+        '''
+        if isinstance(obj, type):
+            return str(obj.__name__)
+        return str(obj.__class__.__name__)
     # endregion private methods
 
 
@@ -92,8 +129,8 @@ class HelperArgs(HelperBase):
 
     @key.setter
     def key(self, value: str) -> None:
-        self._is_str(value=value, prop_name='key', raise_error=True)
-        self._key = value
+        self._is_prop_str(value=value, prop_name='key', raise_error=True)
+        self._key = value.strip()
         return None
 
     @property
@@ -105,8 +142,8 @@ class HelperArgs(HelperBase):
         if value is None:
             self._field = None
             return None
-        self._is_str(value=value, prop_name='field', raise_error=True)
-        self._field = value
+        self._is_prop_str(value=value, prop_name='field', raise_error=True)
+        self._field = value.strip()
         return None
 
     @property
@@ -115,13 +152,13 @@ class HelperArgs(HelperBase):
 
     @require.setter
     def require(self, value: bool) -> None:
-        self._is_bool(value=value, prop_name='require', raise_error=True)
+        self._is_prop_bool(value=value, prop_name='require', raise_error=True)
         self._require = value
         return None
 
     @property
     def types(self) -> Set[str]:
-          return self._types
+        return self._types
 
     @types.setter
     def types(self, value: set) -> None:
@@ -129,11 +166,11 @@ class HelperArgs(HelperBase):
                               prop_type=set, raise_error=True)
         self._types = value
         return None
-    
+
     @property
     def rules(self) -> List[Callable[[IRule], bool]]:
-         return self._rules
-     
+        return self._rules
+
     @rules.setter
     def rules(self, value: List[Callable[[IRule], bool]]) -> None:
         self._isinstance_prop(value=value, prop_name='rules',
@@ -258,7 +295,7 @@ class AfterAssignEventArgs:
 # endregion Event Args
 
 
-class KwargsHelper:
+class KwargsHelper(HelperBase):
     '''
     kwargs helper class. Assigns attributes to class with various checks
     @example:
@@ -301,69 +338,51 @@ class KwargsHelper:
         self._callbacks = None
         self._obj: object = originator
         self._kwargs = obj_kwargs
-
+        m_name = '__init__'
         key = 'field_prefix'
         if key in kwargs:
             self._field_prefix = kwargs[key]
-            if not isinstance(self._field_prefix, str):
-                raise TypeError(self._get_type_error_msg_method(
-                    method_name='__init__', arg=self._field_prefix,
-                    arg_name=key, expected_type='str'
-                ))
+            self._is_arg_str(
+                method_name=m_name, arg=self._field_prefix, arg_name=key, raise_error=True)
         else:
             self._field_prefix = '_'
         key = 'name'
         if key in kwargs:
             self._name = kwargs[key]
-            if not isinstance(self._name, str):
-                raise TypeError(self._get_type_error_msg_method(
-                    method_name='__init__', arg=self._name,
-                    arg_name=key, expected_type='str'
-                ))
+            self._is_arg_str(
+                method_name=m_name, arg=self._name, arg_name=key, raise_error=True)
         else:
             self._name = type(originator).__name__
 
         key = 'rule_error'
         if key in kwargs:
             self._rule_error: bool = kwargs[key]
-            if not isinstance(self._rule_error, bool):
-                raise TypeError(self._get_type_error_msg_method(
-                    method_name='__init__', arg=self._rule_error,
-                    arg_name=key, expected_type='bool'
-                ))
+            self._is_arg_bool(
+                method_name=m_name, arg=self._rule_error, arg_name=key, raise_error=True)
         else:
             self._rule_error: bool = True
 
         key = 'rule_test_before_assign'
         if key in kwargs:
             self._rule_test_early: bool = kwargs[key]
-            if not isinstance(self._rule_test_early, bool):
-                raise TypeError(self._get_type_error_msg_method(
-                    method_name='__init__', arg=self._rule_test_early,
-                    arg_name=key, expected_type='bool'
-                ))
+            self._is_arg_bool(
+                method_name=m_name, arg=self._rule_test_early, arg_name=key, raise_error=True)
         else:
             self._rule_test_early = True
 
         key = 'cancel_error'
         if key in kwargs:
             self._cancel_error: bool = kwargs[key]
-            if not isinstance(self._cancel_error, bool):
-                raise TypeError(self._get_type_error_msg_method(
-                    method_name='__init__', arg=self._cancel_error,
-                    arg_name=key, expected_type='bool'
-                ))
+            self._is_arg_bool(
+                method_name=m_name, arg=self._cancel_error, arg_name=key, raise_error=True)
         else:
             self._cancel_error: bool = True
 
         key = 'assign_true_not_required'
         if key in kwargs:
             self._assign_true_not_required: bool = kwargs[key]
-            if not isinstance(self._assign_true_not_required, bool):
-                raise TypeError(self._get_type_error_msg_method(
-                    method_name='__init__', arg=self._assign_true_not_required,
-                    arg_name=key, expected_type='bool'
-                ))
+            self._is_arg_bool(
+                method_name=m_name, arg=self._assign_true_not_required, arg_name=key, raise_error=True)
         else:
             self._assign_true_not_required: bool = True
     # endregion init
@@ -386,16 +405,12 @@ class KwargsHelper:
 
         @rules: (optional) Type:List[Callable[[IRule], bool]]
         '''
-        if not isinstance(key, str):
-            raise TypeError(self._get_type_error_msg_method(
-                method_name='assign', arg=key,
-                arg_name='key', expected_type='str'
-            ))
-        if not isinstance(require, bool):
-            raise TypeError(self._get_type_error_msg_method(
-                method_name='assign', arg=require,
-                arg_name='require', expected_type='bool'
-            ))
+        m_name = 'assign'
+        self._is_arg_str(
+            method_name=m_name, arg=key, arg_name='key', raise_error=True)
+        self._is_arg_bool(
+            method_name=m_name, arg=require, arg_name='require', raise_error=True)
+
         if types == None:
             types = []
         if rules == None:
@@ -420,6 +435,10 @@ class KwargsHelper:
             result = True
         return result
 
+    def assign_helper(self, helper: HelperArgs) -> bool:
+        self._isinstance_method(method_name='assign_helper', arg=helper, arg_name='helper',arg_type=HelperArgs, raise_error=True)
+        d = helper.to_dict()
+        self.assign(**d)
     # endregion Public Methods
 
     # region private methods
@@ -453,13 +472,13 @@ class KwargsHelper:
         after_args._success
         return None
 
-    def _get_type_error_msg_method(self, method_name: str, arg: object, arg_name: str, expected_type: str) -> str:
-        result = f"{self.__class__.__name__}.{method_name}() arg '{arg_name}' is expecting type of '{expected_type}'. Got type of '{type(arg).__name__}'"
-        return result
+    # def _get_type_error_msg_method(self, method_name: str, arg: object, arg_name: str, expected_type: str) -> str:
+    #     result = f"{self.__class__.__name__}.{method_name}() arg '{arg_name}' is expecting type of '{expected_type}'. Got type of '{type(arg).__name__}'"
+    #     return result
 
-    def _get_type_error_msg_property(self, property_name: str, value: object, expected_type: str) -> str:
-        result = f"{self.__class__.__name__}.{property_name} is expecting type of '{expected_type}'. Got type of '{type(value).__name__}'"
-        return result
+    # def _get_type_error_msg_property(self, property_name: str, value: object, expected_type: str) -> str:
+    #     result = f"{self.__class__.__name__}.{property_name} is expecting type of '{expected_type}'. Got type of '{type(value).__name__}'"
+    #     return result
 
     def _get_formated_types(self, types: Set[str]) -> str:
         result = ''
@@ -571,11 +590,8 @@ class KwargsHelper:
         then `assign()` returns `True` even if the arg failed to be applied. In an 'after callback' method set by `add_handler_after_assign()`
         success in `AfterAssignEventArgs.success` property is `False` if arg was not assigned.
         '''
-        if not isinstance(value, bool):
-            raise TypeError(self._get_type_error_msg_property(
-                property_name='assign_true_not_required',
-                value=value, expected_type='bool'
-            ))
+        self._is_prop_bool(
+            value=value, prop_name='assign_true_not_required', raise_error=True)
         self._assign_true_not_required = value
         return None
 
@@ -597,11 +613,8 @@ class KwargsHelper:
         Determins if an error will be raised if cancel is set in
         `BeforeAssignEventArgs` of a callback
         '''
-        if not isinstance(value, bool):
-            raise TypeError(self._get_type_error_msg_property(
-                property_name='cancel_error',
-                value=value, expected_type='bool'
-            ))
+        self._is_prop_bool(
+            value=value, prop_name='cancel_error', raise_error=True)
         self._cancel_error = value
         return None
 
@@ -617,11 +630,8 @@ class KwargsHelper:
     @name.setter
     def name(self, value: str) -> None:
         '''Sets the name used to represent the class or object in error messages.'''
-        if not isinstance(value, str):
-            raise TypeError(self._get_type_error_msg_property(
-                property_name='name',
-                value=value, expected_type='str'
-            ))
+        self._is_prop_str(
+            value=value, prop_name='name', raise_error=True)
         self._name = value
         return None
 
@@ -649,11 +659,8 @@ class KwargsHelper:
 
         This parameter is ignored when `field` is used in `assign()` method scuh as: `assign(msg='hi', field='message')`
         '''
-        if not isinstance(value, str):
-            raise TypeError(self._get_type_error_msg_property(
-                property_name='field_prefix',
-                value=value, expected_type='str'
-            ))
+        self._is_prop_str(
+            value=value, prop_name='field_prefix', raise_error=True)
         self._field_prefix = value
         return None
 
@@ -683,11 +690,8 @@ class KwargsHelper:
 
         Determins if rules can raise errors.
         '''
-        if not isinstance(value, bool):
-            raise TypeError(self._get_type_error_msg_property(
-                property_name='rule_error',
-                value=value, expected_type='bool'
-            ))
+        self._is_prop_bool(
+            value=value, prop_name='rule_error', raise_error=True)
         self._rule_error = value
         return None
 
@@ -716,11 +720,8 @@ class KwargsHelper:
         Validation can still fail and errors can still be raised, except now the validation
         will take place after attribute value has been assigned.
         '''
-        if not isinstance(value, bool):
-            raise TypeError(self._get_type_error_msg_property(
-                property_name='rule_test_before_assign',
-                value=value, expected_type='bool'
-            ))
+        self._is_prop_bool(
+            value=value, prop_name='rule_test_before_assign', raise_error=True)
         self._rule_test_early = value
         return None
 
@@ -745,13 +746,13 @@ class AssignBuilder(UserList):
         @rules: (optional) Type:List[Callable[[IRule], bool]]
         '''
         if not isinstance(key, str):
-            raise TypeError(self._get_type_error_msg(
-                method_name='add', arg=key, arg_name='key', expected_type='str'
+            raise TypeError(self._get_type_error_method_msg(
+                method_name='append', arg=key, arg_name='key', expected_type='str'
             ))
         _key = key.strip()
         if len(_key) == 0:
             raise ValueError(self._get_value_error_msg(
-                method_name='add', arg=key, arg_name='key',
+                method_name='append', arg=key, arg_name='key',
                 msg="can not be empty or whitespace"
             ))
         if _key in self._keys:
@@ -777,11 +778,36 @@ class AssignBuilder(UserList):
         self._keys.add(_key)
         return None
 
+    def append_helper(self, helper: HelperArgs):
+        '''
+        Appends dictionary item of parameters to list
+        @helper: args to add
+        '''
+        if not isinstance(helper, HelperArgs):
+            raise TypeError(self._get_type_error_method_msg(
+                method_name='append_helper', arg=helper, arg_name='helper', expected_type='HelperArgs'
+            ))
+        if len(helper.key) == 0:
+            raise ValueError(self._get_value_error_msg(
+                method_name='append_helper', arg=helper, arg_name='helper.key',
+                msg="can not be empty or whitespace"
+            ))
+
+        if helper.key in self._keys:
+            raise ValueError(
+                self._get_value_error_msg(
+                    method_name='append_helper', arg=helper, arg_name='key',
+                    msg='already exist.'
+                )
+            )
+        super().append(helper.to_dict())
+        self._keys.add(helper.keyv)
+
     def remove(self, item: dict) -> None:
         if item is None:
             return None
         if not isinstance(item, dict):
-            raise TypeError(self._get_type_error_msg(
+            raise TypeError(self._get_type_error_method_msg(
                 method_name='remove', arg=item, arg_name='item', expected_type='dict'
             ))
         if not 'key' in item:
@@ -801,7 +827,7 @@ class AssignBuilder(UserList):
                 super().append(item)
                 self._keys.add(key)
 
-    def _get_type_error_msg(self, method_name: str, arg: object, arg_name: str, expected_type: str) -> str:
+    def _get_type_error_method_msg(self, method_name: str, arg: object, arg_name: str, expected_type: str) -> str:
         result = f"{self.__class__.__name__}.{method_name}() arg '{arg_name}' is expecting type of '{expected_type}'. Got type of '{type(arg).__name__}'"
         return result
 
