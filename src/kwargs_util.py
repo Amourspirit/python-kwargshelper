@@ -54,7 +54,7 @@ class HelperBase(ABC):
     # endregion Property Helpers
 
     # region method Arg Helpers
-    def _isinstance_method(self, method_name: str, arg: object, arg_name: str, arg_type: object, raise_error: Optional[bool] = False):
+    def _isinstance_method(self, method_name: str, arg: object, arg_name: str, arg_type: object, raise_error: Optional[bool] = False) -> bool:
         result = isinstance(arg, arg_type)
         if result == False and raise_error == True:
             self._arg_type_error(self._get_type_error_method_msg(
