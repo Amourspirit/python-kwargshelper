@@ -1,6 +1,6 @@
 # coding: utf-8
 from collections import UserList
-from typing import Iterable, List, Optional, Set, Callable, Union
+from typing import List, Optional, Set, Callable, Union
 from abc import ABC, abstractmethod
 from . kwarg_rules import IRule
 
