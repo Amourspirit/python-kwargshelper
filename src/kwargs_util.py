@@ -458,7 +458,7 @@ class KwargsHelper(HelperBase):
         if key in self._kwargs:
             value = self._kwargs[key]
             if len(args.types) > 0:
-                if not type(value).__name__ in args.types:
+                if not type(value) in args.types:
                     msg = f"{self._name} arg '{key}' is expected to be of '{self._get_formated_types(args.types)}' but got '{type(value).__name__}'"
                     raise TypeError(msg)
             if args.field:

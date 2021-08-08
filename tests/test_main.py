@@ -33,14 +33,14 @@ class TestKwArgsHelper(unittest.TestCase):
 
     def test_msg_hello_wolrd(self):
         r = Runner(msg='Hello World')
-        r.kw.assign(key='msg', types=['str'])
+        r.kw.assign(key='msg', types=[str])
         self.assertTrue(hasattr(r, '_msg'))
         self.assertEqual(r._msg, 'Hello World')
         self.assertTrue(r == r.kw.originator)
 
     def test_msg_fast(self):
         r = Runner(msg='Hello World')
-        r.kw.assign(key='msg', types=['str'])
+        r.kw.assign(key='msg', types=[str])
         # default should ignore required
         r.kw.assign(key='fast', field='l__fst', types=[
                     'str'], default=True, require=True)
@@ -51,23 +51,23 @@ class TestKwArgsHelper(unittest.TestCase):
 
     def test_key_bad_type(self):
         r = Runner(msg='Hello World')
-        self.assertRaises(TypeError, r.kw.assign, key=self, types=['str'])
+        self.assertRaises(TypeError, r.kw.assign, key=self, types=[str])
 
     def test_require_bad_type(self):
         r = Runner(msg='Hello World')
         self.assertRaises(TypeError, r.kw.assign, key='msg',
-                          types=['str'], require=1)
+                          types=[str], require=1)
 
     def test_age_required_error(self):
         r = Runner(msg='Hello World')
-        r.kw.assign(key='msg', types=['str'])
+        r.kw.assign(key='msg', types=[str])
         self.assertRaises(ValueError, r.kw.assign, key='age',
-                          types=['int'], require=True)
+                          types=[int], require=True)
 
     def test_age_required(self):
         r = Runner(msg='Hello World', age=2)
-        r.kw.assign(key='msg', types=['str'], require=True)
-        r.kw.assign(key='age', types=['int'], require=True)
+        r.kw.assign(key='msg', types=[str], require=True)
+        r.kw.assign(key='age', types=[int], require=True)
         self.assertTrue(hasattr(r, '_msg'))
         self.assertEqual(r._msg, 'Hello World')
         self.assertTrue(hasattr(r, '_age'))
@@ -75,14 +75,14 @@ class TestKwArgsHelper(unittest.TestCase):
 
     def test_bad_type(self):
         r = Runner(msg='Hello World', age="2")
-        r.kw.assign(key='msg', types=['str'], require=True)
+        r.kw.assign(key='msg', types=[str], require=True)
         self.assertRaises(TypeError, r.kw.assign, key='age',
-                          types=['int'], require=True)
+                          types=[int], require=True)
 
     def test_multi_type(self):
         r = Runner(msg='Hello World', age='2')
-        r.kw.assign(key='msg', types=['str'], require=True)
-        r.kw.assign(key='age', types=['int', 'str'], require=True)
+        r.kw.assign(key='msg', types=[str], require=True)
+        r.kw.assign(key='age', types=[int, str], require=True)
         self.assertTrue(hasattr(r, '_msg'))
         self.assertEqual(r._msg, 'Hello World')
         self.assertTrue(hasattr(r, '_age'))
@@ -109,10 +109,10 @@ class TestKwArgsHelper(unittest.TestCase):
         r.kw.name = 'TEST'
         r.kw.assign(key='msg', require=True)
         self.assertRaises(ValueError, r.kw.assign, key='age',
-                          require=True, types=['int'])
+                          require=True, types=[int])
         err_msg = ''
         try:
-            r.kw.assign(key='age', require=True, types=['int'])
+            r.kw.assign(key='age', require=True, types=[int])
         except ValueError as e:
             err_msg = str(e)
         self.assertIn("TEST", err_msg)
@@ -125,14 +125,14 @@ class TestKwArgsHelper(unittest.TestCase):
 
     def test_multi_type_error(self):
         r = Runner(msg='Hello World', age=True)
-        r.kw.assign(key='msg', types=['str'], require=True)
+        r.kw.assign(key='msg', types=[str], require=True)
         self.assertRaises(TypeError, r.kw.assign, key='age',
-                          types=['int', 'str'], require=True)
+                          types=[int, str], require=True)
 
     def test_field(self):
         r = Runner(msg='Hello World', age=2)
-        r.kw.assign(key='msg', types=['str'], require=True, field="message")
-        r.kw.assign(key='age', types=['int'], require=True)
+        r.kw.assign(key='msg', types=[str], require=True, field="message")
+        r.kw.assign(key='age', types=[int], require=True)
         self.assertTrue(hasattr(r, 'message'))
         self.assertEqual(r.message, 'Hello World')
         self.assertTrue(hasattr(r, '_age'))
@@ -140,9 +140,9 @@ class TestKwArgsHelper(unittest.TestCase):
 
     def test_default_no_field(self):
         r = Runner(msg='Hello World', age=2)
-        r.kw.assign(key='msg', types=['str'], require=True, field="message")
-        r.kw.assign(key='age', types=['int'], require=True)
-        r.kw.assign(key='first_name', types=['str'], default='unknown')
+        r.kw.assign(key='msg', types=[str], require=True, field="message")
+        r.kw.assign(key='age', types=[int], require=True)
+        r.kw.assign(key='first_name', types=[str], default='unknown')
         self.assertTrue(hasattr(r, 'message'))
         self.assertEqual(r.message, 'Hello World')
         self.assertTrue(hasattr(r, '_age'))
@@ -206,10 +206,10 @@ class TestKwargsHelperInClass(unittest.TestCase):
                 self._msg = ''
                 kw = KwargsHelper(self, {**kwargs})
                 kw.assign(
-                    key='msg', require=True, types=['str']
+                    key='msg', require=True, types=[str]
                 )
                 kw.assign(
-                    key='name', require=False, types=['str'], default='unknown'
+                    key='name', require=False, types=[str], default='unknown'
                 )
 
             @property
@@ -242,13 +242,13 @@ class TestKwargsHelperInClass(unittest.TestCase):
                 kw = KwargsHelper(self, {**kwargs},
                                   field_prefix='m_', name='MY_TEST')
                 kw.assign(
-                    key='msg', require=True, types=['str']
+                    key='msg', require=True, types=[str]
                 )
                 kw.assign(
-                    key='name', require=False, types=['str'], default='unknown'
+                    key='name', require=False, types=[str], default='unknown'
                 )
                 kw.assign(
-                    key='length', types=['int'], default=self.m_length
+                    key='length', types=[int], default=self.m_length
                 )
 
             @property
@@ -279,10 +279,10 @@ class TestKwargsHelperInClass(unittest.TestCase):
                 kw = KwargsHelper(self, {**kwargs},
                                   field_prefix=1)
                 kw.assign(
-                    key='msg', require=True, types=['str']
+                    key='msg', require=True, types=[str]
                 )
                 kw.assign(
-                    key='name', require=False, types=['str'], default='unknown'
+                    key='name', require=False, types=[str], default='unknown'
                 )
 
             @property
@@ -301,10 +301,10 @@ class TestKwargsHelperInClass(unittest.TestCase):
                 kw = KwargsHelper(self, {**kwargs},
                                   name=1)
                 kw.assign(
-                    key='msg', require=True, types=['str']
+                    key='msg', require=True, types=[str]
                 )
                 kw.assign(
-                    key='name', require=False, types=['str'], default='unknown'
+                    key='name', require=False, types=[str], default='unknown'
                 )
 
             @property
@@ -362,7 +362,7 @@ class TestKwArgsHelperCallback(unittest.TestCase):
         r.kw.add_handler_before_assign(cb_before2)
         r.kw.add_handler_after_assign(cb_after)
         r.kw.add_handler_after_assign(cb_after2)
-        r.kw.assign(key='msg', types=['str'])
+        r.kw.assign(key='msg', types=[str])
         self.assertTrue(hasattr(r, '_msg'))
         self.assertEqual(r._msg, 'Hello World')
 
@@ -384,7 +384,7 @@ class TestKwArgsHelperCallback(unittest.TestCase):
         r = Runner(msg='Hello World')
         r.kw.add_handler_before_assign(cb_before)
         r.kw.add_handler_after_assign(cb_after)
-        r.kw.assign(key='msg', types=['str'])
+        r.kw.assign(key='msg', types=[str])
         self.assertTrue(hasattr(r, '_msg'))
         self.assertEqual(r._msg, 'Soooo.... Yesterday')
 
@@ -406,27 +406,27 @@ class TestKwArgsHelperCallback(unittest.TestCase):
         r = Runner(msg='Hello World', num=22)
         r.kw.add_handler_before_assign(cb_before)
         r.kw.add_handler_after_assign(cb_after)
-        result = r.kw.assign(key='msg', types=['str'])
+        result = r.kw.assign(key='msg', types=[str])
         self.assertTrue(result)
         self.assertRaises(CancelEventError, r.kw.assign,
-                          key='num', types=['int'])
+                          key='num', types=[int])
 
         rx = RunnerEx(kw_args={'cancel_error': False},
                       msg='Hello World', num=22)
         rx.kw.add_handler_before_assign(cb_before)
         rx.kw.add_handler_after_assign(cb_after)
-        result = rx.kw.assign(key='msg', types=['str'])
+        result = rx.kw.assign(key='msg', types=[str])
         self.assertTrue(result)
-        result = rx.kw.assign(key='num', require=True, types=['int'])
+        result = rx.kw.assign(key='num', require=True, types=[int])
         self.assertFalse(result)
 
         rx = RunnerEx(msg='Hello World', num=22)
         rx.kw.cancel_error = False
         rx.kw.add_handler_before_assign(cb_before)
         rx.kw.add_handler_after_assign(cb_after)
-        result = rx.kw.assign(key='msg', types=['str'])
+        result = rx.kw.assign(key='msg', types=[str])
         self.assertTrue(result)
-        result = rx.kw.assign(key='num', require=True, types=['int'])
+        result = rx.kw.assign(key='num', require=True, types=[int])
         self.assertFalse(result)
         self.assertFalse(rx.kw.cancel_error)
 
@@ -535,13 +535,13 @@ class TestKwArgsHelperRules(unittest.TestCase):
                 self.assertFalse(args.rules_passed)
         r = Runner(msg='Hello World')
         self.assertRaises(AttributeError, r.kw.assign, key='msg', types=[
-            'str'], rules=[rules.RuleAttrExist])
+            str], rules=[rules.RuleAttrExist])
         rx = RunnerEx(kw_args={'rule_error': False}, msg='Hello World', num=22)
         rx.kw.add_handler_after_assign(cb)
-        result = rx.kw.assign('msg', require=True, types=['str'], rules=[
+        result = rx.kw.assign('msg', require=True, types=[str], rules=[
                               rules.RuleStrNotNullOrEmpty, rules.RuleAttrExist])
         self.assertTrue(result)
-        result = rx.kw.assign('num', require=True, types=['int'], rules=[
+        result = rx.kw.assign('num', require=True, types=[int], rules=[
                               rules.RuleAttrExist])
         self.assertFalse(result)
 
@@ -553,13 +553,13 @@ class TestKwArgsHelperRules(unittest.TestCase):
                 self.assertTrue(args.rules_passed)
         rx = RunnerEx(msg='Hello World')
         self.assertRaises(AttributeError, rx.kw.assign, key='msg', types=[
-            'str'], rules=[rules.RuleAttrNotExist])
+            str], rules=[rules.RuleAttrNotExist])
         rx = RunnerEx(kw_args={'rule_error': False}, msg='Hello World', num=22)
         rx.kw.add_handler_after_assign(cb)
-        result = rx.kw.assign('msg', require=True, types=['str'], rules=[
+        result = rx.kw.assign('msg', require=True, types=[str], rules=[
                               rules.RuleStrNotNullOrEmpty, rules.RuleAttrNotExist])
         self.assertFalse(result)
-        result = rx.kw.assign('num', require=True, types=['int'], rules=[
+        result = rx.kw.assign('num', require=True, types=[int], rules=[
                               rules.RuleAttrNotExist])
         self.assertTrue(result)
 
@@ -831,10 +831,10 @@ class TestKwArgsHelperAsList(unittest.TestCase):
 
     def test_list_args(self):
         args = []
-        args.append({"key": "msg", "types": ['str'], "require": True})
-        args.append({"key": "age", "types": ['int'], "require": True})
-        args.append({"key": "name", "types": ['str'], "default": "unknown"})
-        args.append({"key": "city", "types": ['str'], "default": "North York"})
+        args.append({"key": "msg", "types": [str], "require": True})
+        args.append({"key": "age", "types": [int], "require": True})
+        args.append({"key": "name", "types": [str], "default": "unknown"})
+        args.append({"key": "city", "types": [str], "default": "North York"})
         r = Runner(msg='Hello World', age=2, city='Toronto')
         result = True
         for arg in args:
@@ -849,10 +849,10 @@ class TestKwArgsHelperAsList(unittest.TestCase):
 
     def test_assign_builder_args(self):
         args = AssignBuilder()
-        args.append(key="msg", types=['str'], require=True)
-        args.append(key="age", types=['int'], require=True)
-        args.append(key="name", types=['str'], default="unknown")
-        args.append(key="city", types=['str'], default="North York")
+        args.append(key="msg", types=[str], require=True)
+        args.append(key="age", types=[int], require=True)
+        args.append(key="name", types=[str], default="unknown")
+        args.append(key="city", types=[str], default="North York")
         r = Runner(msg='Hello World', age=2, city='Toronto')
         result = True
         for arg in args:
@@ -867,10 +867,10 @@ class TestKwArgsHelperAsList(unittest.TestCase):
 
     def test_builder_with_rules(self):
         args = AssignBuilder()
-        args.append(key="msg", types=['str'], require=True)
-        args.append(key="age", types=['int'], require=True)
+        args.append(key="msg", types=[str], require=True)
+        args.append(key="age", types=[int], require=True)
         args.append(key="name", rules=[rules.RuleStr], default="unknown")
-        args.append(key="city", types=['str'], rules=[
+        args.append(key="city", types=[str], rules=[
                     rules.RuleStr], default="North York")
         r = Runner(msg='Hello World', age=2, city='Toronto')
         result = True
@@ -886,11 +886,11 @@ class TestKwArgsHelperAsList(unittest.TestCase):
 
     def test_builder_with_rules_helper(self):
         args = AssignBuilder()
-        args.append_helper(HelperArgs(key="msg", types=['str'], require=True))
-        args.append_helper(HelperArgs(key="age", types=['int'], require=True))
+        args.append_helper(HelperArgs(key="msg", types=[str], require=True))
+        args.append_helper(HelperArgs(key="age", types=[int], require=True))
         args.append_helper(HelperArgs(key="name", rules=[
                            rules.RuleStr], default="unknown"))
-        args.append_helper(HelperArgs(key="city", types=['str'], rules=[
+        args.append_helper(HelperArgs(key="city", types=[str], rules=[
             rules.RuleStr], default="North York",  field='_city'))
         r = Runner(msg='Hello World', age=2, city='Toronto')
         result = True
