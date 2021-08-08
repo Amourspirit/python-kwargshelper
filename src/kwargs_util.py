@@ -1,6 +1,6 @@
 # coding: utf-8
 from collections import UserList
-from typing import List, Optional, Set, Callable, Union
+from typing import Iterable, List, Optional, Set, Callable, Union
 from abc import ABC, abstractmethod
 from . kwarg_rules import IRule
 
@@ -91,13 +91,20 @@ class HelperBase(ABC):
 
 
 class HelperArgs(HelperBase):
-    def __init__(self):
+    def __init__(self, key:str, **kwargs):
+        m_name = '__init__'
         self._key: str = ''
         self._field = None
         self._require = False
         self._types = set()
         self._default = None
         self._rules = []
+        self.key = key
+        keys = ('field','require', 'types','default', 'rules')
+        for key in keys:
+            if key in kwargs:
+                setattr(self, key, kwargs[key])
+  
 
     def to_dict(self) -> dict:
         '''Gets a dictionary representation of current instance fields'''
@@ -161,10 +168,13 @@ class HelperArgs(HelperBase):
         return self._types
 
     @types.setter
-    def types(self, value: set) -> None:
-        self._isinstance_prop(value=value, prop_name='types',
-                              prop_type=set, raise_error=True)
-        self._types = value
+    def types(self, value: Iterable) -> None:
+        if not isinstance(value, Iterable):
+            self._prop_error('types', value, 'Iterable')
+        if isinstance(value, set):
+            self._types = value
+            return None
+        self._types = set([itm for itm in value])
         return None
 
     @property
@@ -415,10 +425,9 @@ class KwargsHelper(HelperBase):
             types = []
         if rules == None:
             rules = []
-        _args = HelperArgs()
-        _args.key = key
+        _args = HelperArgs(key=key, require=require)
         _args.field = field
-        _args.require = require
+        # _args.require = require
         _args.types = set(types)
         _args.rules = rules
         if default is not None:
@@ -762,8 +771,7 @@ class AssignBuilder(UserList):
                     msg='already exist.'
                 )
             )
-        _args = HelperArgs()
-        _args.key = _key
+        _args = HelperArgs(key=_key)
         _args.require = require
         if field is not None:
             _args.field = field
@@ -801,7 +809,7 @@ class AssignBuilder(UserList):
                 )
             )
         super().append(helper.to_dict())
-        self._keys.add(helper.keyv)
+        self._keys.add(helper.key)
 
     def remove(self, item: dict) -> None:
         if item is None:

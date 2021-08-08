@@ -4,7 +4,7 @@ try:
 except:
     pass
 import unittest
-from src.kwargs_util import AfterAssignEventArgs, AssignBuilder, BeforeAssignEventArgs, CancelEventError, KwargsHelper
+from src.kwargs_util import AfterAssignEventArgs, AssignBuilder, BeforeAssignEventArgs, CancelEventError, HelperArgs, KwargsHelper
 import src.kwarg_rules as rules
 
 
@@ -117,12 +117,11 @@ class TestKwArgsHelper(unittest.TestCase):
             err_msg = str(e)
         self.assertIn("TEST", err_msg)
         self.assertTrue(r.kw.name == 'TEST')
-    
+
     def test_set_name_bad_type(self):
         r = Runner(msg='Hello World')
         with self.assertRaises(TypeError):
             r.kw.name = True
-       
 
     def test_multi_type_error(self):
         r = Runner(msg='Hello World', age=True)
@@ -162,7 +161,7 @@ class TestKwArgsHelper(unittest.TestCase):
         self.assertEqual(r.f_age, '2')
         self.assertEqual(r.kw.name, 'Runner')
         self.assertEqual(r.kw.field_prefix, 'f_')
-    
+
     def test_no_field_prefix(self):
         r = Runner(msg='Hello World', age='2')
         r.kw.field_prefix = ''
@@ -174,12 +173,12 @@ class TestKwArgsHelper(unittest.TestCase):
         self.assertEqual(r.age, '2')
         self.assertEqual(r.kw.name, 'Runner')
         self.assertEqual(r.kw.field_prefix, '')
-    
+
     def test_field_bad_type(self):
         r = Runner(msg='Hello World', age='2')
         with self.assertRaises(TypeError):
-                r.kw.field_prefix = True
-    
+            r.kw.field_prefix = True
+
     def test_rule_test_before_assign_bad_type(self):
         r = Runner(msg='Hello World', age='2')
         with self.assertRaises(TypeError):
@@ -420,7 +419,7 @@ class TestKwArgsHelperCallback(unittest.TestCase):
         self.assertTrue(result)
         result = rx.kw.assign(key='num', require=True, types=['int'])
         self.assertFalse(result)
-        
+
         rx = RunnerEx(msg='Hello World', num=22)
         rx.kw.cancel_error = False
         rx.kw.add_handler_before_assign(cb_before)
@@ -475,12 +474,12 @@ class TestKwArgsHelperRules(unittest.TestCase):
                               rules.RuleStrNotNullOrEmpty])
         self.assertFalse(result)
         self.assertEqual(rx._msg, '')
-    
+
         r = Runner(msg='')
         r.kw.rule_error = False
         r.kw.rule_test_before_assign = False
         result = r.kw.assign(key='msg', require=True, rules=[
-                              rules.RuleStrNotNullOrEmpty])
+            rules.RuleStrNotNullOrEmpty])
         self.assertFalse(result)
         self.assertEqual(r._msg, '')
         self.assertFalse(r.kw.rule_error)
@@ -605,12 +604,14 @@ class TestKwArgsHelperRules(unittest.TestCase):
         r = Runner(age=None)
         # RuleIntPositive will not raise a TypeError and will return False for non Int.
         # RuleInt will raise a Type error so these two rules are normally together as in the above test
-        result = r.kw.assign(key='age', require=True, rules=[rules.RuleIntPositive])
+        result = r.kw.assign(key='age', require=True,
+                             rules=[rules.RuleIntPositive])
         self.assertFalse(result)
 
     def test_str_rule_positive_int_rule_invalid(self):
         r = Runner(msg='Hello World', age=-1)
-        r.kw.assign(key='msg',require=True, rules=[rules.RuleStrNotNullOrEmpty])
+        r.kw.assign(key='msg', require=True, rules=[
+                    rules.RuleStrNotNullOrEmpty])
         self.assertRaises(ValueError, r.kw.assign, key='age', require=True,
                           rules=[rules.RuleInt, rules.RuleIntPositive])
 
@@ -728,7 +729,8 @@ class TestKwArgsHelperRules(unittest.TestCase):
 
         rx = RunnerEx(kw_args={
                       "rule_error": False, 'rule_test_before_assign': False}, msg='Hello World', num=-1.0)
-        result = rx.kw.assign(key='msg', require=True, rules=[rules.RuleStrNotNullOrEmpty])
+        result = rx.kw.assign(key='msg', require=True, rules=[
+                              rules.RuleStrNotNullOrEmpty])
         self.assertTrue(result)
         result = rx.kw.assign(
             key='num', require=True, rules=[rules.RuleFloat, rules.RuleFloatPositive])
@@ -833,6 +835,30 @@ class TestAssignBuilder(unittest.TestCase):
         args.append(key="name", rules=[rules.RuleStr], default="unknown")
         args.append(key="city", types=['str'], rules=[
                     rules.RuleStr], default="North York")
+        self.assertEqual(args[0]['key'], 'msg')
+        self.assertListEqual(args[0]['types'], ['str'])
+        self.assertTrue(args[0]['require'])
+        self.assertEqual(args[0]['field'], 'test')
+        self.assertListEqual(args[3]['rules'], [rules.RuleStr])
+        self.assertEqual(args[3]['default'], 'North York')
+
+        self.assertRaises(TypeError, args.append, key=2)
+        # empyty or whitespace not ok for key
+        self.assertRaises(ValueError, args.append, key=' ')
+        self.assertRaises(ValueError, args.append, key='')
+        # duplicate, raises error, cannot have the same key twice
+        self.assertRaises(ValueError, args.append, key="msg",
+                          field='test', types=['str'], require=True)
+
+    def test_build_append_helper(self):
+        args = AssignBuilder()
+        args.append_helper(HelperArgs(key="msg", field='test',
+                           types=['str'], require=True))
+        args.append_helper(HelperArgs(key="age", types=['int'], require=True))
+        args.append_helper(HelperArgs(key="name", rules=[
+                           rules.RuleStr], default="unknown"))
+        args.append_helper(HelperArgs(key="city", types=['str'], rules=[
+            rules.RuleStr], default="North York"))
         self.assertEqual(args[0]['key'], 'msg')
         self.assertListEqual(args[0]['types'], ['str'])
         self.assertTrue(args[0]['require'])
@@ -969,12 +995,12 @@ class TestKwArgsHelperAsList(unittest.TestCase):
         if result == False:
             raise ValueError("Error parsing kwargs")
         self.assertTrue(result)
-        
+
         def _arg_after_cb(helper: KwargsHelper, args: AfterAssignEventArgs) -> None:
             if args.success == False:
                 if args.helper_args.require == False:
                     args.success = True
-        
+
         r = Runner(file_name='data.html', name='Best Doc', loop_count=1)
         r.kw.assign_true_not_required = False
         ab = AssignBuilder()
