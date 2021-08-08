@@ -3,6 +3,8 @@ from abc import ABC, abstractmethod
 import numbers
 
 # region Interface
+
+
 class IRule(ABC):
     def __init__(self, key: str, name: str, value: object, raise_errors: bool, originator: object) -> None:
         self._name: str = name
@@ -21,6 +23,7 @@ class IRule(ABC):
         result = f"Argument Error: '{arg_name}' is expecting type of '{expected_type}'. Got type of '{type(arg).__name__}'"
         return result
     # region Properties
+
     @property
     def field_name(self) -> str:
         '''The name of the field that value was assigned'''
@@ -40,7 +43,7 @@ class IRule(ABC):
     def raise_errors(self) -> bool:
         '''Gets if a rule could raise an error when validation fails'''
         return self._raise_errors
-    
+
     @property
     def originator(self) -> object:
         '''Gets object that attributes validated for '''
@@ -49,6 +52,8 @@ class IRule(ABC):
 # endregion Interface
 
 # region Attrib rules
+
+
 class RuleAttrNotExist(IRule):
     '''
     Rule to ensure an attribute does not exist before it is added to class.
@@ -59,7 +64,7 @@ class RuleAttrNotExist(IRule):
 
     def validate(self) -> bool:
         result = not hasattr(self.originator, self.field_name)
-        if result == False and  self.raise_errors == True:
+        if result == False and self.raise_errors == True:
             raise AttributeError(
                 f"'{self.field_name}' attribute already exist in current instance of '{type(self.originator).__name__}'")
         return result
@@ -82,6 +87,8 @@ class RuleAttrExist(IRule):
 # endregion Attrib rules
 
 # region None
+
+
 class RuleNotNone(IRule):
     '''
     Rule to ensure the value of `None` is not assigned to attribute.
@@ -101,6 +108,8 @@ class RuleNotNone(IRule):
 # endregion None
 
 # region Number
+
+
 class RuleNumber(IRule):
     '''
     Rule to ensure a number is assigned to attribute.
@@ -121,6 +130,8 @@ class RuleNumber(IRule):
         return True
 
 # region Integer
+
+
 class RuleInt(IRule):
     '''
     Rule to ensure a positive integer is assigned to attribute.
@@ -139,6 +150,8 @@ class RuleInt(IRule):
                     self.field_value, self.key, 'int'))
             return False
         return True
+
+
 class RuleIntPositive(IRule):
     '''
     Rule to ensure a positive integer is assigned to attribute.
@@ -179,6 +192,8 @@ class RuleIntNegative(IRule):
 # endregion Integer
 
 # region Float Rules
+
+
 class RuleFloat(IRule):
     '''
     Rule to ensure a float is assigned to attribute.
@@ -193,6 +208,8 @@ class RuleFloat(IRule):
                 raise TypeError(self._get_type_error_msg(
                     self.field_value, self.key, 'float'))
             return False
+
+
 class RuleFloatPositive(IRule):
     '''
     Rule to ensure a positive float is assigned to attribute.
@@ -232,6 +249,8 @@ class RuleFloatNegative(IRule):
 # endregion Number
 
 # region String
+
+
 class RuleStr(IRule):
     '''
     Rule to ensure a str is assigned to attribute.
@@ -239,6 +258,7 @@ class RuleStr(IRule):
     If `raise_errors` is `True` the following errors may be raised:
     * TypeError
     '''
+
     def validate(self) -> bool:
         '''
         Validates rule
@@ -252,6 +272,8 @@ class RuleStr(IRule):
                     self.field_value, self.key, 'str'))
             return False
         return True
+
+
 class RuleStrNotNullOrEmpty(IRule):
     '''
     Rule to ensure a string that is not empty or whitespace is assigned to attribute.
@@ -279,6 +301,8 @@ class RuleStrNotNullOrEmpty(IRule):
 # endregion String
 
 # region boolean
+
+
 class RuleBool(IRule):
     def validate(self) -> bool:
         if not isinstance(self.field_value, bool):

@@ -4,8 +4,10 @@ try:
 except:
     pass
 import unittest
-from src.kwargs_util import AssignBuilder, HelperArgs
-import src.kwarg_rules as rules
+
+from src.helper.builder import AssignBuilder, HelperArgs
+import src.rules as rules
+
 
 
 
