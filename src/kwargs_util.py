@@ -89,7 +89,6 @@ class HelperBase(ABC):
         return str(obj.__class__.__name__)
     # endregion private methods
 
-
 class HelperArgs(HelperBase):
     def __init__(self, key:str, **kwargs):
         m_name = '__init__'
@@ -168,8 +167,8 @@ class HelperArgs(HelperBase):
         return self._types
 
     @types.setter
-    def types(self, value: Iterable) -> None:
-        if not isinstance(value, Iterable):
+    def types(self, value: Union[list, set, tuple]) -> None:
+        if not isinstance(value, (list, set, tuple)):
             self._prop_error('types', value, 'Iterable')
         if isinstance(value, set):
             self._types = value
@@ -447,7 +446,7 @@ class KwargsHelper(HelperBase):
     def assign_helper(self, helper: HelperArgs) -> bool:
         self._isinstance_method(method_name='assign_helper', arg=helper, arg_name='helper',arg_type=HelperArgs, raise_error=True)
         d = helper.to_dict()
-        self.assign(**d)
+        return self.assign(**d)
     # endregion Public Methods
 
     # region private methods
@@ -782,7 +781,7 @@ class AssignBuilder(UserList):
         if rules is not None:
             _args.rules = rules
 
-        super().append(_args.to_dict())
+        super().append(_args)
         self._keys.add(_key)
         return None
 
@@ -808,21 +807,19 @@ class AssignBuilder(UserList):
                     msg='already exist.'
                 )
             )
-        super().append(helper.to_dict())
+        super().append(helper)
         self._keys.add(helper.key)
 
-    def remove(self, item: dict) -> None:
+    def remove(self, item: HelperArgs) -> None:
         if item is None:
             return None
-        if not isinstance(item, dict):
+        if not isinstance(item, HelperArgs):
             raise TypeError(self._get_type_error_method_msg(
-                method_name='remove', arg=item, arg_name='item', expected_type='dict'
+                method_name='remove', arg=item, arg_name='item', expected_type='HelperArgs'
             ))
-        if not 'key' in item:
-            raise KeyError(
-                f"{self.__class__.__name__}.remove() dictionary item is missing key value of 'key'")
+        _key = item.key
         super().remove(item)
-        self._keys.remove(item['key'])
+        self._keys.remove(_key)
         return None
 
     def extend(self, other: 'AssignBuilder') -> None:
@@ -830,7 +827,7 @@ class AssignBuilder(UserList):
             raise NotImplementedError(
                 f"{self.__class__.__name__}.extend() only supports extending by instances of 'AssignBuilder'")
         for item in other:
-            key: str = item['key']
+            key: str = item.key
             if not key in self._keys:
                 super().append(item)
                 self._keys.add(key)
@@ -842,3 +839,25 @@ class AssignBuilder(UserList):
     def _get_value_error_msg(self, method_name: str, arg: object, arg_name: str, msg: str) -> str:
         result = f"{self.__class__.__name__}.{method_name}() arg '{arg_name}' {msg}"
         return result
+
+    # region dunder methods
+    def __getitem__(self, i: int) -> HelperArgs:
+        return super().__getitem__(i)
+    
+    def __setitem__(self, i: int, helper: HelperArgs):
+        if not isinstance(helper, HelperArgs):
+            raise TypeError(self._get_type_error_method_msg(
+                method_name='__setitem__', arg=helper, arg_name='helper', expected_type='HelperArgs'
+            ))
+        if i < 0 or i >= len(self):
+            raise IndexError
+        current = self[i]
+        if helper.key != current.key:
+            if helper.key in self._keys:
+                raise ValueError(
+                    self._get_value_error_msg(
+                        method_name='__setitem__', arg=helper, arg_name='key',
+                        msg='already exist.'
+                ))
+        super().__setitem__(i, helper)
+    # endregion dunder methods
