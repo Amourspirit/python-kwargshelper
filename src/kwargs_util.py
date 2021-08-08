@@ -1,31 +1,145 @@
 # coding: utf-8
 from collections import UserList
-from typing import List, Optional, Set, Callable
-from .kwarg_rules import IRule
+from typing import List, Optional, Set, Callable, Union
+from abc import ABC, abstractmethod
+from . kwarg_rules import IRule
 
 
-class HelperArgs:
+class HelperBase(ABC):
+    @abstractmethod
+    def __init__(self) -> None:
+        '''Class Constructor'''
+
+    # region private methods
+    def _get_type_error_method_msg(self, method_name: str, arg: object, arg_name: str, expected_type: str) -> str:
+        result = f"{self.__class__.__name__}.{method_name}() arg '{arg_name}' is expecting type of '{expected_type}'. Got type of '{type(arg).__name__}'"
+        return result
+
+    def _get_type_error_prop_msg(self, prop_name: str, value: object, expected_type: str) -> str:
+        result = f"{self.__class__.__name__}.{prop_name} is expecting type of '{expected_type}'. Got type of '{type(value).__name__}'"
+        return result
+
+    def _get_value_error_msg(self, method_name: str, arg: object, arg_name: str, msg: str) -> str:
+        result = f"{self.__class__.__name__}.{method_name}() arg '{arg_name}' {msg}"
+        return result
+
+    def _is_str(self, value: object, prop_name: str, raise_error: Optional[bool] = False) -> bool:
+        result = self._isinstance_prop(
+            value=value, prop_name=prop_name, prop_type=str, raise_error=raise_error)
+        return result
+
+    def _is_bool(self, value: object, prop_name: str, raise_error: Optional[bool] = False) -> bool:
+        result = self._isinstance_prop(
+            value=value, prop_name=prop_name, prop_type=bool, raise_error=raise_error)
+        return result
+
+    def _is_int(self, value: object, prop_name: str, raise_error: Optional[bool] = False) -> bool:
+        result = self._isinstance_prop(
+            value=value, prop_name=prop_name, prop_type=int, raise_error=raise_error)
+        return result
+
+    def _isinstance_prop(self, value: object, prop_name: str, prop_type: object, raise_error: Optional[bool] = False):
+        result = isinstance(value, prop_type)
+        if result == False and raise_error == True:
+            self._prop_error(prop_name=prop_name,
+                             value=value, expected_type='int')
+        return result
+
+    def _prop_error(self, prop_name: str, value: object, expected_type: str):
+        raise TypeError(self._get_type_error_prop_msg(
+            prop_name=prop_name, value=value, expected_type=expected_type
+        ))
+
+    # endregion private methods
+
+
+class HelperArgs(HelperBase):
     def __init__(self):
-        self.key: str = ''
-        self.field: Optional[str] = None
-        self.require: bool = False
-        self.types: Optional[Set[str]] = None
-        self.default: Optional[object] = None
-        self.rules: Optional[List[Callable[[IRule], bool]]] = None
+        self._key: str = ''
+        self._field = None
+        self._require = False
+        self._types = set()
+        self._default = None
+        self._rules = []
 
     def to_dict(self) -> dict:
         '''Gets a dictionary representation of current instance fields'''
         arg = {'key': self.key, 'require': self.require}
         if self.field is not None:
             arg['field'] = self.field
-        if self.types is not None:
+        if self.types is not None and len(self.types) > 0:
             arg['types'] = [itm for itm in self.types]
         if self.default is not None:
             arg['default'] = self.default
-        if self.rules is not None:
+        if self.rules is not None and len(self.rules) > 0:
             arg['rules'] = self.rules
         return arg
 
+    # region Properties
+
+    @property
+    def default(self) -> object:
+        return self._default
+
+    @default.setter
+    def default(self, value: object) -> None:
+        self._default = value
+        return None
+
+    @property
+    def key(self) -> str:
+        return self._key
+
+    @key.setter
+    def key(self, value: str) -> None:
+        self._is_str(value=value, prop_name='key', raise_error=True)
+        self._key = value
+        return None
+
+    @property
+    def field(self) -> Union[str, None]:
+        return self._field
+
+    @field.setter
+    def field(self, value: Union[str, None]) -> None:
+        if value is None:
+            self._field = None
+            return None
+        self._is_str(value=value, prop_name='field', raise_error=True)
+        self._field = value
+        return None
+
+    @property
+    def require(self) -> bool:
+        return self._require
+
+    @require.setter
+    def require(self, value: bool) -> None:
+        self._is_bool(value=value, prop_name='require', raise_error=True)
+        self._require = value
+        return None
+
+    @property
+    def types(self) -> Set[str]:
+          return self._types
+
+    @types.setter
+    def types(self, value: set) -> None:
+        self._isinstance_prop(value=value, prop_name='types',
+                              prop_type=set, raise_error=True)
+        self._types = value
+        return None
+    
+    @property
+    def rules(self) -> List[Callable[[IRule], bool]]:
+         return self._rules
+     
+    @rules.setter
+    def rules(self, value: List[Callable[[IRule], bool]]) -> None:
+        self._isinstance_prop(value=value, prop_name='rules',
+                              prop_type=list, raise_error=True)
+        self._rules = value
+    # endregion Properties
 # region Event Args
 
 
