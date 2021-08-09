@@ -1,4 +1,5 @@
 # coding: utf-8
+__version__ = '0.3.0'
 from typing import List, Optional, Set, Callable
 from . rules import IRule
 from . helper.base import HelperBase
@@ -100,7 +101,7 @@ class KwargsHelper(HelperBase):
     # endregion init
 
     # region Public Methods
-    def assign(self, key: str, field: Optional[str] = None, require: bool = False, default: Optional[object] = None, types: Optional[List[str]] = None, rules: Optional[List[Callable[[IRule], bool]]] = None) -> bool:
+    def assign(self, key: str, field: Optional[str] = None, require: bool = False, default: Optional[object] = None, types: Optional[List[type]] = None, rules: Optional[List[Callable[[IRule], bool]]] = None) -> bool:
         '''
         Assigns attribue value to `obj` passed in to constructor. Attributes are created if they do not exist.
         @key: Type:str, the key of the key, value pair that is required or optional in `obj_kwargs` passed into to constructor.

@@ -6,7 +6,7 @@ from setuptools import setup
 
 MAJOR = 0
 MINOR = 2
-MICRO = 0
+MICRO = 1
 ISRELEASED = True
 VERSION = f'{MAJOR}.{MINOR}.{MICRO}'
 
@@ -59,7 +59,7 @@ def getListOfFiles(dir_name):
     return all_files
 
 def get_src_modules(root_path: pathlib.Path):
-    dir_name = root_path / 'src'
+    dir_name = root_path / 'kwhelp'
     # Get the list of all files in directory tree at given path
     listOfFiles = getListOfFiles(dir_name)
     _slice = len(str(dir_name)) + 1
@@ -79,7 +79,8 @@ setup(
     url="https://github.com/Amourspirit/python-kwargshelper",
     author=":Barry-Thomas-Paul: Moss",
     license="MIT",
-    package_dir={'': 'src'},
+    # package_dir={'': 'kwhelp'},
+    packages=['kwhelp'],
     py_modules=MODULES,
     keywords=['python', 'kwargs', 'args', 'parse', 'helper'],
     classifiers=[
