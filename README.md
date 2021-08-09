@@ -26,7 +26,7 @@ New rules can be created by inheriting from `IRule` interface/class
 **Example Rule:**
 
 ```python
-from kwarg_rules import IRule
+from rules import IRule
 class RuleIntRangeZeroNine(IRule):
     '''
     Rule to ensure a integer from 0 to 9.
@@ -64,7 +64,7 @@ Simple usage
 
 ```python
 from kwargs_util import KwargsHelper
-import kwarg_rules as rules
+import rules
 
 class MyClass:
     def __init__(self, **kwargs):
