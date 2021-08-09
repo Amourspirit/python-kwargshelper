@@ -5,10 +5,8 @@ except:
     pass
 import unittest
 
-from src.helper.builder import AssignBuilder, HelperArgs
-import src.rules as rules
-
-
+from kwhelp import AssignBuilder, HelperArgs
+import kwhelp.rules as rules
 
 
 class TestAssignBuilder(unittest.TestCase):

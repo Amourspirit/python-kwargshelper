@@ -4,9 +4,7 @@ try:
 except:
     pass
 import unittest
-from src.helper.base import HelperBase
-
-
+from kwhelp.helper.base import HelperBase
 
 class MyHelper(HelperBase):
     def __init__(self) -> None:

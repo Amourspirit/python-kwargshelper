@@ -4,12 +4,8 @@ try:
 except:
     pass
 import unittest
-from src.main import KwargsHelper
-from src.error import CancelEventError
-from src.helper.builder import AssignBuilder, HelperArgs
-from src.event_args import AfterAssignEventArgs, BeforeAssignEventArgs
-import src.rules as rules
-
+from kwhelp import KwargsHelper, CancelEventError, AssignBuilder, HelperArgs, AfterAssignEventArgs, BeforeAssignEventArgs
+import kwhelp.rules as rules
 
 class Runner:
     def __init__(self, **kwargs):
