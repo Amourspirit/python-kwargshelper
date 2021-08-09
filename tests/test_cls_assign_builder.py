@@ -1,10 +1,9 @@
 # coding: utf-8
-try:
-    import path_imports
-except:
-    pass
-import unittest
 
+if __name__ == '__main__':
+    import path_imports
+
+import unittest
 from kwhelp import AssignBuilder, HelperArgs
 import kwhelp.rules as rules
 
@@ -12,13 +11,13 @@ import kwhelp.rules as rules
 class TestAssignBuilder(unittest.TestCase):
     def test_build_append(self):
         args = AssignBuilder()
-        args.append(key="msg", field='test', types=['str'], require=True)
-        args.append(key="age", types=['int'], require=True)
+        args.append(key="msg", field='test', types=[str], require=True)
+        args.append(key="age", types=[int], require=True)
         args.append(key="name", rules=[rules.RuleStr], default="unknown")
-        args.append(key="city", types=['str'], rules=[
+        args.append(key="city", types=[str], rules=[
                     rules.RuleStr], default="North York")
         self.assertEqual(args[0].key, 'msg')
-        self.assertSetEqual(args[0].types, set(['str']))
+        self.assertSetEqual(args[0].types, set([str]))
         self.assertTrue(args[0].require)
         self.assertEqual(args[0].field, 'test')
         self.assertListEqual(args[3].rules, [rules.RuleStr])
@@ -30,26 +29,26 @@ class TestAssignBuilder(unittest.TestCase):
         self.assertRaises(ValueError, args.append, key='')
         # duplicate, raises error, cannot have the same key twice
         self.assertRaises(ValueError, args.append, key="msg",
-                          field='test', types=['str'], require=True)
+                          field='test', types=[str], require=True)
 
     def test_build_append_helper(self):
         args = AssignBuilder()
         args.append_helper(HelperArgs(key="msg", field='test',
-                           types=['str'], require=True))
-        args.append_helper(HelperArgs(key="age", types=['int'], require=True))
+                           types=[str], require=True))
+        args.append_helper(HelperArgs(key="age", types=[int], require=True))
         args.append_helper(HelperArgs(key="name", rules=[
                            rules.RuleStr], default="unknown"))
-        args.append_helper(HelperArgs(key="city", types=['str'], rules=[
+        args.append_helper(HelperArgs(key="city", types=[str], rules=[
             rules.RuleStr], default="North York"))
         self.assertEqual(args[0].key, 'msg')
-        self.assertSetEqual(args[0].types, set(['str']))
+        self.assertSetEqual(args[0].types, set([str]))
         self.assertTrue(args[0].require)
         self.assertEqual(args[0].field, 'test')
         self.assertListEqual(args[3].rules, [rules.RuleStr])
         self.assertEqual(args[3].default, 'North York')
 
         h = HelperArgs(key="msg", field='_message',
-                           types=['str'], require=True)
+                           types=[str], require=True)
         args[0] = h
         self.assertEqual(args[0].key, 'msg')
         self.assertEqual(args[0].field, '_message')
@@ -77,21 +76,21 @@ class TestAssignBuilder(unittest.TestCase):
         self.assertRaises(ValueError, args.append, key='')
         # duplicate, raises error, cannot have the same key twice
         self.assertRaises(ValueError, args.append, key="msg",
-                          field='test', types=['str'], require=True)
+                          field='test', types=[str], require=True)
 
     def test_builder_append_remove(self):
         args = AssignBuilder()
-        args.append(key="msg", types=['str'], require=True)
-        args.append(key="age", types=['int'], require=True)
+        args.append(key="msg", types=[str], require=True)
+        args.append(key="age", types=[int], require=True)
         args.append(key="name", rules=[rules.RuleStr], default="unknown")
-        args.append(key="city", types=['str'], rules=[
+        args.append(key="city", types=[str], rules=[
                     rules.RuleStr], default="North York")
         self.assertTrue(len(args) == 4)
         args.remove(args[2])
         self.assertTrue(len(args) == 3)
         args.remove(args[2])
         self.assertTrue(len(args) == 2)
-        args.append(key="city", types=['str'], rules=[
+        args.append(key="city", types=[str], rules=[
                     rules.RuleStr], default="North York")
         self.assertTrue(len(args) == 3)
         self.assertRaises(TypeError, args.remove, [])
@@ -100,15 +99,15 @@ class TestAssignBuilder(unittest.TestCase):
 
     def test_builder_append_extend(self):
         args = AssignBuilder()
-        args.append(key="msg", types=['str'], require=True)
-        args.append(key="age", types=['int'], require=True)
+        args.append(key="msg", types=[str], require=True)
+        args.append(key="age", types=[int], require=True)
         args.append(key="name", rules=[rules.RuleStr], default="unknown")
-        args.append(key="city", types=['str'], rules=[
+        args.append(key="city", types=[str], rules=[
                     rules.RuleStr], default="North York")
         self.assertTrue(len(args) == 4)
         args_ex = AssignBuilder()
-        args_ex.append(key="message", types=['str'], require=True)
-        args_ex.append(key="limit", types=['int'], require=True)
+        args_ex.append(key="message", types=[str], require=True)
+        args_ex.append(key="limit", types=[int], require=True)
         self.assertTrue(len(args_ex) == 2)
         args.extend(args_ex)
         self.assertTrue(len(args) == 6)

@@ -1,8 +1,7 @@
 # coding: utf-8
-try:
+if __name__ == '__main__':
     import path_imports
-except:
-    pass
+
 import unittest
 from kwhelp.helper.base import HelperBase
 
