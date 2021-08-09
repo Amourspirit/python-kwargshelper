@@ -1,4 +1,5 @@
 # coding: utf-8
+from kwhelp.rules import RuleAttrExist
 from typing import Optional
 from abc import ABC, abstractmethod
 # region class HelperBase
@@ -65,6 +66,21 @@ class HelperBase(ABC):
     def _is_arg_str(self, method_name: str, arg: object, arg_name: str, raise_error: Optional[bool] = False) -> bool:
         result = self._isinstance_method(
             method_name=method_name, arg=arg, arg_name=arg_name, arg_type=str, raise_error=raise_error)
+        return result
+    
+    def _is_arg_str_empty_null(self, method_name: str, arg: object, arg_name: str, raise_error: Optional[bool] = False) -> bool:
+        result = self._is_arg_str(
+            method_name=method_name, arg=arg, arg_name=arg_name, raise_error=raise_error)
+        if result == False:
+            return result
+        _arg = str(arg).strip()
+        if len(_arg) == 0:
+            if raise_error:
+                raise ValueError(self._get_value_error_msg(
+                    method_name=method_name, arg=arg, arg_name=arg_name,
+                    msg='empty or whitespace string is not allowed'
+                ))
+            result = False
         return result
 
     def _is_arg_bool(self, method_name: str, arg: object, arg_name: str, raise_error: Optional[bool] = False) -> bool:

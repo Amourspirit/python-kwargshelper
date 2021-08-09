@@ -145,6 +145,36 @@ class TestKwArgsHelper(unittest.TestCase):
         raise_error = True
         self.assertRaises(TypeError, mh._is_arg_str, method_name=method_name,
                           arg=arg, arg_name=arg_name, raise_error=raise_error)
+    
+    def test_is_arg_str_empty_null(self):
+        method_name: str = 'mymethod'
+        arg: object = 'hello'
+        arg_name: str = 'arg'
+        raise_error = False
+        mh = MyHelper()
+        result = mh._is_arg_str_empty_null(
+            method_name=method_name, arg=arg, arg_name=arg_name, raise_error=raise_error)
+        self.assertTrue(result)
+        arg = 10
+        result = mh._is_arg_str_empty_null(
+            method_name=method_name, arg=arg, arg_name=arg_name, raise_error=raise_error)
+        self.assertFalse(result)
+        raise_error = True
+        self.assertRaises(TypeError, mh._is_arg_str_empty_null, method_name=method_name,
+                          arg=arg, arg_name=arg_name, raise_error=raise_error)
+        arg = ''
+        self.assertRaises(ValueError, mh._is_arg_str_empty_null, method_name=method_name,
+                          arg=arg, arg_name=arg_name, raise_error=raise_error)
+        arg = '\t\n'
+        self.assertRaises(ValueError, mh._is_arg_str_empty_null, method_name=method_name,
+                          arg=arg, arg_name=arg_name, raise_error=raise_error)
+        arg = '    '
+        self.assertRaises(ValueError, mh._is_arg_str_empty_null, method_name=method_name,
+                          arg=arg, arg_name=arg_name, raise_error=raise_error)
+        raise_error = False
+        result = mh._is_arg_str_empty_null(
+            method_name=method_name, arg=arg, arg_name=arg_name, raise_error=raise_error)
+        self.assertFalse(result)
 
     def test_is_arg_bool(self):
         method_name: str = 'mymethod'

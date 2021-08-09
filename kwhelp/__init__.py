@@ -1,17 +1,25 @@
 # coding: utf-8
-__version__ = '1.0.4'
-from typing import List, Optional, Set, Callable, Union
+__version__ = '1.1.1'
+from typing import Any, Dict, List, Optional, Set, Callable, Union
 from collections import UserList
 from typing import List, Optional, Callable
 from . rules import IRule
 from . helper.base import HelperBase
 
 # region Custom Errors
+
+
 class CancelEventError(Exception):
     '''Cancel Event Error'''
+
+
+class ReservedAttributeError(ValueError):
+    '''Error when a reserved attribute is attempted to be set'''
 # endregion Custom Errors
 
 # region class HelperArgs
+
+
 class HelperArgs(HelperBase):
     def __init__(self, key: str, **kwargs):
         self._key: str = ''
@@ -84,7 +92,7 @@ class HelperArgs(HelperBase):
         return None
 
     @property
-    def types(self) -> Set[str]:
+    def types(self) -> Set[type]:
         return self._types
 
     @types.setter
@@ -109,6 +117,7 @@ class HelperArgs(HelperBase):
     # endregion Properties
 # endregion class HelperArgs
 
+
 # region class AssignBuilder
 class AssignBuilder(UserList):
     '''Helper class for building list to use with "KwargsHelper.Assing() method'''
@@ -117,14 +126,14 @@ class AssignBuilder(UserList):
         super().__init__(initlist=None)
         self._keys = set()
 
-    def append(self, key: str, field: Optional[str] = None, require: bool = False, default: Optional[object] = None, types: Optional[List[str]] = None, rules: Optional[List[Callable[[IRule], bool]]] = None):
+    def append(self, key: str, field: Optional[str] = None, require: bool = False, default: Optional[object] = None, types: Optional[List[type]] = None, rules: Optional[List[Callable[[IRule], bool]]] = None):
         '''
         Appends dictionary item of parameters to list
         @key: Type:str, the key of the key, value pair.
         @field: (optional) Type:str the name of the field.
         @require: (optional) Type:bool Default: `False`
         @default: (optional) Type:str, default value to assign.
-        @types: (optional) Type:List[str], a string list of one or more types that the value of the key value pair must match.
+        @types: (optional) Type:List[type], a `type` list of one or more types that the value of the key value pair must match.
         @rules: (optional) Type:List[Callable[[IRule], bool]]
         '''
         if not isinstance(key, str):
@@ -238,6 +247,8 @@ class AssignBuilder(UserList):
 # endregion class AssignBuilder
 
 # region Event Args
+
+
 class BeforeAssignEventArgs:
     def __init__(self, help_args: HelperArgs, originator: object):
         self._helper_args = help_args
@@ -349,6 +360,8 @@ class AfterAssignEventArgs:
 # endregion Event Args
 
 # region class KwargsHelper
+
+
 class KwargsHelper(HelperBase):
     '''
     kwargs helper class. Assigns attributes to class with various checks
@@ -444,23 +457,26 @@ class KwargsHelper(HelperBase):
     # region Public Methods
     def assign(self, key: str, field: Optional[str] = None, require: bool = False, default: Optional[object] = None, types: Optional[List[type]] = None, rules: Optional[List[Callable[[IRule], bool]]] = None) -> bool:
         '''
-        Assigns attribue value to `obj` passed in to constructor. Attributes are created if they do not exist.
+        Assigns attribute value to `obj` passed in to constructor. Attributes are created if they do not exist.
         @key: Type:str, the key of the key, value pair that is required or optional in `obj_kwargs` passed into to constructor.
-        @field: (optional) Type:str the name of the field to assign a value. If `field` is omitted then filed name is built using
+        @field: (optional) Type:str the name of the field to assign a value. If `field` is omitted then field name is built using
         `instance.field_prefix` + `key`. If included then `instance.field_prefix` will be ignored.
         @require: (optional) Type:bool, Determins if `key` is required to be in `obj_kwargs` passed into to constructor.
         if `default` is passed in then `require` is ignored. Default: `False`
         @default: (optional) Type:str, default value to assign to key attribute if no value is found in `obj_kwargs` passed into to constructor.
         If `default` is passed in then `require` is ignored
-        @types: (optional) Type:List[str], a string list of one or more types that the value of the key value pair must match.
-        For example if a value is required to be only `str` then `types=['str']. In this example if value is not type str then `TypeError` is raised
-        If value is required to be `str` or `int` then `types=['str', 'int']`.
-        If `types` is omitted then a value can be any type.
+        @types: (optional) Type:List[type], a type list of one or more types that the value of the key value pair must match.
+        For example if a value is required to be only `str` then `types=[str]`.
+
+        In this example if value is not type str then `TypeError` is raised
+        If value is required to be `str` or `int` then `types=[str, int].
+        If `types` is omitted then a value can be any type unless there is a rule in `rules` that is otherwise.
 
         @rules: (optional) Type:List[Callable[[IRule], bool]]
+        @return: `True` if attribute assignment is successful; Otherwise, `False`
         '''
         m_name = 'assign'
-        self._is_arg_str(
+        self._is_arg_str_empty_null(
             method_name=m_name, arg=key, arg_name='key', raise_error=True)
         self._is_arg_bool(
             method_name=m_name, arg=require, arg_name='require', raise_error=True)
@@ -489,9 +505,25 @@ class KwargsHelper(HelperBase):
         return result
 
     def assign_helper(self, helper: HelperArgs) -> bool:
-        self._isinstance_method(method_name='assign_helper', arg=helper, arg_name='helper',arg_type=HelperArgs, raise_error=True)
+        '''
+        Assigns attribute value using instance of HelperArgs. See `assign()` method.
+        @helper: Type:HelperArgs instance to assign.
+        @return: `True` if attribute assignment is successful; Otherwise, `False`
+        '''
+        self._isinstance_method(method_name='assign_helper', arg=helper,
+                                arg_name='helper', arg_type=HelperArgs, raise_error=True)
         d = helper.to_dict()
         return self.assign(**d)
+    
+    def is_key_existing(self, key: str) -> bool:
+        '''
+        Gets if the key exist in  kwargs dictionary passed in to the constructor by `obj_kwargs` arg.
+        '''
+        valid_key = self._is_arg_str_empty_null(
+            method_name='is_key_existing', arg=key, arg_name='key', raise_error=False)
+        if valid_key == False:
+            return False
+        return key in self._kwargs
     # endregion Public Methods
 
     # region private methods
@@ -524,14 +556,6 @@ class KwargsHelper(HelperBase):
         after_args._success = result
         after_args._success
         return None
-
-    # def _get_type_error_msg_method(self, method_name: str, arg: object, arg_name: str, expected_type: str) -> str:
-    #     result = f"{self.__class__.__name__}.{method_name}() arg '{arg_name}' is expecting type of '{expected_type}'. Got type of '{type(arg).__name__}'"
-    #     return result
-
-    # def _get_type_error_msg_property(self, property_name: str, value: object, expected_type: str) -> str:
-    #     result = f"{self.__class__.__name__}.{property_name} is expecting type of '{expected_type}'. Got type of '{type(value).__name__}'"
-    #     return result
 
     def _get_formated_types(self, types: Set[str]) -> str:
         result = ''
@@ -778,7 +802,136 @@ class KwargsHelper(HelperBase):
         self._rule_test_early = value
         return None
 
+    @property
+    def kw_args(self) -> Dict[str, Any]:
+        '''Gets the kwargs dictionary passed in to the constructor by `obj_kwargs` arg'''
+        return self._kwargs
+
     # endregion Properties
 
 # endregion class KwargsHelper
 
+# region class KwArgs
+
+
+class KwArg(HelperBase):
+    '''Class for assigning kwargs to autogen fields with type checking and testing'''
+    _RESERVED_INTERNAL_FIELDS: Set[str] = set(
+        ['kwargs_helper', 'assign', 'assign_helper', '_kw_args_helper_class_instance',
+         '__init__', 'is_attribute_exist', 'is_key_existing',
+         '_get_type_error_method_msg', '_get_value_error_msg',
+         '_get_type_error_prop_msg', '_isinstance_prop',
+         '_prop_error', '_is_prop_str', '_is_prop_bool', '_is_prop_int',
+         '_isinstance_method', '_is_arg_str', '_is_arg_bool',
+         '_arg_type_error', '_get_name_type_obj'])
+
+    def __init__(self, **kwargs):
+        '''
+        Constructs instance of class
+
+        @kwargs: dictionary of args
+
+        @example:
+        ```
+        def my_method(**kwargs) -> str:
+            kw = KwArg(**kwargs)
+            kw.assign(key='first', require=True, types=[int])
+            kw.assign(key='second', require=True, types=[int])
+            kw.assign(key='msg', types=[str], default='Result:')
+            kw.assign(key='end', types=[str])
+            first:int = kw.first
+            second:int = kw.second
+            msg: str = kw.msg
+            _result = first + second
+            if kw.is_attribute_exist('end'):
+                return_msg = f'{msg} {_result}{kw.end}'
+            else:
+                return_msg = f'{msg} {_result}'
+            return return_msg
+        ```
+        '''
+        self._kw_args_helper_class_instance = KwargsHelper(
+            originator=self, obj_kwargs={**kwargs})
+        self._kw_args_helper_class_instance.field_prefix = ''
+
+    def assign(self, key: str, field: Optional[str] = None, require: bool = False, default: Optional[object] = None, types: Optional[List[type]] = None, rules: Optional[List[Callable[[IRule], bool]]] = None) -> bool:
+        '''
+        Assigns attribute value to current instance passed in to constructor. Attributes automatically.
+        @key: Type:str, the key of the key, value pair that is required or optional in `kwargs` passed into to constructor.
+        @field: (optional) Type:str the name of the field to assign a value. If `field` is omitted then field name is built using
+        `key`. If included then `kwargs_helper.field_prefix` will be ignored.
+        @require: (optional) Type:bool, Determins if `key` is required to be in `kwargs` passed into to constructor.
+        if `default` is passed in then `require` is ignored. Default: `False`
+        @default: (optional) Type:str, default value to assign to key attribute if no value is found in `kwargs` passed into to constructor.
+        If `default` is passed in then `require` is ignored
+        @types: (optional) Type:List[type], a tyep list of one or more types that the value of the key value pair must match.
+        For example if a value is required to be only `str` then `types=[str]`.
+
+        In this example if value is not type str then `TypeError` is raised
+        If value is required to be `str` or `int` then `types=[str, int]`.
+        If `types` is omitted then a value can be any type unless there is a rule in `rules` that is otherwise.
+
+        @rules: (optional) Type:List[Callable[[IRule], bool]]
+        @return: `True` if attribute assignment is successful; Otherwise, `False`
+        '''
+        m_name = 'assign'
+        self._is_arg_str_empty_null(
+            method_name=m_name, arg=key, arg_name='key', raise_error=True)
+        if field is None:
+            if key in KwArg._RESERVED_INTERNAL_FIELDS:
+                raise ReservedAttributeError(
+                    f"{self.__class__.__name__}.{key} is a reserved keyword. Try using the 'field' arg for a different field name")
+        else:
+            if field in KwArg._RESERVED_INTERNAL_FIELDS:
+                raise ReservedAttributeError(
+                    f"{self.__class__.__name__}.{field} is a reserved keyword. Try using a differne field name.")
+        return self._kw_args_helper_class_instance.assign(key=key, field=field, require=require, default=default, types=types, rules=rules)
+
+    def assign_helper(self, helper: HelperArgs) -> bool:
+        '''
+        Assigns attribute value using instance of HelperArgs. See `assign()` method.
+        @helper: Type:HelperArgs instance to assign.
+        @return: `True` if attribute assignment is successful; Otherwise, `False`
+        '''
+        self._isinstance_method(method_name='assign_helper', arg=helper,
+                                arg_name='helper', arg_type=HelperArgs, raise_error=True)
+        d = helper.to_dict()
+        return self.assign(**d)
+
+    # region Public Methods
+    def is_attribute_exist(self, attrib_name: str) -> bool:
+        '''
+        Gets if `attrib_name` exist the current instance.
+        @attrib_name: Type:str, This is usually the `key` value of `assign()` or `field` value of `assign()`.
+        `field` has priority over `key` of `assign()` method.
+
+        Use this method when 
+        When assigning a key that is not required it may not exist in the current instance.
+        When assing key that are required then the field will exist in the current instance.
+        '''
+        # if an key is assigned and not required it may not exist in curren instance
+        valid_key = self._is_arg_str_empty_null(
+            method_name='has_attribute', arg=attrib_name, arg_name='key', raise_error=False)
+        if valid_key == False:
+            return False
+        _key = attrib_name.strip()
+        return hasattr(self, _key)
+    
+    def is_key_existing(self, key: str) -> bool:
+        '''
+        Gets if the key exist in current kwargs.
+        Basically shortcut for `key in kwargs`
+        '''
+        return self._kw_args_helper_class_instance.is_key_existing(key)
+    # endregion Public Methods
+
+    # region Properties
+
+    @property
+    def kwargs_helper(self) -> KwargsHelper:
+        '''Get instance of KwargsHelper used to add fields current instance'''
+        return self._kw_args_helper_class_instance
+
+    # endregion Properties
+
+# region class KwArgs

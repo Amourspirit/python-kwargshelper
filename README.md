@@ -1,15 +1,8 @@
 [![codecov](https://codecov.io/gh/Amourspirit/python-kwargshelper/branch/master/graph/badge.svg?token=mJ2HdGwSGy)](https://codecov.io/gh/Amourspirit/python-kwargshelper) ![GitHub Workflow Status](https://img.shields.io/github/workflow/status/Amourspirit/python-kwargshelper/CodeCov) ![GitHub](https://img.shields.io/github/license/Amourspirit/python-kwargshelper) ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/kwargshelper) ![PyPI - Wheel](https://img.shields.io/pypi/wheel/kwargshelper)
 
-# KwargsHelper Class
+# kwargshelper
 
-Helper class for working with python **kwargs.
-
-Parse kwargs with suport for rules that can be extended that validate any arg of kwargs.
-Type checking of any type.
-
-Callback function for before update that includes a Cancel Option.
-
-Many other options avaliable for more complex usage.
+A python package for working with **kwargs**
 
 ## Installation
 
@@ -18,6 +11,33 @@ You can install the Version Class from [PyPI](https://pypi.org/project/kwargshel
 ```python
 pip install kwargshelper
 ```
+
+## KwargsHelper Class
+
+Helper class for working with python `**kwargs` in a class constructor
+
+Assigns values of `**kwargs` to an exising class with type checking and rules
+
+Parse kwargs with suport for rules that can be extended that validate any arg of kwargs.
+Type checking of any type.
+
+Callback function for before update that includes a Cancel Option.
+
+Many other options avaliable for more complex usage.
+
+## KwArg Class
+
+Helper class for working with python `**kwargs` in a method/function
+Wrapper for `KwargsHelper` Class.
+
+Assigns values of `**kwargs` to itself with validation
+
+Parse kwargs with suport for rules that can be extended that validate any arg of kwargs.
+Type checking of any type.
+
+Callback function for before update that includes a Cancel Option.
+
+Many other options avaliable for more complex usage.
 
 ## Rules
 
@@ -58,7 +78,31 @@ class RuleIntRangeZeroNine(IRule):
 * RuleStr
 * RuleStrNotNullOrEmpty
 
-## Usage
+## Usage KwArg Class
+
+```python
+from kwhelp import KwArg
+import kwhelp.rules as rules
+
+def my_method(**kwargs) -> str:
+    kw = KwArg(**kwargs)
+    kw.assign(key='first', require=True, types=[int])
+    kw.assign(key='second', require=True, types=[int])
+    kw.assign(key='msg', types=[str], default='Result:',
+        rules=[rules.RuleStrNotNullOrEmpty])
+    kw.assign(key='end', types=[str])
+    first:int = kw.first
+    second:int = kw.second
+    msg: str = kw.msg
+    _result = first + second
+    if kw.is_attribute_exist('end'):
+        return_msg = f'{msg} {_result}{kw.end}'
+    else:
+        return_msg = f'{msg} {_result}'
+    return return_msg
+```
+
+## Usage KwargsHelper Class
 
 Simple usage
 
@@ -169,11 +213,10 @@ Using callback example:
 ```python
 from kwhelp import KwargsHelper, AfterAssignEventArgs, BeforeAssignEventArgs, AssignBuilder
 
-
 class MyClass:
     def __init__(self, **kwargs):
         self._loop_count = -1
-        kw = KwargsHelper(self, {**kwargs})
+        kw = KwargsHelper(originator=self, obj_kwargs={**kwargs})
         ab = AssignBuilder()
         kw.add_handler_before_assign(self._arg_before_cb)
         kw.add_handler_after_assign(self._arg_after_cb)
@@ -230,16 +273,4 @@ print(my_class.exporter)  # json
 print(my_class.file_name)  # data.json
 print(my_class.name)  # None
 print(my_class.loop_count)  # 3
-try:
-    # will raise an error because loop_count is default  is -1
-    my_class = MyClass(exporter='html', file_name='data.html',
-                       name='Best Doc')
-except Exception as e:
-    print(e)  # KwargsHelper.assign() canceled in 'BeforeAssignEventArgs'
-
-try:
-    # will raise an error because loop_count is default  is -1
-    my_class = MyClass(file_name='data.html', name='Best Doc', loop_count=1)
-except Exception as e:
-    print(e)  # MyClass arg 'exporter' is required
 ```

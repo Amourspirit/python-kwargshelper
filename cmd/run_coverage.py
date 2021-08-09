@@ -1,5 +1,5 @@
 # coding: utf-8
-from subprocess import run, call
+from subprocess import run
 
 def main():
     cmd_str = 'coverage run --source=kwhelp -m unittest discover tests'
