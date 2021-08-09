@@ -26,7 +26,7 @@ New rules can be created by inheriting from `IRule` interface/class
 **Example Rule:**
 
 ```python
-from rules import IRule
+from kwhelp.rules import IRule
 class RuleIntRangeZeroNine(IRule):
     '''
     Rule to ensure a integer from 0 to 9.
