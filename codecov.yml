@@ -8,3 +8,4 @@ comment:
     - "master"
 ignore:
   - "tests"  # ignore folders and all its contents
+  - "cmd"
