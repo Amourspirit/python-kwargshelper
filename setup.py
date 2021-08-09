@@ -1,12 +1,13 @@
+#!/usr/bin/env python
 import pathlib
 import sys
 import os
 import platform
 from setuptools import setup
 
-MAJOR = 0
-MINOR = 2
-MICRO = 1
+MAJOR = 1
+MINOR = 0
+MICRO = 4
 ISRELEASED = True
 VERSION = f'{MAJOR}.{MINOR}.{MICRO}'
 
@@ -78,9 +79,10 @@ setup(
     long_description=README,
     url="https://github.com/Amourspirit/python-kwargshelper",
     author=":Barry-Thomas-Paul: Moss",
+    author_email='bigbytetech@gmail.com',
     license="MIT",
-    # package_dir={'': 'kwhelp'},
-    packages=['kwhelp'],
+    # package_dir={'kwhelp': 'kwhelp'},
+    packages=['kwhelp', 'kwhelp.rules', 'kwhelp.helper'],
     py_modules=MODULES,
     keywords=['python', 'kwargs', 'args', 'parse', 'helper'],
     classifiers=[
