@@ -19,6 +19,16 @@ class TestKwArg(unittest.TestCase):
         self.assertFalse(kw.is_key_existing(' '))
         self.assertFalse(kw.is_key_existing(None))
         self.assertTrue('msg' in kw.kwargs_helper.kw_args)
+        
+    def test_assign_default_none(self):
+        #with self.assertWarns(DeprecationWarning):
+        kw = KwArg()
+        kw.kw_assign(key='msg', types=[str], default=None)
+        self.assertTrue(kw.is_attribute_exist('msg'))
+        self.assertFalse(kw.is_key_existing('msg'))
+        self.assertFalse('msg' in kw.kwargs_helper.kw_args)
+        self.assertEqual(kw.msg, None)
+
     
     def test_assign_assign_warns(self):
         kw = KwArg(msg='Hello World')

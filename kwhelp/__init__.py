@@ -6,6 +6,8 @@ from typing import List, Optional, Callable
 from warnings import warn
 from . rules import IRule
 from . helper.base import HelperBase
+from .helper import NO_THING
+
 
 # region Custom Errors
 
@@ -27,7 +29,7 @@ class HelperArgs(HelperBase):
         self._field = None
         self._require = False
         self._types = set()
-        self._default = None
+        self._default = NO_THING
         self._rules = []
         self.key = key
         keys = ('field', 'require', 'types', 'default', 'rules')
@@ -42,7 +44,7 @@ class HelperArgs(HelperBase):
             arg['field'] = self.field
         if self.types is not None and len(self.types) > 0:
             arg['types'] = [itm for itm in self.types]
-        if self.default is not None:
+        if self.default is not NO_THING:
             arg['default'] = self.default
         if self.rules is not None and len(self.rules) > 0:
             arg['rules'] = self.rules
@@ -584,7 +586,7 @@ class KwargsHelper(HelperBase):
             return self._auto_assign_with_cb()
         return self._auto_assign_no_cb()
 
-    def assign(self, key: str, field: Optional[str] = None, require: bool = False, default: Optional[object] = None, types: Optional[List[type]] = None, rules: Optional[List[Callable[[IRule], bool]]] = None) -> bool:
+    def assign(self, key: str, field: Optional[str] = None, require: bool = False, default: Optional[object] = NO_THING, types: Optional[List[type]] = None, rules: Optional[List[Callable[[IRule], bool]]] = None) -> bool:
         '''
         Assigns attribute value to `obj` passed in to constructor. Attributes are created if they do not exist.
         @key: Type:str, the key of the key, value pair that is required or optional in `obj_kwargs` passed into to constructor.
@@ -619,7 +621,7 @@ class KwargsHelper(HelperBase):
         # _args.require = require
         _args.types = set(types)
         _args.rules = rules
-        if default is not None:
+        if default is not NO_THING:
             _args.default = default
         before_args = BeforeAssignEventArgs(_args, self._obj)
 
@@ -659,7 +661,8 @@ class KwargsHelper(HelperBase):
     def _auto_assign_no_cb(self) -> bool:
         for k, v in self._kwargs.items():
             field_name = f"{self._field_prefix}{k}"
-            self._obj.__dict__[field_name] = v
+            setattr(self._obj, field_name, v)
+            # self._obj.__dict__[field_name] = v
             self._remove_key(key=k)
         return True
 
@@ -686,7 +689,8 @@ class KwargsHelper(HelperBase):
                 else:
                     result = False
             else:
-                self._obj.__dict__[_field] = _value
+                # self._obj.__dict__[_field] = _value
+                setattr(self._obj, _field, _value)
                 after_args._success = True
                 after_args._field_name = _field
                 after_args._field_value = _value
@@ -709,7 +713,7 @@ class KwargsHelper(HelperBase):
                 result = self._setattr(f"{self._field_prefix}{key}",
                                        value, before_args, after_args, args=args)
         else:
-            if args.default is not None:
+            if args.default is not NO_THING:
                 if args.field:
                     result = self._setattr(args.field, args.default,
                                            before_args, after_args, args=args)
@@ -751,8 +755,8 @@ class KwargsHelper(HelperBase):
                 args=args, field=_field, value=_value, after_args=after_args)
             if result == False:
                 return result
-        # setattr(self._obj, _field, _value)
-        self._obj.__dict__[_field] = _value
+        setattr(self._obj, _field, _value)
+        # self._obj.__dict__[_field] = _value
         self._remove_key(args.key)
         if self._rule_test_early == False:
             result = self._validate_rules(
@@ -1075,12 +1079,12 @@ class KwArg(HelperBase):
         '''
         self._kw_args_helper_class_instance.auto_assign()
 
-    def assign(self, key: str, field: Optional[str] = None, require: bool = False, default: Optional[object] = None, types: Optional[List[type]] = None, rules: Optional[List[Callable[[IRule], bool]]] = None) -> bool:
+    def assign(self, key: str, field: Optional[str] = None, require: bool = False, default: Optional[object] = NO_THING, types: Optional[List[type]] = None, rules: Optional[List[Callable[[IRule], bool]]] = None) -> bool:
         # https://docs.python.org/3/library/warnings.html#warnings.warn
         warn("use kw_assign instead", DeprecationWarning, stacklevel=2)
         return self.kw_assign(key=key,field=field,require=require,default=default,types=types,rules=rules)
     
-    def kw_assign(self, key: str, field: Optional[str] = None, require: bool = False, default: Optional[object] = None, types: Optional[List[type]] = None, rules: Optional[List[Callable[[IRule], bool]]] = None) -> bool:
+    def kw_assign(self, key: str, field: Optional[str] = None, require: bool = False, default: Optional[object] = NO_THING, types: Optional[List[type]] = None, rules: Optional[List[Callable[[IRule], bool]]] = None) -> bool:
         '''
         Assigns attribute value to current instance passed in to constructor. Attributes automatically.
         @key: Type:str, the key of the key, value pair that is required or optional in `kwargs` passed into to constructor.

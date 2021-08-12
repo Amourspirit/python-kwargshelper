@@ -224,6 +224,14 @@ class TestKwArgsHelper(unittest.TestCase):
         with self.assertRaises(TypeError):
             r.kw.assign_true_not_required = -1
 
+    def test_assign_default_none(self):
+        r = Runner(msg='Hello World')
+        r.kw.assign(key='msg', types=[str], require=True)
+        r.kw.assign(key='job', types=[str, None], default=None)
+        self.assertEqual(r._msg, 'Hello World')
+        self.assertEqual(r._job, None)
+        self.assertTrue(r == r.kw.originator)
+
 class TestKwargsHelperInClass(unittest.TestCase):
 
     def test_msg_hello_wolrd(self):
