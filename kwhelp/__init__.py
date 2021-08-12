@@ -3,6 +3,7 @@ __version__ = '1.1.1'
 from typing import Any, Dict, List, Optional, Set, Callable, Union
 from collections import UserList
 from typing import List, Optional, Callable
+from warnings import warn
 from . rules import IRule
 from . helper.base import HelperBase
 
@@ -288,11 +289,11 @@ class BeforeAssignAutoEventArgs:
         return self._field_value
 
     @field_value.setter
-    def field_value(self, val: object) -> None:
+    def field_value(self, value: object) -> None:
         '''
         Sets the value to be blindly assigned to property
         '''
-        self._field_value = val
+        self._field_value = value
 
     @property
     def originator(self) -> object:
@@ -577,7 +578,7 @@ class KwargsHelper(HelperBase):
         unless the event is canceled in `BeforeAssignBlindEventArgs` then key, value pair will be added automacally to `originator`.
         @return: `True` of all key, value pairs are added; Otherwise, `False`
         
-        Call back events are supported via
+        Call back events are supported via `add_handler_before_assign_auto()` and `add_handler_after_assign_auto()` methods.
         '''
         if self._is_auto_assign_handlers():
             return self._auto_assign_with_cb()
@@ -661,6 +662,7 @@ class KwargsHelper(HelperBase):
             self._obj.__dict__[field_name] = v
             self._remove_key(key=k)
         return True
+
     def _auto_assign_with_cb(self) -> bool:
         '''
         Assigns all key, value pairs blindly unless interupted by event cancel
@@ -1030,7 +1032,7 @@ class KwArg(HelperBase):
          '_get_type_error_prop_msg', '_isinstance_prop',
          '_prop_error', '_is_prop_str', '_is_prop_bool', '_is_prop_int',
          '_isinstance_method', '_is_arg_str', '_is_arg_bool',
-         '_arg_type_error', '_get_name_type_obj', 'unused_keys'])
+         '_arg_type_error', '_get_name_type_obj', 'kw_unused_keys', 'kw_auto_assign', 'kw_assign', 'kw_assign_helper'])
 
     def __init__(self, **kwargs):
         '''
@@ -1061,7 +1063,24 @@ class KwArg(HelperBase):
             originator=self, obj_kwargs={**kwargs})
         self._kw_args_helper_class_instance.field_prefix = ''
 
+    def kw_auto_assign(self):
+        '''
+        Assigns all of the key, value pairs of `obj_kwargs` passed into constructor to `originator`,
+        unless the event is canceled in `BeforeAssignBlindEventArgs` then key, value pair will be added automacally to `originator`.
+        @return: `True` of all key, value pairs are added; Otherwise, `False`
+        
+        Call back events are supported via `kwargs_helper.add_handler_before_assign_auto()` and `kwargs_helper.add_handler_after_assign_auto()` methods.
+        
+        Wrapper method for `KwArgsHelper.auto_assign()`
+        '''
+        self._kw_args_helper_class_instance.auto_assign()
+
     def assign(self, key: str, field: Optional[str] = None, require: bool = False, default: Optional[object] = None, types: Optional[List[type]] = None, rules: Optional[List[Callable[[IRule], bool]]] = None) -> bool:
+        # https://docs.python.org/3/library/warnings.html#warnings.warn
+        warn("use kw_assign instead", DeprecationWarning, stacklevel=2)
+        return self.kw_assign(key=key,field=field,require=require,default=default,types=types,rules=rules)
+    
+    def kw_assign(self, key: str, field: Optional[str] = None, require: bool = False, default: Optional[object] = None, types: Optional[List[type]] = None, rules: Optional[List[Callable[[IRule], bool]]] = None) -> bool:
         '''
         Assigns attribute value to current instance passed in to constructor. Attributes automatically.
         @key: Type:str, the key of the key, value pair that is required or optional in `kwargs` passed into to constructor.
@@ -1095,6 +1114,11 @@ class KwArg(HelperBase):
         return self._kw_args_helper_class_instance.assign(key=key, field=field, require=require, default=default, types=types, rules=rules)
 
     def assign_helper(self, helper: HelperArgs) -> bool:
+        # https://docs.python.org/3/library/warnings.html#warnings.warn
+        warn("use kw_assign_helper instead", DeprecationWarning, stacklevel=2)
+        return self.kw_assign_helper(helper=helper)
+
+    def kw_assign_helper(self, helper: HelperArgs) -> bool:
         '''
         Assigns attribute value using instance of HelperArgs. See `assign()` method.
         @helper: Type:HelperArgs instance to assign.
@@ -1103,7 +1127,7 @@ class KwArg(HelperBase):
         self._isinstance_method(method_name='assign_helper', arg=helper,
                                 arg_name='helper', arg_type=HelperArgs, raise_error=True)
         d = helper.to_dict()
-        return self.assign(**d)
+        return self.kw_assign(**d)
 
     # region Public Methods
     def is_attribute_exist(self, attrib_name: str) -> bool:
@@ -1140,7 +1164,7 @@ class KwArg(HelperBase):
         return self._kw_args_helper_class_instance
 
     @property
-    def unused_keys(self) -> Set[str]:
+    def kw_unused_keys(self) -> Set[str]:
         '''
         Gets any unused keys passed into constructor via `**kwargs`
 
