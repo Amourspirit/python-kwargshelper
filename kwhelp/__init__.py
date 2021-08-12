@@ -1,5 +1,5 @@
 # coding: utf-8
-__version__ = '1.1.1'
+__version__ = '1.2.0'
 from typing import Any, Dict, List, Optional, Set, Callable, Union
 from collections import UserList
 from typing import List, Optional, Callable

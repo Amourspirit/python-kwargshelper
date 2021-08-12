@@ -7,8 +7,8 @@ from setuptools import setup
 
 PKG_NAME = 'kwargshelper'
 MAJOR = 1
-MINOR = 1
-MICRO = 1
+MINOR = 2
+MICRO = 0
 ISRELEASED = True
 VERSION = f'{MAJOR}.{MINOR}.{MICRO}'
 
