@@ -5,6 +5,7 @@ import os
 import platform
 from setuptools import setup
 
+PKG_NAME = 'kwargshelper'
 MAJOR = 1
 MINOR = 1
 MICRO = 1
@@ -15,9 +16,10 @@ min_version = (3, 6, 0)
 
 
 def is_right_py_version(min_py_version):
+    global PKG_NAME
     if sys.version_info < (3,):
         sys.stderr.write(
-            'Python 2 has reached end-of-life and is no longer supported by Caer.')
+            'Python 2 has reached end-of-life and is NOT supported by ' + PKG_NAME)
         return False
 
     if sys.version_info < min_py_version:
@@ -72,7 +74,7 @@ MODULES = get_src_modules(HERE)
 
 # This call to setup() does all the work
 setup(
-    name="kwargshelper",
+    name=PKG_NAME,
     version=VERSION,
     description="Manages testing for valid kwargs key, values pairs and assigns class attributes for pairs.",
     long_description_content_type="text/markdown",
