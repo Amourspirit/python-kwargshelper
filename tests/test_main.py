@@ -3,7 +3,7 @@ if __name__ == '__main__':
     import path_imports
 
 import unittest
-from kwhelp import KwargsHelper, CancelEventError, AssignBuilder, HelperArgs, AfterAssignEventArgs, BeforeAssignEventArgs
+from kwhelp import KwargsHelper, CancelEventError, AssignBuilder, HelperArgs, AfterAssignEventArgs, BeforeAssignEventArgs, AfterAssignAutoEventArgs, BeforeAssignAutoEventArgs
 import kwhelp.rules as rules
 
 class Runner:
@@ -224,7 +224,6 @@ class TestKwArgsHelper(unittest.TestCase):
         with self.assertRaises(TypeError):
             r.kw.assign_true_not_required = -1
 
-
 class TestKwargsHelperInClass(unittest.TestCase):
 
     def test_msg_hello_wolrd(self):
@@ -354,7 +353,6 @@ class TestKwargsHelperInClass(unittest.TestCase):
         self.assertRaises(TypeError, RunnerEx, kw_args={
                           "rule_test_before_assign": 1}, msg='')
 
-
 class TestKwArgsHelperCallback(unittest.TestCase):
 
     def test_msg_hello_wolrd(self):
@@ -456,7 +454,6 @@ class TestKwArgsHelperCallback(unittest.TestCase):
         result = rx.kw.assign(key='num', require=True, types=[int])
         self.assertFalse(result)
         self.assertFalse(rx.kw.cancel_error)
-
 
 class TestKwArgsHelperRules(unittest.TestCase):
 
@@ -853,7 +850,6 @@ class TestKwArgsHelperRules(unittest.TestCase):
         self.assertTrue(hasattr(rx, '_is_adult'))
         self.assertTrue(rx._is_adult == 10)
 
-
 class TestKwArgsHelperAsList(unittest.TestCase):
 
     def test_list_args(self):
@@ -977,6 +973,187 @@ class TestKwArgsHelperAsList(unittest.TestCase):
         self.assertTrue(result)
         self.assertFalse(r.kw.assign_true_not_required)
 
+class TestKwargsHelperAssignAuto(unittest.TestCase):
+    
+    def test_assign_auto_simple(self):
+        rx = RunnerEx(kw_args=None, msg='Hello World', age=12)
+        result = rx.kw.auto_assign()
+        self.assertTrue(result)
+        self.assertEqual(rx._msg, 'Hello World')
+        self.assertEqual(rx._age, 12)
+    
+    def test_assign_auto_no_prefix(self):
+        obj = EmptyObj()
+        d = {
+            "age": 12,
+            "height": "5.2'"
+            }
+        kw = KwargsHelper(originator=obj,obj_kwargs=d,field_prefix='')
+        result = kw.auto_assign()
+        self.assertTrue(result)
+        self.assertEqual(obj.age, 12)
+        self.assertEqual(obj.height, "5.2'")
 
+ 
+    def test_assign_auto_cb(self):
+        obj = EmptyObj()
+        def before_assign(_, arg: BeforeAssignAutoEventArgs):
+            self.assertEqual(arg.originator, obj)
+            if arg.key == 'msg':
+                arg.field_name = 'msg'
+                arg.field_value = 'Good Day'
+
+        def after_assign(_, arg: AfterAssignAutoEventArgs):
+            self.assertTrue(arg.success)
+            self.assertEqual(arg.originator, obj)
+        d = {
+            "age": 12,
+            "height": "5.2'",
+            "msg": "Hello World"
+            }
+        kw = KwargsHelper(originator=obj,obj_kwargs=d)
+        kw.add_handler_before_assign_auto(before_assign)
+        kw.add_handler_after_assign_auto(after_assign)
+        result = kw.auto_assign()
+        self.assertTrue(result)
+        self.assertEqual(obj._age, 12)
+        self.assertEqual(obj._height, "5.2'")
+        self.assertEqual(obj.msg, "Good Day")
+
+    def test_assign_auto_cb_before(self):
+        obj = EmptyObj()
+
+        def before_assign(_, arg: BeforeAssignAutoEventArgs):
+            self.assertEqual(arg.originator, obj)
+            if arg.key == 'msg':
+                arg.field_name = 'msg'
+                arg.field_value = 'Good Day'
+
+        d = {
+            "age": 12,
+            "height": "5.2'",
+            "msg": "Hello World"
+        }
+        kw = KwargsHelper(originator=obj, obj_kwargs=d)
+        kw.add_handler_before_assign_auto(before_assign)
+        result = kw.auto_assign()
+        self.assertTrue(result)
+        self.assertEqual(obj._age, 12)
+        self.assertEqual(obj._height, "5.2'")
+        self.assertEqual(obj.msg, "Good Day")
+    
+    def test_assign_auto_cb_after(self):
+        obj = EmptyObj()
+        d = {
+            "age": 12,
+            "height": "5.2'",
+            "msg": "Hello World"
+        }
+        kw = KwargsHelper(originator=obj, obj_kwargs=d)
+        def after_assign(_, arg: AfterAssignAutoEventArgs):
+            
+            self.assertTrue(arg.success)
+            self.assertEqual(arg.originator, obj)
+            self.assertIn(arg.field_name[1:], d)
+            self.assertEqual(arg.field_value, d[arg.field_name[1:]])
+            
+        kw.add_handler_after_assign_auto(after_assign)
+        result = kw.auto_assign()
+        self.assertTrue(result)
+        self.assertEqual(obj._age, 12)
+        self.assertEqual(obj._height, "5.2'")
+        self.assertEqual(obj._msg, "Hello World")
+    
+    def test_assign_auto_cb_cancel(self):
+        obj = EmptyObj()
+
+        def before_assign(_, arg: BeforeAssignAutoEventArgs):
+            self.assertEqual(arg.originator, obj)
+            if arg.key == 'msg':
+                arg.cancel = True
+
+        def after_assign(_, arg: AfterAssignAutoEventArgs):
+            self.assertTrue(arg.success)
+            self.assertEqual(arg.originator, obj)
+        d = {
+            "age": 12,
+            "height": "5.2'",
+            "msg": "Hello World"
+        }
+        kw = KwargsHelper(originator=obj, obj_kwargs=d)
+        kw.add_handler_before_assign_auto(before_assign)
+        kw.add_handler_after_assign_auto(after_assign)
+        with self.assertRaises(CancelEventError):
+            kw.auto_assign()
+    
+    def test_assign_auto_cb_cancel_no_error(self):
+        obj = EmptyObj()
+
+        def before_assign(_, arg: BeforeAssignAutoEventArgs):
+            self.assertEqual(arg.originator, obj)
+            if arg.key == 'msg':
+                arg.cancel = True
+
+        def after_assign(_, arg: AfterAssignAutoEventArgs):
+            
+            self.assertEqual(arg.originator, obj)
+            if arg.key == 'msg':
+                self.assertTrue(arg.canceled)
+                self.assertFalse(arg.success)
+            else:
+                self.assertTrue(arg.success)
+                self.assertFalse(arg.canceled)
+        d = {
+            "age": 12,
+            "height": "5.2'",
+            "msg": "Hello World"
+        }
+        kw = KwargsHelper(originator=obj, obj_kwargs=d)
+        kw.cancel_error = False
+        kw.add_handler_before_assign_auto(before_assign)
+        kw.add_handler_after_assign_auto(after_assign)
+        result = kw.auto_assign()
+        self.assertFalse(result)
+        self.assertEqual(obj._age, 12)
+        self.assertEqual(obj._height, "5.2'")
+        self.assertFalse(hasattr(obj, '_msg'))
+
+    def test_assign_auto_no_auto_callback(self):
+        def cb_assign_after(_, arg: AfterAssignEventArgs):
+            self.assertTrue(arg.success)
+            self.assertFalse(arg.canceled)
+        obj = EmptyObj()
+        d = {
+            "age": 12,
+            "height": "5.2'",
+            "msg": "Hello World"
+        }
+        kw = KwargsHelper(originator=obj, obj_kwargs=d)
+        kw.add_handler_after_assign(cb_assign_after)
+        result = kw.auto_assign()
+        kw.assign(key='month', types=[str], default='August')
+        self.assertTrue(result)
+        self.assertEqual(obj._age, 12)
+        self.assertEqual(obj._height, "5.2'")
+        self.assertEqual(obj._msg, "Hello World")
+        self.assertEqual(obj._month, "August")
+        
+    def test_assign_auto_and_assign_normal(self):
+        obj = EmptyObj()
+        d = {
+            "age": 12,
+            "height": "5.2'",
+            "msg": "Hello World"
+        }
+        kw = KwargsHelper(originator=obj, obj_kwargs=d)
+        result = kw.auto_assign()
+        kw.assign(key='age', types=[int], require=True)
+        kw.assign(key='month', types=[str], default='August')
+        self.assertTrue(result)
+        self.assertEqual(obj._age, 12)
+        self.assertEqual(obj._height, "5.2'")
+        self.assertEqual(obj._msg, "Hello World")
+        self.assertEqual(obj._month, "August")
+        
 if __name__ == '__main__':
     unittest.main()

@@ -19,6 +19,7 @@ class ReservedAttributeError(ValueError):
 
 # region class HelperArgs
 
+
 class HelperArgs(HelperBase):
     def __init__(self, key: str, **kwargs):
         self._key: str = ''
@@ -117,6 +118,8 @@ class HelperArgs(HelperBase):
 # endregion class HelperArgs
 
 # region class AssignBuilder
+
+
 class AssignBuilder(UserList):
     '''Helper class for building list to use with "KwargsHelper.Assing() method'''
 
@@ -245,6 +248,113 @@ class AssignBuilder(UserList):
 # endregion class AssignBuilder
 
 # region Event Args
+
+
+class BeforeAssignAutoEventArgs:
+    def __init__(self, key: str, value: object, field: str, originator: object) -> None:
+        self._key = key
+        self._field_value = value
+        self._cancel = False
+        self._originator = originator
+        self._field_name = field
+
+    # region Properties
+    @property
+    def key(self) -> str:
+        '''
+        Gets the key of the key value pair
+        '''
+        return self._key
+
+    @property
+    def field_name(self) -> str:
+        '''
+        Gets the field that will be assigned representing `key`
+        '''
+        return self._field_name
+
+    @field_name.setter
+    def field_name(self, value: str) -> str:
+        '''
+        Sets the field that will be assigned representing `key`
+        '''
+        self._field_name = str(value).strip()
+
+    @property
+    def field_value(self) -> object:
+        '''
+        Gets the value to be blindly assigned to property
+        '''
+        return self._field_value
+
+    @field_value.setter
+    def field_value(self, val: object) -> None:
+        '''
+        Sets the value to be blindly assigned to property
+        '''
+        self._field_value = val
+
+    @property
+    def originator(self) -> object:
+        '''Gets object that attributes assigned/modified for '''
+        return self._originator
+
+    @property
+    def cancel(self) -> bool:
+        return self._cancel
+
+    @cancel.setter
+    def cancel(self, value: bool) -> None:
+        self._cancel = bool(value)
+    # endregion Properties
+
+
+class AfterAssignAutoEventArgs:
+    def __init__(self, key: str, originator: object) -> None:
+        self._key = key
+        self._field_value: object = None
+        self._originator = originator
+        self._field_name: str = ''
+        self._success = False
+        self._canceled = False
+
+    # region Properties
+    @property
+    def key(self) -> str:
+        '''
+        Gets the key of the key value pair
+        '''
+        return self._key
+
+    @property
+    def field_name(self) -> str:
+        '''
+        Gets the field that will be assigned representing `key`
+        '''
+        return self._field_name
+
+    @property
+    def field_value(self) -> object:
+        '''
+        Gets the value to be blindly assigned to property
+        '''
+        return self._field_value
+
+    @property
+    def originator(self) -> object:
+        '''Gets object that attributes assigned/modified for '''
+        return self._originator
+
+    @property
+    def success(self) -> bool:
+        '''Get assigning of attribue/value succeeded'''
+        return self._success
+
+    @property
+    def canceled(self) -> bool:
+        '''Get if assigment was canceled by before events'''
+        return self._canceled
+    # endregion Properties
 
 
 class BeforeAssignEventArgs:
@@ -408,6 +518,7 @@ class KwargsHelper(HelperBase):
         self._obj: object = originator
         self._callbacks = None
         self._kwargs = obj_kwargs
+        self._auto_assigned = False
         self._keys: set = set(self._kwargs.keys())
         m_name = '__init__'
         key = 'field_prefix'
@@ -456,9 +567,22 @@ class KwargsHelper(HelperBase):
                 method_name=m_name, arg=self._assign_true_not_required, arg_name=key, raise_error=True)
         else:
             self._assign_true_not_required: bool = True
+
     # endregion init
 
     # region Public Methods
+    def auto_assign(self) -> bool:
+        '''
+        Assigns all of the key, value pairs of `obj_kwargs` passed into constructor to `originator`,
+        unless the event is canceled in `BeforeAssignBlindEventArgs` then key, value pair will be added automacally to `originator`.
+        @return: `True` of all key, value pairs are added; Otherwise, `False`
+        
+        Call back events are supported via
+        '''
+        if self._is_auto_assign_handlers():
+            return self._auto_assign_with_cb()
+        return self._auto_assign_no_cb()
+
     def assign(self, key: str, field: Optional[str] = None, require: bool = False, default: Optional[object] = None, types: Optional[List[type]] = None, rules: Optional[List[Callable[[IRule], bool]]] = None) -> bool:
         '''
         Assigns attribute value to `obj` passed in to constructor. Attributes are created if they do not exist.
@@ -518,7 +642,7 @@ class KwargsHelper(HelperBase):
                                 arg_name='helper', arg_type=HelperArgs, raise_error=True)
         d = helper.to_dict()
         return self.assign(**d)
-    
+
     def is_key_existing(self, key: str) -> bool:
         '''
         Gets if the key exist in  kwargs dictionary passed in to the constructor by `obj_kwargs` arg.
@@ -531,6 +655,42 @@ class KwargsHelper(HelperBase):
     # endregion Public Methods
 
     # region private methods
+    def _auto_assign_no_cb(self) -> bool:
+        for k, v in self._kwargs.items():
+            field_name = f"{self._field_prefix}{k}"
+            self._obj.__dict__[field_name] = v
+            self._remove_key(key=k)
+        return True
+    def _auto_assign_with_cb(self) -> bool:
+        '''
+        Assigns all key, value pairs blindly unless interupted by event cancel
+        @return: `True` if all key, values have been added; Otherwise, `False`
+        '''
+        self._auto_assigned == True
+        result = True
+        for k, v in self._kwargs.items():
+            field_name = f"{self._field_prefix}{k}"
+            before_args = BeforeAssignAutoEventArgs(
+                key=k, value=v, field=field_name, originator=self._obj)
+            self._on_before_assign_auto(event_args=before_args)
+            _field = before_args.field_name
+            _value = before_args.field_value
+            after_args = AfterAssignAutoEventArgs(key=k, originator=self._obj)
+            after_args._canceled = before_args.cancel
+            if before_args.cancel == True:
+                if self._cancel_error == True:
+                    raise CancelEventError(
+                        f"{self.__class__.__name__}.assign() canceled in 'BeforeAssignBlindEventArgs'")
+                else:
+                    result = False
+            else:
+                self._obj.__dict__[_field] = _value
+                after_args._success = True
+                after_args._field_name = _field
+                after_args._field_value = _value
+                self._remove_key(key=k)
+            self._on_after_assign_auto(event_args=after_args)
+        return result
     def _assign(self, args: HelperArgs, before_args: BeforeAssignEventArgs, after_args: AfterAssignEventArgs) -> None:
         result = False
         key = args.key
@@ -573,7 +733,7 @@ class KwargsHelper(HelperBase):
         before_args.field_name = field
         before_args.field_value = value
 
-        self._on_before_assign(before_args=before_args)
+        self._on_before_assign(event_args=before_args)
 
         after_args._canceled = before_args.cancel
         if before_args.cancel == True:
@@ -589,7 +749,8 @@ class KwargsHelper(HelperBase):
                 args=args, field=_field, value=_value, after_args=after_args)
             if result == False:
                 return result
-        setattr(self._obj, _field, _value)
+        # setattr(self._obj, _field, _value)
+        self._obj.__dict__[_field] = _value
         self._remove_key(args.key)
         if self._rule_test_early == False:
             result = self._validate_rules(
@@ -614,13 +775,25 @@ class KwargsHelper(HelperBase):
         after_args._rules_passed = True
         return True
 
-    def _remove_key(self, key:str) -> bool:
+    def _remove_key(self, key: str) -> bool:
         '''
         Removes a key from the internal keys.
         @return: `True` if key was removed; Otherwise, `False`
         '''
         if key in self._keys:
             self._keys.remove(key)
+            return True
+        return False
+
+    def _is_auto_assign_handlers(self) -> bool:
+        '''
+        Gets if any handler are set for Auto Assign
+        '''
+        if self._callbacks is None:
+            return False
+        if 'on_before_assign_auto' in self._callbacks:
+            return True
+        if 'on_after_assign_auto' in self._callbacks:
             return True
         return False
     # endregion private methods
@@ -642,13 +815,19 @@ class KwargsHelper(HelperBase):
                 callback(self, eventArgs)
 
     # endregion callback funcs
-
+    
     # region raise events
-    def _on_before_assign(self, before_args: BeforeAssignEventArgs):
-        self._trigger("on_before_assign", before_args)
+    def _on_before_assign(self, event_args: BeforeAssignEventArgs):
+        self._trigger("on_before_assign", event_args)
 
     def _on_after_assign(self, event_args: AfterAssignEventArgs):
         self._trigger("on_after_assign", event_args)
+
+    def _on_before_assign_auto(self, event_args: BeforeAssignAutoEventArgs):
+        self._trigger("on_before_assign_auto", event_args)
+
+    def _on_after_assign_auto(self, event_args: AfterAssignAutoEventArgs):
+        self._trigger("on_after_assign_auto", event_args)
     # endregion raise events
 
      # region Handlers
@@ -657,6 +836,12 @@ class KwargsHelper(HelperBase):
 
     def add_handler_after_assign(self, callback: Callable[['KwargsHelper', AfterAssignEventArgs], None]):
         self._on("on_after_assign", callback)
+
+    def add_handler_before_assign_auto(self, callback: Callable[['KwargsHelper', BeforeAssignAutoEventArgs], None]):
+        self._on("on_before_assign_auto", callback)
+
+    def add_handler_after_assign_auto(self, callback: Callable[['KwargsHelper', AfterAssignAutoEventArgs], None]):
+        self._on("on_after_assign_auto", callback)
     # endregion
 
     # region Properties
@@ -825,7 +1010,7 @@ class KwargsHelper(HelperBase):
     def unused_keys(self) -> Set[str]:
         '''
         Gets any unused keys passed into constructor via `obj_kwargs`
-        
+
         This would be a set of keys that were never used passed into the constructor.
         '''
         return self._keys
@@ -834,6 +1019,8 @@ class KwargsHelper(HelperBase):
 # endregion class KwargsHelper
 
 # region class KwArg
+
+
 class KwArg(HelperBase):
     '''Class for assigning kwargs to autogen fields with type checking and testing'''
     _RESERVED_INTERNAL_FIELDS: Set[str] = set(
@@ -936,7 +1123,7 @@ class KwArg(HelperBase):
             return False
         _key = attrib_name.strip()
         return hasattr(self, _key)
-    
+
     def is_key_existing(self, key: str) -> bool:
         '''
         Gets if the key exist in current kwargs.
@@ -956,7 +1143,7 @@ class KwArg(HelperBase):
     def unused_keys(self) -> Set[str]:
         '''
         Gets any unused keys passed into constructor via `**kwargs`
-        
+
         This would be a set of keys that were never used passed into the constructor.
         '''
         return self._kw_args_helper_class_instance.unused_keys
