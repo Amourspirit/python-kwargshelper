@@ -26,15 +26,27 @@ class RunnerEx:
     def kw(self) -> KwargsHelper:
         return self._kw
 
+class EmptyObj(object):
+    pass
 
 class TestKwArgsHelper(unittest.TestCase):
 
     def test_msg_hello_wolrd(self):
         r = Runner(msg='Hello World')
-        r.kw.assign(key='msg', types=[str])
+        r.kw.assign(key='msg', types=[str], require=True)
         self.assertTrue(hasattr(r, '_msg'))
         self.assertEqual(r._msg, 'Hello World')
         self.assertTrue(r == r.kw.originator)
+    
+    def test_msg_hello_wolrd_for_empty_obj(self):
+        empty = EmptyObj()
+        kw = KwargsHelper(originator=empty, obj_kwargs={
+            'msg': 'Hello World'
+        })
+        kw.assign(key='msg', types=[str], require=True)
+        self.assertTrue(hasattr(empty, '_msg'))
+        self.assertEqual(empty._msg, 'Hello World')
+        self.assertTrue(empty == kw.originator)
 
     def test_msg_fast(self):
         r = Runner(msg='Hello World')
@@ -70,12 +82,29 @@ class TestKwArgsHelper(unittest.TestCase):
         self.assertEqual(r._msg, 'Hello World')
         self.assertTrue(hasattr(r, '_age'))
         self.assertEqual(r._age, 2)
+    
+    def test_unused_keys(self):
+        r = Runner(msg='Hello World', age=2, width=12, height=24, length=6)
+        r.kw.assign(key='msg', types=[str], require=True)
+        r.kw.assign(key='age', types=[int], require=True)
+        self.assertTrue(hasattr(r, '_msg'))
+        self.assertEqual(r._msg, 'Hello World')
+        self.assertTrue(hasattr(r, '_age'))
+        self.assertEqual(r._age, 2)
+        self.assertEqual(len(r.kw.unused_keys), 3)
+        self.assertIn('width', r.kw.unused_keys)
+        self.assertIn('height', r.kw.unused_keys)
+        self.assertIn('length', r.kw.unused_keys)
 
     def test_bad_type(self):
         r = Runner(msg='Hello World', age="2")
         r.kw.assign(key='msg', types=[str], require=True)
         self.assertRaises(TypeError, r.kw.assign, key='age',
                           types=[int], require=True)
+    
+    def test_obj_kwargs_bad_type(self):
+        empty = EmptyObj()
+        self.assertRaises(TypeError, KwargsHelper, originator=empty, obj_kwargs=[1,2,3])
 
     def test_multi_type(self):
         r = Runner(msg='Hello World', age='2')

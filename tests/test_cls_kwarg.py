@@ -127,6 +127,15 @@ class TestKwArg(unittest.TestCase):
         self.assertTrue(kw.is_attribute_exist('msg'))
         self.assertEqual(kw.msg, 'Hello World')
         self.assertRaises(TypeError, kw.assign_helper, 'hello')
+    
+    def test_unused_keys(self):
+        kw = KwArg(msg='Hello World', width=12, height=24, length=6)
+        kw.assign_helper(HelperArgs(key='msg', types=[str], rules=[
+            rules.RuleStrNotNullOrEmpty], require=True))
+        self.assertEqual(len(kw.unused_keys), 3)
+        self.assertIn('width', kw.unused_keys)
+        self.assertIn('height', kw.unused_keys)
+        self.assertIn('length', kw.unused_keys)
         
 
 if __name__ == '__main__':

@@ -19,7 +19,6 @@ class ReservedAttributeError(ValueError):
 
 # region class HelperArgs
 
-
 class HelperArgs(HelperBase):
     def __init__(self, key: str, **kwargs):
         self._key: str = ''
@@ -116,7 +115,6 @@ class HelperArgs(HelperBase):
         self._rules = value
     # endregion Properties
 # endregion class HelperArgs
-
 
 # region class AssignBuilder
 class AssignBuilder(UserList):
@@ -402,9 +400,15 @@ class KwargsHelper(HelperBase):
         @rule_test_before_assign: (optional) Type:bool, sets the `rule_test_before_assign` property
         @assign_true_not_required: (optional): Type:bool, sets the `assign_true_not_required` property
         '''
-        self._callbacks = None
+        if not isinstance(obj_kwargs, dict):
+            raise TypeError(self._get_type_error_method_msg(
+                method_name='__init__', arg=obj_kwargs,
+                arg_name='obj_kwargs', expected_type=dict
+            ))
         self._obj: object = originator
+        self._callbacks = None
         self._kwargs = obj_kwargs
+        self._keys: set = set(self._kwargs.keys())
         m_name = '__init__'
         key = 'field_prefix'
         if key in kwargs:
@@ -586,6 +590,7 @@ class KwargsHelper(HelperBase):
             if result == False:
                 return result
         setattr(self._obj, _field, _value)
+        self._remove_key(args.key)
         if self._rule_test_early == False:
             result = self._validate_rules(
                 args=args, field=_field, value=_value, after_args=after_args)
@@ -609,6 +614,15 @@ class KwargsHelper(HelperBase):
         after_args._rules_passed = True
         return True
 
+    def _remove_key(self, key:str) -> bool:
+        '''
+        Removes a key from the internal keys.
+        @return: `True` if key was removed; Otherwise, `False`
+        '''
+        if key in self._keys:
+            self._keys.remove(key)
+            return True
+        return False
     # endregion private methods
 
     # region callback funcs
@@ -807,13 +821,19 @@ class KwargsHelper(HelperBase):
         '''Gets the kwargs dictionary passed in to the constructor by `obj_kwargs` arg'''
         return self._kwargs
 
+    @property
+    def unused_keys(self) -> Set[str]:
+        '''
+        Gets any unused keys passed into constructor via `obj_kwargs`
+        
+        This would be a set of keys that were never used passed into the constructor.
+        '''
+        return self._keys
     # endregion Properties
 
 # endregion class KwargsHelper
 
-# region class KwArgs
-
-
+# region class KwArg
 class KwArg(HelperBase):
     '''Class for assigning kwargs to autogen fields with type checking and testing'''
     _RESERVED_INTERNAL_FIELDS: Set[str] = set(
@@ -823,7 +843,7 @@ class KwArg(HelperBase):
          '_get_type_error_prop_msg', '_isinstance_prop',
          '_prop_error', '_is_prop_str', '_is_prop_bool', '_is_prop_int',
          '_isinstance_method', '_is_arg_str', '_is_arg_bool',
-         '_arg_type_error', '_get_name_type_obj'])
+         '_arg_type_error', '_get_name_type_obj', 'unused_keys'])
 
     def __init__(self, **kwargs):
         '''
@@ -932,6 +952,14 @@ class KwArg(HelperBase):
         '''Get instance of KwargsHelper used to add fields current instance'''
         return self._kw_args_helper_class_instance
 
+    @property
+    def unused_keys(self) -> Set[str]:
+        '''
+        Gets any unused keys passed into constructor via `**kwargs`
+        
+        This would be a set of keys that were never used passed into the constructor.
+        '''
+        return self._kw_args_helper_class_instance.unused_keys
     # endregion Properties
 
-# region class KwArgs
+# endregion class KwArg
