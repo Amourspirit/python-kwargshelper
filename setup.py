@@ -4,13 +4,9 @@ import sys
 import os
 import platform
 from setuptools import setup
-
+from kwhelp import __version__
 PKG_NAME = 'kwargshelper'
-MAJOR = 1
-MINOR = 2
-MICRO = 1
-ISRELEASED = True
-VERSION = f'{MAJOR}.{MINOR}.{MICRO}'
+VERSION = __version__
 
 # The directory containing this file
 HERE = pathlib.Path(__file__).parent
