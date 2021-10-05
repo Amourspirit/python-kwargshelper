@@ -501,18 +501,30 @@ class KwargsHelper(HelperBase):
     # region init
 
     def __init__(self, originator: object, obj_kwargs: dict, **kwargs):
-        '''
-        Class Constructor
-        @originator: Type:object, object that attributes are assigned to via `assign()` method. This is usually a class.
-        @obj_kwargs: Type:dict, The dictionary of key value args used to set values of attributes.
-        Often passed in as `obj_kwargs = {**kwargs}`
-        @field_prefix: (optional) Type:bool, sets the `field_prefix` property
-        @name: (optional) Type:str, sets the `name` property
-        @cancel_error: (optional) Type:bool, sets the `cancel_error` property
-        @rule_error: (optional) Type:bool, sets the `rule_error` property
-        @rule_test_before_assign: (optional) Type:bool, sets the `rule_test_before_assign` property
-        @assign_true_not_required: (optional): Type:bool, sets the `assign_true_not_required` property
-        '''
+        """
+        Constructor
+
+        Args:
+            originator (object): object that attributes are assigned to via ``assign()`` method. This is usually a class.
+            obj_kwargs (dict): The dictionary of key value args used to set values of attributes.
+                Often passed in as ``obj_kwargs = {**kwargs}``
+
+        Keyword Arguments:
+            field_prefix (str, optional): sets the ``field_prefix`` property. Default ``_``.
+            name (str, optional): sets the `field_prefix` property.
+                Default is the name of ``originator`` object.
+            cancel_error (bool, optional): sets the `cancel_error` property. Default ``True``.
+            rule_error (bool, optional): sets the ``rule_error`` property. Default ``False``.
+            assign_true_not_required (bool, optional): sets the ``assign_true_not_required`` property.
+                Default ``True``.
+            type_instance_check (bool, optional): If ``True`` and :py:meth:`.KwargsHelper.assign`` arg ``types`` is set
+                then values will be tested also for isinstance rather then just type check if type check is ``False``.
+                If ``False`` then values willl only be tested as type.
+                Default ``True``
+
+        Raises:
+            TypeError: if any arg is not of the correct type.
+        """
         if not isinstance(obj_kwargs, dict):
             raise TypeError(self._get_type_error_method_msg(
                 method_name='__init__', arg=obj_kwargs,
@@ -570,6 +582,14 @@ class KwargsHelper(HelperBase):
                 method_name=m_name, arg=self._assign_true_not_required, arg_name=key, raise_error=True)
         else:
             self._assign_true_not_required: bool = True
+
+        key = 'type_instance_check'
+        if key in kwargs:
+            self._type_instance_check: bool = kwargs[key]
+            self._is_arg_bool(
+                method_name=m_name, arg=self._type_instance_check, arg_name=key, raise_error=True)
+        else:
+            self._type_instance_check: bool = True
 
     # endregion init
 
@@ -697,15 +717,32 @@ class KwargsHelper(HelperBase):
                 self._remove_key(key=k)
             self._on_after_assign_auto(event_args=after_args)
         return result
+
     def _assign(self, args: HelperArgs, before_args: BeforeAssignEventArgs, after_args: AfterAssignEventArgs) -> None:
+        def _is_type_instance(_types:Set[type], _value ):
+            result = False
+            for t in _types:
+                if isinstance(_value, t):
+                    result = True
+                    break
+            return result
+
         result = False
         key = args.key
         if key in self._kwargs:
             value = self._kwargs[key]
             if len(args.types) > 0:
                 if not type(value) in args.types:
-                    msg = f"{self._name} arg '{key}' is expected to be of '{self._get_formated_types(args.types)}' but got '{type(value).__name__}'"
-                    raise TypeError(msg)
+                    # object such as PosixPath inherit from more than on class (Path, PurePosixPath)
+                    # testing if PosixPath is type of Path is False.
+                    # for this reason will do an instace check as well. isinstance(_posx, Path) is True
+                    is_valid_type = False
+                    if self._type_instance_check == True and _is_type_instance(args.types, value):
+                        is_valid_type = True
+                    
+                    if is_valid_type is False:
+                        msg = f"{self._name} arg '{key}' is expected to be of '{self._get_formated_types(args.types)}' but got '{type(value).__name__}'"
+                        raise TypeError(msg)
             if args.field:
                 result = self._setattr(
                     args.field, value, before_args, after_args, args=args)
