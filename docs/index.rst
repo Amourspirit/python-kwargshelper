@@ -6,11 +6,18 @@
 Welcome to kwargs's documentation!
 ==================================
 .. toctree::
+   :caption: General
+   :maxdepth: 2
+
+   source/index
+
+.. toctree::
    :caption: Modules:
    :titlesonly:
    :maxdepth: 6
 
    source/kwhelp/index
+   
 
 .. toctree::
    :maxdepth: 2
