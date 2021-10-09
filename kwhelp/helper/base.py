@@ -5,8 +5,9 @@ from abc import ABC, abstractmethod
 # region class HelperBase
 
 class HelperBase(ABC):
+    """Helper Base class"""
     @abstractmethod
-    def __init__(self) -> None:
+    def __init__(self):
         '''Class Constructor'''
 
     # region private methods

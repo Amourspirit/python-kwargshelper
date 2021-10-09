@@ -60,6 +60,13 @@ html_theme = 'sphinx_rtd_theme'
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 
-autodoc_default_options = {
-    'special-members': '__init__'
-}
+html_css_files = []
+
+if html_theme == 'sphinx_rtd_theme':
+    html_css_files.append('css/readthedocs_custom.css')
+
+# Napoleon settings
+# https://www.sphinx-doc.org/en/master/usage/extensions/napoleon.html
+napoleon_google_docstring = True
+napoleon_include_init_with_doc = True
+

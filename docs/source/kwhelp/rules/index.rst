@@ -1,9 +1,8 @@
-kwhelp
-======
+rules
+=====
 
 .. toctree::
     :titlesonly:
     :glob:
 
     *
-    rules/index
