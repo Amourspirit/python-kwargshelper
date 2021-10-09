@@ -6,9 +6,9 @@
     rules_pattern = r_path + os.sep + "Rule*.rst"
     rule_list = glob.glob(rules_pattern)
     rule_list.sort()
-    i_trim = len(r_path) + 1
     print("\n")
     for rule in rule_list:
-        name = str(rule)[i_trim:-4]
-        print("* :py:class:`~.rules.{}`".format(name))
+        name = os.path.basename(str(rule)[:-4])
+        # print("* :py:class:`~.rules.{}`".format(name))
+        print("* :doc:`{0} <../kwhelp/rules/{0}>`".format(name))
         print("\n")
