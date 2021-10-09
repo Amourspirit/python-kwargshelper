@@ -92,6 +92,7 @@ dependencies:
     - python-jsonrpc-server==0.3.4
     - pyyaml==5.4.1
     - snooty-lextudio==1.11.4.dev0
+    - sphinx_rtd_theme=1.0.0
     - typing-extensions==3.10.0.2
     - ujson==1.35
     - watchdog==1.0.2

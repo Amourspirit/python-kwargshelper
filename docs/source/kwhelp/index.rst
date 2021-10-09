@@ -1,0 +1,8 @@
+kwhelp
+======
+
+.. toctree::
+    :titlesonly:
+    :glob:
+
+    *
