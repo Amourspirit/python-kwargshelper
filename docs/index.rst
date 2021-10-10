@@ -10,6 +10,7 @@ Welcome to kwargs's documentation!
    :maxdepth: 2
 
    source/index
+   source/example/index
 
 .. toctree::
    :caption: Modules:

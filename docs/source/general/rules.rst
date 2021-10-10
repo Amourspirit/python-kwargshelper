@@ -1,6 +1,10 @@
 Rules
 =====
 
+Rules allow validation of ``kwargs`` values.
+
+See :doc:`Simple Uasage Example <../example/simple_usage>`
+
 New rules can be created by inheriting from :py:class:`~.rules.IRule` interface/class
 
 **Example Rule:**

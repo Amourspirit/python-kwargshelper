@@ -20,7 +20,15 @@ README
 kwargshelper
 ------------
 
-A python package for working with **kwargs**
+A python package for working with **kwargs**.
+
+Allows for validation of args passed in via ``**kwargs`` in various ways.
+Such as type checking, rules checking, error handeling.
+
+Many built in rules that make validation of input simple and effective.
+Easily create and add new rules.
+
+Various callbacks to hook each **kwarg** with rich set of options for fine control.
 
 Installation
 ++++++++++++
