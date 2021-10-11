@@ -25,26 +25,41 @@ Simple usage
     :caption: Simple assignment
 
     >>> my_class = MyClass(file_name='data.html', name='Best Doc', loop_count=1)
-    >>> print(my_class.exporter)  # None
-    >>> print(my_class.file_name)  # data.html
-    >>> print(my_class.name)  # Best Doc
-    >>> print(my_class.loop_count)  # 1
+    >>> print(my_class.exporter)
+    None
+    >>> print(my_class.file_name)
+    data.html
+    >>> print(my_class.name)
+    Best Doc
+    >>> print(my_class.loop_count)
+    1
+
+.. code-block:: python
+    :caption: Simple assignment
+
+    >>> my_class = MyClass(exporter='json', file_name='data.json', loop_count=3)
+    >>> print(my_class.exporter)
+    json
+    >>> print(my_class.file_name)
+    data.json
+    >>> print(my_class.name)
+    None
+    >>> print(my_class.loop_count)
+    3
+
+**Validation Failure**
+
+Raises an error because ``loop_count`` is default  is ``-1`` and
+:py:class:`~.rules.RuleIntPositive` is added to rules.
 
 .. code-block:: python
     :caption: Fails validation example
 
-    >>> my_class = MyClass(exporter='json', file_name='data.json', loop_count=3)
-    >>> print(my_class.exporter)  # json
-    >>> print(my_class.file_name)  # data.json
-    >>> print(my_class.name)  # None
-    >>> print(my_class.loop_count)  # 3
     >>> try:
-    >>>     # will raise an error because loop_count is default  is -1 and
-    >>>     # RuleIntPositive is added to rules
-    >>>     my_class = MyClass(exporter='html', file_name='data.html',
-    >>>                     name='Best Doc')
+    >>>     my_class = MyClass(exporter='html', file_name='data.html', name='Best Doc')
     >>> except Exception as e:
-    >>>    print(e)  # Arg error: 'loop_count' must be a positive int value
+    >>>    print(e)
+    Arg error: 'loop_count' must be a positive int value
 
 .. seealso::
 

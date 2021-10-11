@@ -81,6 +81,9 @@ napoleon_include_init_with_doc = True
 # https://stackoverflow.com/questions/27875455/displaying-dictionary-data-in-sphinx-documentation
 # custom directive
 
+autodoc_default_options = {
+    'member-order': 'groupwise'
+}
 
 class ExecDirective(Directive):
     """Execute the specified python code and insert the output into the document"""

@@ -638,26 +638,9 @@ class KwargsHelper(HelperBase):
     kwargs helper class. Assigns attributes to class with various checks
 
     Example:
-        .. code-block:: python
+        .. include:: ../inc/ex/KwargsHelper_basic_cls.rst
 
-            class MyClass:
-                def __init__(self, **kwargs):
-                    self._msg = ''
-                    kw = KwargsHelper(self, {**kwargs})
-                    kw.assign(key='msg', require=True, types=['str'])
-                    kw.assign(key='length', types=['int'], default=-1)
-
-                @property
-                def msg(self) -> str:
-                    return self._msg
-
-                @property
-                def length(self) -> str:
-                    return self._length
-
-            my_class = MyClass(msg='Hello World')
-            print(my_class.msg) # Hello World
-            print(my_class.length) # -1
+        .. include:: ../inc/ex/KwargsHelper_basic_ex.rst
     """
     # region init
 
@@ -794,6 +777,8 @@ class KwargsHelper(HelperBase):
                 In this example if value is not type ``str`` then ``TypeError`` is raised.
                 If ``types`` is omitted then a value can be any type unless there is a rule in ``rules`` that is otherwise.
                 Defaults to ``None``.
+
+                See Also: :doc:`../usage/KwargsHelper/assign_type`
             rules (List[Callable[[IRule], bool]], optional): List of rules that must be passed before assignment can take place.
                 Defaults to ``None``.
 
@@ -1264,23 +1249,7 @@ class KwArg(HelperBase):
             kwargs (dict): dictionary of args
 
         Example:
-            .. code-block:: python
-
-                def my_method(**kwargs) -> str:
-                    kw = KwArg(**kwargs)
-                    kw.assign(key='first', require=True, types=[int])
-                    kw.assign(key='second', require=True, types=[int])
-                    kw.assign(key='msg', types=[str], default='Result:')
-                    kw.assign(key='end', types=[str])
-                    first:int = kw.first
-                    second:int = kw.second
-                    msg: str = kw.msg
-                    _result = first + second
-                    if kw.is_attribute_exist('end'):
-                        return_msg = f'{msg} {_result}{kw.end}'
-                    else:
-                        return_msg = f'{msg} {_result}'
-                    return return_msg
+            .. include:: ../inc/ex/KwArg_basic.rst
         """
         self._kw_args_helper_class_instance = KwargsHelper(
             originator=self, obj_kwargs={**kwargs})

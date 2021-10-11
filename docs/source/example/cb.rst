@@ -36,7 +36,8 @@ Using callback:
                         args: BeforeAssignEventArgs) -> None:
             # callback function before value assigned to attribute
             if args.key == 'loop_count' and args.field_value < 0:
-                # cancel will raise CancelEventError unless KwargsHelper constructor has cancel_error=False
+                # cancel will raise CancelEventError unless
+                # KwargsHelper constructor has cancel_error=False
                 args.cancel = True
             if args.key == 'name' and args.field_value == 'unknown':
                 args.field_value = 'None'
@@ -68,10 +69,14 @@ Using callback:
     :caption: Assignment
 
     >>> my_class = MyClass(exporter='json', file_name='data.json', loop_count=3)
-    >>> print(my_class.exporter)  # json
-    >>> print(my_class.file_name)  # data.json
-    >>> print(my_class.name)  # None
-    >>> print(my_class.loop_count)  # 3
+    >>> print(my_class.exporter)
+    json
+    >>> print(my_class.file_name)
+    data.json
+    >>> print(my_class.name)
+    None
+    >>> print(my_class.loop_count)
+    3
 
 .. seealso::
 

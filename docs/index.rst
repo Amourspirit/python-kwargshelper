@@ -11,6 +11,7 @@ Welcome to kwargs's documentation!
 
    source/index
    source/example/index
+   source/usage/index
 
 .. toctree::
    :caption: Modules:
