@@ -371,6 +371,9 @@ class RuleFloatPositive(IRule):
         Returns:
             bool: ``True`` if ``field_value`` is a positive float; Otherwise, ``False``.
         """
+        float_rule = create_rule(rule=self, new_rule=RuleFloat)
+        if float_rule.validate() == False:
+            return False
         if self.field_value < 0.0:
             if self.raise_errors:
                 raise ValueError(
@@ -394,6 +397,9 @@ class RuleFloatNegative(IRule):
         Returns:
             bool: ``True`` if ``field_value`` is a negative float; Otherwise, ``False``.
         """
+        float_rule = create_rule(rule=self, new_rule=RuleFloat)
+        if float_rule.validate() == False:
+            return False
         if self.field_value >= 0.0:
             if self.raise_errors:
                 raise ValueError(
