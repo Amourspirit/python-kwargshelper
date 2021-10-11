@@ -1,12 +1,14 @@
 # coding: utf-8
 from abc import ABC, abstractmethod
 import numbers
+from typing import Callable, Type
 
 # region Interface
 
 
 class IRule(ABC):
     """Abstract Interface Class for rules"""
+
     def __init__(self, key: str, name: str, value: object, raise_errors: bool, originator: object):
         """
         Constructor
@@ -17,12 +19,28 @@ class IRule(ABC):
             value (object): the value that is assigned to ``field_name``
             raise_errors (bool): determinins if rule could raise an error when validation fails
             originator (object): the object that attributes validated for
+
+        Raises:
+            TypeError: If any arg is not of the correct type
         """
+        if not isinstance(name, str):
+            msg = self._get_type_error_msg(name, 'name', 'str')
+            raise TypeError(msg)
         self._name: str = name
-        self._value: object = value
+
+        if not isinstance(key, str):
+            msg = self._get_type_error_msg(key, 'key', 'str')
+            raise TypeError(msg)
         self._key: str = key
+
+        if not isinstance(raise_errors, bool):
+            msg = self._get_type_error_msg(
+                raise_errors, 'raise_errors', 'bool')
+            raise TypeError(msg)
         self._raise_errors = raise_errors
-        self._originator = originator
+
+        self._value: object = value
+        self._originator: object = originator
 
     # region Abstract Methods
     @abstractmethod
@@ -37,23 +55,63 @@ class IRule(ABC):
 
     @property
     def field_name(self) -> str:
-        '''The name of the field that value was assigned'''
+        '''
+        Name of the field assigned.
+
+        :getter: Gets the name of the field assigned
+        :setter: Sets the name of the field assigned
+        '''
         return self._name
+
+    @field_name.setter
+    def field_name(self, value: str):
+        if not isinstance(value, str):
+            msg = self._get_type_error_msg(value, 'field_name', 'str')
+            raise TypeError(msg)
+        self._name = value
 
     @property
     def field_value(self) -> object:
-        '''The value that is assigned to ``field_name``'''
+        """
+        The value assigned to ``field_name``
+
+        :getter: Gets value assigned to ``field_name``
+        :setter: Sets value assigned to ``field_name``
+        """
         return self._value
+
+    @field_value.setter
+    def field_value(self, value: object):
+        self._value = value
 
     @property
     def key(self) -> str:
         '''Gets the key currently being read'''
         return self._key
 
+    @key.setter
+    def key(self, value: str):
+        if not isinstance(value, str):
+            msg = self._get_type_error_msg(value, 'key', 'str')
+            raise TypeError(msg)
+        self._key = value
+
     @property
     def raise_errors(self) -> bool:
-        '''Gets if a rule could raise an error when validation fails'''
+        """
+        Determines if a rule can raise an error when validation fails.
+
+        :getter: Gets if a rule could raise an error when validation fails
+        :setter: Sets if a rule could raise an error when validation fails
+        """
         return self._raise_errors
+
+    @raise_errors.setter
+    def raise_errors(self, value: bool):
+        if not isinstance(value, bool):
+            msg = self._get_type_error_msg(value, 'raise_errors', 'bool')
+            raise TypeError(msg)
+        self._raise_errors = value
 
     @property
     def originator(self) -> object:
@@ -61,6 +119,29 @@ class IRule(ABC):
         return self._originator
     # endregion Properties
 # endregion Interface
+
+
+def create_rule(rule: IRule, new_rule: Type[IRule]) -> IRule:
+    """
+    Creates a new instance of a rule from an existing rule.
+
+    Args:
+        rule (IRule): Exisiting ``IRule`` instance
+        new_rule (Type[IRule]): Rule type to create an instance of
+
+    Returns:
+        IRule: New instance of IRule of type ``new_rule``
+
+    Notes:
+        This function can be useful for rules that need to generate instances of other rules.
+    """
+    return new_rule(
+        key=rule.key,
+        name=rule.field_name,
+        value=rule.field_value,
+        raise_errors=rule.raise_errors,
+        originator=rule.originator
+    )
 
 # region Attrib rules
 
@@ -210,7 +291,8 @@ class RuleIntPositive(IRule):
         Returns:
             bool: ``True`` if ``field_value`` is a positive int; Otherwise, ``False``.
         """
-        if not isinstance(self.field_value, int):
+        int_rule = create_rule(rule=self, new_rule=RuleInt)
+        if int_rule.validate() == False:
             return False
         if self.field_value < 0:
             if self.raise_errors:
@@ -235,7 +317,8 @@ class RuleIntNegative(IRule):
         Returns:
             bool: ``True`` if ``field_value`` is a negative int; Otherwise, ``False``.
         """
-        if not isinstance(self.field_value, int):
+        int_rule = create_rule(rule=self, new_rule=RuleInt)
+        if int_rule.validate() == False:
             return False
         if self.field_value >= 0:
             if self.raise_errors:
@@ -380,6 +463,7 @@ class RuleBool(IRule):
     """
      Rule to ensure a bool is assigned to attribute.
     """
+
     def validate(self) -> bool:
         """
         Validates that value to assign is a bool
