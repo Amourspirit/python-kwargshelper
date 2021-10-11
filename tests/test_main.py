@@ -664,11 +664,8 @@ class TestKwArgsHelperRules(unittest.TestCase):
         self.assertEqual(r._age, 35)
 
         r = Runner(age=None)
-        # RuleIntPositive will not raise a TypeError and will return False for non Int.
-        # RuleInt will raise a Type error so these two rules are normally together as in the above test
-        result = r.kw.assign(key='age', require=True,
+        self.assertRaises(TypeError, r.kw.assign,key='age', require=True,
                              rules=[rules.RuleIntPositive])
-        self.assertFalse(result)
 
     def test_str_rule_positive_int_rule_invalid(self):
         r = Runner(msg='Hello World', age=-1)
@@ -709,17 +706,14 @@ class TestKwArgsHelperRules(unittest.TestCase):
     def test_str_rule_negative_int_rule_invalid(self):
         r = Runner(msg='Hello World', num=0)
         r.kw.assign(key='msg', rules=[rules.RuleStrNotNullOrEmpty])
-        try:
-            r.kw.assign(key='num', rules=[rules.RuleIntNegative])
-        except Exception as e:
-            self.assertTrue(isinstance(e, ValueError))
+
         self.assertRaises(ValueError, r.kw.assign,
                           key='num', rules=[rules.RuleIntNegative])
         rx = RunnerEx(kw_args={"rule_error": False}, msg='Hello World', num=0)
         result = rx.kw.assign(key='msg', rules=[rules.RuleStrNotNullOrEmpty])
         self.assertTrue(result)
         result = rx.kw.assign(
-            key='num', require=True, rules=[rules.RuleInt, rules.RuleIntNegative])
+            key='num', require=True, rules=[rules.RuleIntNegative])
         self.assertFalse(result)
         self.assertFalse(hasattr(rx, '_num'))
 
@@ -735,11 +729,10 @@ class TestKwArgsHelperRules(unittest.TestCase):
         self.assertTrue(rx._num == 0)
 
         r = Runner(age=None)
-        # RuleIntNegative will not raise a TypeError and will return False for non Int.
-        # RuleInt will raise a Type error so these two rules are normally together as in the above test
-        result = r.kw.assign(key='age', require=True,
-                             rules=[rules.RuleIntNegative])
-        self.assertFalse(result)
+        self.assertRaises(TypeError, r.kw.assign, key='age', require=True,
+                          rules=[rules.RuleIntNegative])
+
+
 
     def test_str_rule_negative_int_rule_invalid_type(self):
         r = Runner(msg='Hello World', num='10')

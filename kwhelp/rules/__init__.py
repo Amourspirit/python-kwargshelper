@@ -320,6 +320,8 @@ class RuleIntNegative(IRule):
         int_rule = create_rule(rule=self, new_rule=RuleInt)
         if int_rule.validate() == False:
             return False
+        # if not isinstance(self.field_value, int):
+        #     return False
         if self.field_value >= 0:
             if self.raise_errors:
                 raise ValueError(
