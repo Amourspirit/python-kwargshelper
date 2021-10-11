@@ -709,8 +709,12 @@ class TestKwArgsHelperRules(unittest.TestCase):
     def test_str_rule_negative_int_rule_invalid(self):
         r = Runner(msg='Hello World', num=0)
         r.kw.assign(key='msg', rules=[rules.RuleStrNotNullOrEmpty])
+        try:
+            r.kw.assign(key='num', rules=[rules.RuleIntNegative])
+        except Exception as e:
+            self.assertTrue(isinstance(e, ValueError))
         self.assertRaises(ValueError, r.kw.assign,
-                          key='num', rules=[rules.RuleInt, rules.RuleIntNegative])
+                          key='num', rules=[rules.RuleIntNegative])
         rx = RunnerEx(kw_args={"rule_error": False}, msg='Hello World', num=0)
         result = rx.kw.assign(key='msg', rules=[rules.RuleStrNotNullOrEmpty])
         self.assertTrue(result)
