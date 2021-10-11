@@ -329,6 +329,33 @@ class RuleIntNegative(IRule):
             return False
         return True
 
+
+class RuleIntNegativeOrZero(IRule):
+    '''
+    Rule to ensure a negative or zero integer is assigned to attribute.
+    '''
+
+    def validate(self) -> bool:
+        """
+        Validates that value to assign is equal to zero or a negative int
+
+        Raises:
+            TypeError: If ``raise_errors`` is ``True`` and ``field_value`` is not a negative int.
+
+        Returns:
+            bool: ``True`` if ``field_value`` is equal to zero or a negative int; Otherwise, ``False``.
+        """
+        int_rule = create_rule(rule=self, new_rule=RuleInt)
+        if int_rule.validate() == False:
+            return False
+        # if not isinstance(self.field_value, int):
+        #     return False
+        if self.field_value > 0:
+            if self.raise_errors:
+                raise ValueError(
+                    f"Arg error: '{self.key}' must be equal to zero or a negative int value")
+            return False
+        return True
 # endregion Integer
 
 # region Float Rules
@@ -407,6 +434,31 @@ class RuleFloatNegative(IRule):
             return False
         return True
 
+
+class RuleFloatNegativeOrZero(IRule):
+    '''
+    Rule to ensure a negative float is assigned to attribute.
+    '''
+
+    def validate(self) -> bool:
+        """
+        Validates that value to assign is equal to 0.0 or a negative float
+
+        Raises:
+            ValueError: If ``raise_errors`` is ``True`` and ``field_value`` is not a negative float.
+
+        Returns:
+            bool: ``True`` if ``field_value`` is equal to 0.0 or a negative float; Otherwise, ``False``.
+        """
+        float_rule = create_rule(rule=self, new_rule=RuleFloat)
+        if float_rule.validate() == False:
+            return False
+        if self.field_value > 0.0:
+            if self.raise_errors:
+                raise ValueError(
+                    f"Arg error: '{self.key}' must be equal to 0.0 or a negative float value")
+            return False
+        return True
 # endregion Float Rules
 
 # endregion Number
