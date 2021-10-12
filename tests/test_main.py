@@ -676,17 +676,23 @@ class TestKwArgsHelperRules(unittest.TestCase):
 
         rx = RunnerEx(kw_args={"rule_error": False}, num=-1)
         result = rx.kw.assign(
-            key='num', require=True, rules=[rules.RuleInt, rules.RuleIntPositive])
+            key='num', require=True, rules=[rules.RuleIntPositive])
         self.assertFalse(result)
         self.assertFalse(hasattr(rx, '_num'))
 
         rx = RunnerEx(kw_args={
                       "rule_error": False, 'rule_test_before_assign': False}, num=-1)
         result = rx.kw.assign(
-            key='num', require=True, rules=[rules.RuleInt, rules.RuleIntPositive])
+            key='num', require=True, rules=[rules.RuleIntPositive])
         self.assertFalse(result)
         self.assertTrue(hasattr(rx, '_num'))
         self.assertTrue(rx._num == -1)
+        
+        rx = RunnerEx(kw_args={
+                      "rule_error": False, 'rule_test_before_assign': False}, num='notInt')
+        result = rx.kw.assign(
+            key='num', require=True, rules=[rules.RuleIntPositive])
+        self.assertFalse(result)
 
     def test_str_rule_positive_int_rule_invalid_type(self):
         r = Runner(msg='Hello World', age='10')
@@ -731,6 +737,12 @@ class TestKwArgsHelperRules(unittest.TestCase):
         r = Runner(age=None)
         self.assertRaises(TypeError, r.kw.assign, key='age', require=True,
                           rules=[rules.RuleIntNegative])
+
+        rx = RunnerEx(kw_args={
+                      "rule_error": False, 'rule_test_before_assign': False}, num='notInt')
+        result = rx.kw.assign(
+            key='num', require=True, rules=[rules.RuleIntNegative])
+        self.assertFalse(result)
 
     def test_str_rule_negative_int_rule_invalid_type(self):
         r = Runner(msg='Hello World', num='10')
@@ -779,7 +791,13 @@ class TestKwArgsHelperRules(unittest.TestCase):
 
         r = Runner(age=None)
         self.assertRaises(TypeError, r.kw.assign, key='age', require=True,
-                          rules=[rules.RuleIntNegative])
+                          rules=[rules.RuleIntNegativeOrZero])
+
+        rx = RunnerEx(kw_args={
+                      "rule_error": False, 'rule_test_before_assign': False}, num='notInt')
+        result = rx.kw.assign(
+            key='num', require=True, rules=[rules.RuleIntNegativeOrZero])
+        self.assertFalse(result)
 
     def test_str_rule_negative_zero_int_rule_invalid_type(self):
         r = Runner(msg='Hello World', num='10')
@@ -842,6 +860,12 @@ class TestKwArgsHelperRules(unittest.TestCase):
         self.assertFalse(result)
         self.assertTrue(hasattr(rx, '_num'))
         self.assertTrue(rx._num == -1.0)
+        
+        rx = RunnerEx(kw_args={
+                      "rule_error": False, 'rule_test_before_assign': False}, num='notInt')
+        result = rx.kw.assign(
+            key='num', require=True, rules=[rules.RuleFloatPositive])
+        self.assertFalse(result)
 
     def test_str_rule_positive_float_rule_invalid_type(self):
         r = Runner(msg='Hello World', age='10')
@@ -877,6 +901,12 @@ class TestKwArgsHelperRules(unittest.TestCase):
         self.assertFalse(result)
         self.assertTrue(hasattr(rx, '_num'))
         self.assertTrue(rx._num == 0.0)
+
+        rx = RunnerEx(kw_args={
+                      "rule_error": False, 'rule_test_before_assign': False}, num='notInt')
+        result = rx.kw.assign(
+            key='num', require=True, rules=[rules.RuleFloatNegative])
+        self.assertFalse(result)
 
     def test_str_rule_negative_float_rule_invalid_type(self):
         r = Runner(msg='Hello World', num='10')
@@ -918,6 +948,12 @@ class TestKwArgsHelperRules(unittest.TestCase):
         self.assertFalse(result)
         self.assertTrue(hasattr(rx, '_num'))
         self.assertTrue(rx._num == 1.1)
+
+        rx = RunnerEx(kw_args={
+                      "rule_error": False, 'rule_test_before_assign': False}, num='notInt')
+        result = rx.kw.assign(
+            key='num', require=True, rules=[rules.RuleFloatNegativeOrZero])
+        self.assertFalse(result)
 
     def test_str_rule_negative_zero_float_rule_invalid_type(self):
         r = Runner(msg='Hello World', num='10')
