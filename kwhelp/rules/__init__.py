@@ -120,29 +120,6 @@ class IRule(ABC):
     # endregion Properties
 # endregion Interface
 
-
-def create_rule(rule: IRule, new_rule: Type[IRule]) -> IRule:
-    """
-    Creates a new instance of a rule from an existing rule.
-
-    Args:
-        rule (IRule): Exisiting ``IRule`` instance
-        new_rule (Type[IRule]): Rule type to create an instance of
-
-    Returns:
-        IRule: New instance of IRule of type ``new_rule``
-
-    Notes:
-        This function can be useful for rules that need to generate instances of other rules.
-    """
-    return new_rule(
-        key=rule.key,
-        name=rule.field_name,
-        value=rule.field_value,
-        raise_errors=rule.raise_errors,
-        originator=rule.originator
-    )
-
 # region Attrib rules
 
 

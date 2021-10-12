@@ -548,6 +548,26 @@ class TestKwArgsHelperRules(unittest.TestCase):
         self.assertFalse(r.kw.rule_test_before_assign)
 
     def test_msg_ws_str_rule(self):
+        rx = RunnerEx(kw_args={"rule_error": False}, msg="hello")
+        result = rx.kw.assign(key='msg', rules=[rules.RuleStrNotNullEmptyWs])
+        self.assertTrue(result)
+
+        # not required so result will be True
+        rx = RunnerEx(kw_args={"rule_error": False}, msg="")
+        result = rx.kw.assign(key='msg', rules=[rules.RuleStrNotNullEmptyWs])
+        self.assertTrue(result)
+
+        rx = RunnerEx(kw_args={"rule_error": False}, msg="")
+        result = rx.kw.assign(
+            key='msg', rules=[rules.RuleStrNotNullEmptyWs], require=True)
+        self.assertFalse(result)
+
+        rx = RunnerEx(kw_args={"rule_error": False}, msg="  ")
+        result = rx.kw.assign(
+            key='msg', rules=[rules.RuleStrNotNullEmptyWs], require=True)
+        self.assertFalse(result)
+
+    def test_msg_ws_str_rule_error(self):
         r = Runner(msg='')
         with self.assertRaises(ValueError):
             r.kw.assign(key='msg', rules=[rules.RuleStrNotNullEmptyWs])
@@ -670,8 +690,8 @@ class TestKwArgsHelperRules(unittest.TestCase):
         self.assertEqual(r._age, 35)
 
         r = Runner(age=None)
-        self.assertRaises(TypeError, r.kw.assign,key='age', require=True,
-                             rules=[rules.RuleIntPositive])
+        self.assertRaises(TypeError, r.kw.assign, key='age', require=True,
+                          rules=[rules.RuleIntPositive])
 
     def test_str_rule_positive_int_rule_invalid(self):
         r = Runner(msg='Hello World', age=-1)
@@ -693,7 +713,7 @@ class TestKwArgsHelperRules(unittest.TestCase):
         self.assertFalse(result)
         self.assertTrue(hasattr(rx, '_num'))
         self.assertTrue(rx._num == -1)
-        
+
         rx = RunnerEx(kw_args={
                       "rule_error": False, 'rule_test_before_assign': False}, num='notInt')
         result = rx.kw.assign(
@@ -764,7 +784,7 @@ class TestKwArgsHelperRules(unittest.TestCase):
         self.assertEqual(r._msg, 'Hello World')
         self.assertTrue(hasattr(r, '_num'))
         self.assertEqual(r._num, -35)
-        
+
         r = Runner(msg='Hello World', num=0)
         r.kw.assign(key='msg', rules=[rules.RuleStrNotNullOrEmpty])
         r.kw.assign(key='num', rules=[rules.RuleIntNegativeOrZero])
@@ -866,7 +886,7 @@ class TestKwArgsHelperRules(unittest.TestCase):
         self.assertFalse(result)
         self.assertTrue(hasattr(rx, '_num'))
         self.assertTrue(rx._num == -1.0)
-        
+
         rx = RunnerEx(kw_args={
                       "rule_error": False, 'rule_test_before_assign': False}, num='notInt')
         result = rx.kw.assign(
@@ -920,7 +940,6 @@ class TestKwArgsHelperRules(unittest.TestCase):
         self.assertRaises(TypeError, r.kw.assign,
                           key='num', rules=[rules.RuleFloatNegative])
 
-
     def test_str_rule_negative_zero_float_rule(self):
         r = Runner(msg='Hello World', num=-35.2)
         r.kw.assign(key='msg', rules=[rules.RuleStrNotNullOrEmpty])
@@ -929,7 +948,7 @@ class TestKwArgsHelperRules(unittest.TestCase):
         self.assertEqual(r._msg, 'Hello World')
         self.assertTrue(hasattr(r, '_num'))
         self.assertEqual(r._num, -35.2)
-        
+
         r = Runner(msg='Hello World', num=-0.0)
         r.kw.assign(key='msg', rules=[rules.RuleStrNotNullOrEmpty])
         r.kw.assign(key='num', rules=[rules.RuleFloatNegativeOrZero])
