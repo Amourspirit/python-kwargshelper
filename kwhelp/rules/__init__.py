@@ -374,9 +374,10 @@ class RuleFloat(IRule):
                 raise TypeError(self._get_type_error_msg(
                     self.field_value, self.key, 'float'))
             return False
+        return True
 
 
-class RuleFloatPositive(IRule):
+class RuleFloatPositive(RuleFloat):
     '''
     Rule to ensure a positive float is assigned to attribute.
     '''
@@ -391,8 +392,7 @@ class RuleFloatPositive(IRule):
         Returns:
             bool: ``True`` if ``field_value`` is a positive float; Otherwise, ``False``.
         """
-        float_rule = create_rule(rule=self, new_rule=RuleFloat)
-        if float_rule.validate() == False:
+        if not super().validate():
             return False
         if self.field_value < 0.0:
             if self.raise_errors:
@@ -402,7 +402,7 @@ class RuleFloatPositive(IRule):
         return True
 
 
-class RuleFloatNegative(IRule):
+class RuleFloatNegative(RuleFloat):
     '''
     Rule to ensure a negative float is assigned to attribute.
     '''
@@ -417,8 +417,7 @@ class RuleFloatNegative(IRule):
         Returns:
             bool: ``True`` if ``field_value`` is a negative float; Otherwise, ``False``.
         """
-        float_rule = create_rule(rule=self, new_rule=RuleFloat)
-        if float_rule.validate() == False:
+        if not super().validate():
             return False
         if self.field_value >= 0.0:
             if self.raise_errors:
@@ -428,7 +427,7 @@ class RuleFloatNegative(IRule):
         return True
 
 
-class RuleFloatNegativeOrZero(IRule):
+class RuleFloatNegativeOrZero(RuleFloat):
     '''
     Rule to ensure a float value less than or equal to ``0.0`` is assigned to attribute.
     '''
@@ -443,8 +442,7 @@ class RuleFloatNegativeOrZero(IRule):
         Returns:
             bool: ``True`` if ``field_value`` is equal to ``0.0`` or a negative float; Otherwise, ``False``.
         """
-        float_rule = create_rule(rule=self, new_rule=RuleFloat)
-        if float_rule.validate() == False:
+        if not super().validate():
             return False
         if self.field_value > 0.0:
             if self.raise_errors:
