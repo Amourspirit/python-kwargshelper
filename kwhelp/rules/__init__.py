@@ -332,7 +332,7 @@ class RuleIntNegative(IRule):
 
 class RuleIntNegativeOrZero(IRule):
     '''
-    Rule to ensure a negative or zero integer is assigned to attribute.
+    Rule to ensure an integer value less than or equal to ``0`` is assigned to attribute.
     '''
 
     def validate(self) -> bool:
@@ -437,18 +437,18 @@ class RuleFloatNegative(IRule):
 
 class RuleFloatNegativeOrZero(IRule):
     '''
-    Rule to ensure a negative float is assigned to attribute.
+    Rule to ensure a float value less than or equal to ``0.0`` is assigned to attribute.
     '''
 
     def validate(self) -> bool:
         """
-        Validates that value to assign is equal to 0.0 or a negative float
+        Validates that value to assign is equal to ``0.0`` or a negative float
 
         Raises:
             ValueError: If ``raise_errors`` is ``True`` and ``field_value`` is not a negative float.
 
         Returns:
-            bool: ``True`` if ``field_value`` is equal to 0.0 or a negative float; Otherwise, ``False``.
+            bool: ``True`` if ``field_value`` is equal to ``0.0`` or a negative float; Otherwise, ``False``.
         """
         float_rule = create_rule(rule=self, new_rule=RuleFloat)
         if float_rule.validate() == False:
