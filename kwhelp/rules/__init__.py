@@ -489,7 +489,7 @@ class RuleStr(IRule):
         return True
 
 
-class RuleStrNotNullOrEmpty(IRule):
+class RuleStrNotNullOrEmpty(RuleStr):
     '''
     Rule to ensure a string that is not empty or whitespace is assigned to attribute.
     '''
@@ -505,7 +505,7 @@ class RuleStrNotNullOrEmpty(IRule):
         Returns:
             bool: ``True`` if value is valid; Otherwise; ``False``.
         """
-        if not isinstance(self.field_value, str):
+        if not super().validate():
             return False
         value = self.field_value.strip()
         if len(value) == 0:
