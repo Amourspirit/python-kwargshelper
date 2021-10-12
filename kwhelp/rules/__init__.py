@@ -276,7 +276,7 @@ class RuleInt(IRule):
         return True
 
 
-class RuleIntPositive(IRule):
+class RuleIntPositive(RuleInt):
     '''
     Rule to ensure a positive integer is assigned to attribute.
     '''
@@ -291,8 +291,7 @@ class RuleIntPositive(IRule):
         Returns:
             bool: ``True`` if ``field_value`` is a positive int; Otherwise, ``False``.
         """
-        int_rule = create_rule(rule=self, new_rule=RuleInt)
-        if int_rule.validate() == False:
+        if not super().validate():
             return False
         if self.field_value < 0:
             if self.raise_errors:
@@ -302,7 +301,7 @@ class RuleIntPositive(IRule):
         return True
 
 
-class RuleIntNegative(IRule):
+class RuleIntNegative(RuleInt):
     '''
     Rule to ensure a negative integer is assigned to attribute.
     '''
@@ -317,11 +316,8 @@ class RuleIntNegative(IRule):
         Returns:
             bool: ``True`` if ``field_value`` is a negative int; Otherwise, ``False``.
         """
-        int_rule = create_rule(rule=self, new_rule=RuleInt)
-        if int_rule.validate() == False:
+        if not super().validate():
             return False
-        # if not isinstance(self.field_value, int):
-        #     return False
         if self.field_value >= 0:
             if self.raise_errors:
                 raise ValueError(
@@ -330,7 +326,7 @@ class RuleIntNegative(IRule):
         return True
 
 
-class RuleIntNegativeOrZero(IRule):
+class RuleIntNegativeOrZero(RuleInt):
     '''
     Rule to ensure an integer value less than or equal to ``0`` is assigned to attribute.
     '''
@@ -345,11 +341,8 @@ class RuleIntNegativeOrZero(IRule):
         Returns:
             bool: ``True`` if ``field_value`` is equal to zero or a negative int; Otherwise, ``False``.
         """
-        int_rule = create_rule(rule=self, new_rule=RuleInt)
-        if int_rule.validate() == False:
+        if not super().validate():
             return False
-        # if not isinstance(self.field_value, int):
-        #     return False
         if self.field_value > 0:
             if self.raise_errors:
                 raise ValueError(
