@@ -548,9 +548,15 @@ class TestKwArgsHelperRules(unittest.TestCase):
         self.assertFalse(r.kw.rule_test_before_assign)
 
     def test_msg_ws_str_rule(self):
+        r = Runner(msg='')
+        with self.assertRaises(ValueError):
+            r.kw.assign(key='msg', rules=[rules.RuleStrNotNullEmptyWs])
         r = Runner(msg='  ')
-        self.assertRaises(ValueError, r.kw.assign, key='msg',
-                          rules=[rules.RuleStrNotNullOrEmpty])
+        with self.assertRaises(ValueError):
+            r.kw.assign(key='msg', rules=[rules.RuleStrNotNullEmptyWs])
+        r = Runner(msg=22)
+        with self.assertRaises(TypeError):
+            r.kw.assign(key='msg', rules=[rules.RuleStrNotNullEmptyWs])
 
     def test_msg_non_str_rule(self):
         r = Runner(msg=2)

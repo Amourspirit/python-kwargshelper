@@ -482,6 +482,33 @@ class RuleStr(IRule):
 
 class RuleStrNotNullOrEmpty(RuleStr):
     '''
+    Rule to ensure a string that is not empty is assigned to attribute.
+    '''
+
+    def validate(self) -> bool:
+        """
+        Validates that value to assign is a string and is not a empty string.
+
+        Raises:
+            ValueError: If ``raise_errors`` is ``True`` and ``field_value``
+                is not instance of string or is empty string
+
+        Returns:
+            bool: ``True`` if value is valid; Otherwise; ``False``.
+        """
+        if not super().validate():
+            return False
+        value = self.field_value
+        if len(value) == 0:
+            if self.raise_errors:
+                raise ValueError(
+                    f"Arg error: {self.key} must not be empty str")
+            return False
+        return True
+
+
+class RuleStrNotNullEmptyWs(RuleStrNotNullOrEmpty):
+    '''
     Rule to ensure a string that is not empty or whitespace is assigned to attribute.
     '''
 
@@ -502,7 +529,7 @@ class RuleStrNotNullOrEmpty(RuleStr):
         if len(value) == 0:
             if self.raise_errors:
                 raise ValueError(
-                    f"Arg error: {self.key} must not be empty or whitespace")
+                    f"Arg error: {self.key} must not be empty or whitespace str")
             return False
         return True
 # endregion String
