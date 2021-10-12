@@ -4,18 +4,14 @@ import sys
 import os
 import platform
 from setuptools import setup
-
+from kwhelp import __version__
 PKG_NAME = 'kwargshelper'
-MAJOR = 1
-MINOR = 2
-MICRO = 1
-ISRELEASED = True
-VERSION = f'{MAJOR}.{MINOR}.{MICRO}'
+VERSION = __version__
 
 # The directory containing this file
 HERE = pathlib.Path(__file__).parent
 # The text of the README file
-with open(HERE / "README.md") as fh:
+with open(HERE / "README.rst") as fh:
     README = fh.read()
 
 
@@ -56,7 +52,7 @@ setup(
     version=VERSION,
     python_requires='>=3.6.0',
     description="Manages testing for valid kwargs key, values pairs and assigns class attributes for pairs.",
-    long_description_content_type="text/markdown",
+    long_description_content_type="text/x-rst", # "text/markdown",
     long_description=README,
     url="https://github.com/Amourspirit/python-kwargshelper",
     author=":Barry-Thomas-Paul: Moss",
