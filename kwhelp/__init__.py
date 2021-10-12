@@ -764,13 +764,19 @@ class KwargsHelper(HelperBase):
                 is omitted then field name is built using ``instance.field_prefix`` + ``key``.
                 If included then ``instance.field_prefix`` will be ignored.
                 Defaults to ``None``.
+                
+                See also: :doc:`../usage/KwargsHelper/assign_field`
             require (bool, optional): Determins if ``key`` is required to be in ``obj_kwargs`` passed into to constructor.
                 if ``default`` is passed in then ``require`` is ignored.
                 Defaults to ``False``.
+                
+                See also: :doc:`../usage/KwargsHelper/assign_require`
             default (object, optional): default value to assign to key attribute if no value is found in
                 ``obj_kwargs`` passed into to constructor.
                 If ``default`` is passed in then ``require`` is ignored.
-                Defaults to ``NO_THING``.
+                Defaults to ``NO_THING`` which will result in default being ignored.
+                
+                See also: :doc:`../usage/KwargsHelper/assign_default`
             types (List[type], optional): a type list of one or more types that the value of the key value pair must match.
                 For example if a value is required to be only ``str`` then ``types=[str]``.
                 If value is required to be ``str`` or ``int`` then ``types=[str, int]``.
@@ -778,9 +784,11 @@ class KwargsHelper(HelperBase):
                 If ``types`` is omitted then a value can be any type unless there is a rule in ``rules`` that is otherwise.
                 Defaults to ``None``.
 
-                See Also: :doc:`../usage/KwargsHelper/assign_type`
+                See also: :doc:`../usage/KwargsHelper/assign_type`
             rules (List[Callable[[IRule], bool]], optional): List of rules that must be passed before assignment can take place.
                 Defaults to ``None``.
+
+                See also: :doc:`../usage/KwargsHelper/assign_rules`
 
         Returns:
             bool: ``True`` if attribute assignment is successful; Otherwise, ``False``

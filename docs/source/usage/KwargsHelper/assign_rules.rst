@@ -5,6 +5,9 @@ Rule checking can be done by adding ``rules`` to :py:meth:`~.KwargsHelper.assign
 Rule checking ensures a value of ``**kwargs`` values matches all rules before assign to
 current instance of class.
 
+In the following example attribute ``speed`` can be a positive ``float`` or a positive ``int``.
+All other values will result in an error.
+
 .. code-block:: python
 
     from kwhelp import KwargsHelper
@@ -13,7 +16,7 @@ current instance of class.
     class MyClass:
         def __init__(self, **kwargs):
             kw = KwargsHelper(self, {**kwargs})
-            kw.assign(key="speed", types=[int, float], rules=[
+            kw.assign(key="speed", rules=[
                 rules.RuleIntPositive,
                 rules.RuleFloatPositive
             ])

@@ -4,6 +4,9 @@ Assign Type Checking
 Type checking can be done by adding ``types`` to :py:meth:`~.KwargsHelper.assign` method.
 Type checking ensures the type of ``**kwargs`` values that are assigned to attributes of current instance of class.
 
+In the following example attribute ``speed`` can be of type ``float`` or of type ``int``.
+All other type will result in an error.
+
 .. code-block:: python
 
     from kwhelp import KwargsHelper
@@ -28,4 +31,4 @@ Type checking ensures the type of ``**kwargs`` values that are assigned to attri
 .. code-block:: python
 
     >>> myclass = MyClass(speed="a")
-    TypeError: MyClass arg 'speed' is expected to be of '<class 'int'>' but got 'str'
+    TypeError: MyClass arg 'speed' is expected to be of '<class 'float'> | <class 'int'>' but got 'str'
