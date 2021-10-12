@@ -47,3 +47,8 @@ All other values will result in an error.
 
     >>> myclass = MyClass(speed="a")
     TypeError: MyClass arg 'speed' is expected to be of '<class 'int'>' but got 'str'
+
+Included Rules
+--------------
+
+.. include:: ../../inc/rules_list.rst

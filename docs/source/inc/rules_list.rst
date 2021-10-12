@@ -10,5 +10,5 @@
     for rule in rule_list:
         name = os.path.basename(str(rule)[:-4])
         # print("* :py:class:`~.rules.{}`".format(name))
-        print("* :doc:`{0} <../kwhelp/rules/{0}>`".format(name))
+        print("* :doc:`{0} </source/kwhelp/rules/{0}>`".format(name))
         print("\n")
