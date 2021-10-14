@@ -28,19 +28,6 @@ class TestKwArg(unittest.TestCase):
         self.assertFalse(kw.is_key_existing('msg'))
         self.assertFalse('msg' in kw.kwargs_helper.kw_args)
         self.assertEqual(kw.msg, None)
-
-    
-    def test_assign_assign_warns(self):
-        kw = KwArg(msg='Hello World')
-        with self.assertWarns(DeprecationWarning):
-            kw.assign(key='msg', types=[str], rules=[
-                rules.RuleStrNotNullOrEmpty], require=True)
-        self.assertTrue(kw.is_attribute_exist('msg'))
-        self.assertEqual(kw.msg, 'Hello World')
-        self.assertTrue(kw.is_key_existing('msg'))
-        self.assertFalse(kw.is_key_existing(' '))
-        self.assertFalse(kw.is_key_existing(None))
-        self.assertTrue('msg' in kw.kwargs_helper.kw_args)
     
     def test_is_attribute_exist(self):
         kw = KwArg(msg='Hello World')
@@ -67,17 +54,19 @@ class TestKwArg(unittest.TestCase):
         self.assertEqual(kw.msg, 'Hello World')
 
     def test_assign_reserved_key_word(self):
-        kw = KwArg(assign=True)
-        self.assertRaises(ReservedAttributeError, kw.kw_assign,
-                          key='assign', types=[bool], require=True)
-        kw.kw_assign(key='assign', field='is_assign', types=[bool], require=True)
+        kw = KwArg(kw_assign=True)
+        with self.assertRaises(ReservedAttributeError):
+            kw.kw_assign(key='kw_assign', types=[bool], require=True)
+        kw.kw_assign(key='kw_assign', field='is_assign',
+                     types=[bool], require=True)
         self.assertTrue(kw.is_attribute_exist('is_assign'))
         self.assertTrue(kw.is_assign)
 
     def test_assign_reserved_field_word(self):
         kw = KwArg(needs_help=True)
-        self.assertRaises(ReservedAttributeError, kw.kw_assign,
-                          key='needs_help', field='assign_helper', types=[bool], require=True)
+        with self.assertRaises(ReservedAttributeError):
+            kw.kw_assign(key='needs_help', field='kw_assign_helper',
+                         types=[bool], require=True)
         kw.kw_assign(key='needs_help', field='requires_helper',
                   types=[bool], require=True)
         self.assertTrue(kw.is_attribute_exist('requires_helper'))
@@ -151,15 +140,6 @@ class TestKwArg(unittest.TestCase):
         self.assertEqual(kw.msg, 'Hello World')
         self.assertRaises(TypeError, kw.kw_assign_helper, 'hello')
     
-    def test_assign_helper_warning(self):
-        kw = KwArg(msg='Hello World')
-        with self.assertWarns(DeprecationWarning):
-            kw.assign_helper(HelperArgs(key='msg', types=[str], rules=[
-                rules.RuleStrNotNullOrEmpty], require=True))
-        self.assertTrue(kw.is_attribute_exist('msg'))
-        self.assertEqual(kw.msg, 'Hello World')
-        self.assertRaises(TypeError, kw.kw_assign_helper, 'hello')
-
     def test_unused_keys(self):
         kw = KwArg(msg='Hello World', width=12, height=24, length=6)
         kw.kw_assign_helper(HelperArgs(key='msg', types=[str], rules=[
