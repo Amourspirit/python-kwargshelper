@@ -36,7 +36,7 @@ class HelperArgs(HelperBase):
         
         Keyword Arguments:
             field (str, optional): field arg. Default ``None``
-            require (bool: optional): require arg. Default ``False``
+            require (bool, optional): require arg. Default ``False``
             types (set, optional): types arg. Default Empty set
             default (obj, optional): Default arg. Default ``NO_THING``
             rules (list, optional): rules list. Default Empty List.
@@ -348,6 +348,9 @@ class AssignBuilder(UserList):
 class BeforeAssignAutoEventArgs:
     """
     Before Assign Auto Event Args
+    
+    See Also:
+        :doc:`../usage/KwargsHelper/auto_assign_callback`    
     """
     def __init__(self, key: str, value: object, field: str, originator: object):
         """
@@ -425,6 +428,9 @@ class BeforeAssignAutoEventArgs:
 class AfterAssignAutoEventArgs:
     """
     After Assign Auto Event Args
+
+    See Also:
+        :doc:`../usage/KwargsHelper/auto_assign_callback` 
     """
     def __init__(self, key: str, originator: object):
         """
@@ -483,6 +489,9 @@ class AfterAssignAutoEventArgs:
 class BeforeAssignEventArgs:
     """
     Before assign event args
+
+    See Also:
+        :doc:`../usage/KwargsHelper/callback` 
     """
     def __init__(self, help_args: HelperArgs, originator: object):
         """
@@ -561,6 +570,9 @@ class BeforeAssignEventArgs:
 class AfterAssignEventArgs:
     """
     After Assign Event Args
+
+    See Also:
+        :doc:`../usage/KwargsHelper/callback` 
     """
     def __init__(self, help_args: HelperArgs, originator: object) -> None:
         """
@@ -741,7 +753,8 @@ class KwargsHelper(HelperBase):
     def auto_assign(self) -> bool:
         """
         Assigns all of the key, value pairs of ``obj_kwargs`` passed into constructor to ``originator``,
-        unless the event is canceled in ``BeforeAssignBlindEventArgs`` then key, value pair will be added automacally to ``originator``.
+        unless the event is canceled in :py:class:`.BeforeAssignAutoEventArgs` then key,
+        value pair will be added automacally to ``originator``.
 
         Returns:
             bool: ``True`` of all key, value pairs are added; Otherwise, ``False``.
@@ -749,6 +762,11 @@ class KwargsHelper(HelperBase):
         Note:
             Call back events are supported via :py:meth:`~.KwargsHelper.add_handler_before_assign_auto`
             and :py:meth:`~.KwargsHelper.add_handler_after_assign_auto` methods.
+
+        See Also:
+            * :doc:`../usage/KwargsHelper/auto_assign`
+            * :doc:`../usage/KwargsHelper/auto_assign_callback`
+            * :py:meth:`~.KwargsHelper.assign`
         """
         if self._is_auto_assign_handlers():
             return self._auto_assign_with_cb()
@@ -792,6 +810,13 @@ class KwargsHelper(HelperBase):
 
         Returns:
             bool: ``True`` if attribute assignment is successful; Otherwise, ``False``
+
+        See Also:
+            * :doc:`../usage/KwargsHelper/assign_field`
+            * :doc:`../usage/KwargsHelper/assign_default`
+            * :doc:`../usage/KwargsHelper/assign_type`
+            * :doc:`../usage/KwargsHelper/assign_rules`
+            * :py:meth:`~.KwargsHelper.auto_assign`
         """
         m_name = 'assign'
         self._is_arg_str_empty_null(
@@ -882,7 +907,7 @@ class KwargsHelper(HelperBase):
             if before_args.cancel == True:
                 if self._cancel_error == True:
                     raise CancelEventError(
-                        f"{self.__class__.__name__}.assign() canceled in 'BeforeAssignBlindEventArgs'")
+                        f"{self.__class__.__name__}.auto_assign() canceled in 'BeforeAssignBlindEventArgs'")
                 else:
                     result = False
             else:
@@ -1057,6 +1082,9 @@ class KwargsHelper(HelperBase):
 
         Args:
             callback (Callable[['KwargsHelper', BeforeAssignEventArgs], None]): Callback Method
+
+        See Also:
+            :doc:`../usage/KwargsHelper/callback`
         """
         self._on("on_before_assign", callback)
 
@@ -1066,6 +1094,9 @@ class KwargsHelper(HelperBase):
 
         Args:
             callback (Callable[['KwargsHelper', AfterAssignEventArgs], None]): Callback Method
+
+        See Also:
+            :doc:`../usage/KwargsHelper/callback`
         """
         self._on("on_after_assign", callback)
 
@@ -1075,6 +1106,9 @@ class KwargsHelper(HelperBase):
 
         Args:
             callback (Callable[['KwargsHelper', BeforeAssignAutoEventArgs], None]): Callback Method
+
+        See Also:
+            :doc:`../usage/KwargsHelper/callback`
         """
         self._on("on_before_assign_auto", callback)
 
@@ -1084,6 +1118,9 @@ class KwargsHelper(HelperBase):
 
         Args:
             callback (Callable[['KwargsHelper', AfterAssignAutoEventArgs], None]): Callback Method
+
+        See Also:
+            :doc:`../usage/KwargsHelper/callback`
         """
         self._on("on_after_assign_auto", callback)
     # endregion
