@@ -825,7 +825,10 @@ class KwargsHelper(HelperBase):
 
         Args:
             key (str): the key of the key, value pair that is required or optional in ``obj_kwargs`` passed into to constructor.
-            all_rules (bool, optional): Determines if all rules or any rules are to be matched. Default ``False``
+            all_rules (bool, optional): Determines if all rules or any rules are to be matched.
+                If ``True`` then all rules included in ``rules`` must be valid to be considered a success.
+                If ``False`` then any rule included in ``rules`` that is valid is considered a success.
+                Default ``False``.
             field (str, optional): the name of the field to assign a value. If ``field``
                 is omitted then field name is built using ``instance.field_prefix`` + ``key``.
                 If included then ``instance.field_prefix`` will be ignored.
@@ -1389,7 +1392,10 @@ class KwArg:
 
         Args:
             key (str): the key of the key, value pair that is required or optional in ``kwargs`` passed into to constructor.
-            all_rules (bool, optional): Determines if all rules or any rules are to be matched. Default ``False``
+            all_rules (bool, optional): Determines if all rules or any rules are to be matched.
+                If ``True`` then all rules included in ``rules`` must be valid to be considered a success.
+                If ``False`` then any rule included in ``rules`` that is valid is considered a success.
+                Default ``False``.
             field (str, optional): the name of the field to assign a value. 
                 if ``field`` is omitted then field name is built using ``key``.
                 If included then ``kwargs_helper.field_prefix`` will be ignored.
