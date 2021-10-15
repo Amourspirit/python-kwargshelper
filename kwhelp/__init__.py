@@ -1331,14 +1331,21 @@ class KwArg:
             field (str, optional): the name of the field to assign a value. 
                 if ``field`` is omitted then field name is built using ``key``.
                 If included then ``kwargs_helper.field_prefix`` will be ignored.
-                Defaults to ``None``.
+                Defaults to **Empty string**.
+                
+                See also: :doc:`../usage/KwArg/kw_assign_field`,
+                :py:attr:`.KwArg.kwargs_helper`
             require (bool, optional): Determins if ``key`` is required to be in `kwargs` passed into to constructor.
                 if ``default`` is passed in then ``require`` is ignored.
                 Defaults to ``False``.
+                
+                See also: :doc:`../usage/KwArg/kw_assign_require`
             default (object, optional): default value to assign to key attribute if no value is
                 found in ``kwargs`` passed into to constructor.
                 If ``default`` is passed in then ``require`` is ignored.
                 Defaults to ``NO_THING``.
+                
+                See also: :doc:`../usage/KwArg/kw_assign_default`
             types (List[type], optional): a type list of one or more types that the value of the
                 key value pair must match.
                 For example if a value is required to be only ``str`` then ``types=[str]``.
@@ -1355,6 +1362,11 @@ class KwArg:
 
         Returns:
             bool: ``True`` if attribute assignment is successful; Otherwise, ``False``
+
+        See Also:
+            * :doc:`../usage/KwArg/kw_assign_default`
+            * :doc:`../usage/KwArg/kw_assign_field`
+            * :doc:`../usage/KwArg/kw_assign_require`
         """
         m_name = 'assign'
         self._kw_arg_internal._is_arg_str_empty_null(
