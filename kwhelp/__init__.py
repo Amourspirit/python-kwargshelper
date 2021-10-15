@@ -1012,18 +1012,31 @@ class KwargsHelper(HelperBase):
         return result
 
     def _validate_rules(self, args: HelperArgs, field: str, value: object,  after_args: AfterAssignEventArgs) -> bool:
+        # if any rule passes then validations is considered a success
+        error_lst = []
         key = after_args.key
+        result = False
         if len(args.rules) > 0:
             for rule in args.rules:
+                if result == True:
+                    break
                 if not issubclass(rule, IRule):
                     raise TypeError('Rules must implement IRule')
                 rule_instance: IRule = rule(
                     key=key, name=field, value=value, raise_errors=self._rule_error, originator=self._obj)
-                if rule_instance.validate() == False:
-                    after_args._rules_passed = False
-                    return False
-        after_args._rules_passed = True
-        return True
+                try:
+                    if rule_instance.validate() == True:
+                        result = True
+                        break
+                except Exception as e:
+                    error_lst.append(e)
+        else:
+            result = True
+        if result == False and self._rule_error == True and len(error_lst) > 0:
+            # raise the first error in error list
+            raise error_lst[0]
+        after_args._rules_passed = result
+        return result
 
     def _remove_key(self, key: str) -> bool:
         '''

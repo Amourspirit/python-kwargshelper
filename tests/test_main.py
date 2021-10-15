@@ -522,11 +522,13 @@ class TestKwArgsHelperRules(unittest.TestCase):
 
     def test_msg_empty_str_rule(self):
         r = Runner(msg='')
-        self.assertRaises(ValueError, r.kw.assign, key='msg',
-                          rules=[rules.RuleStrNotNullOrEmpty])
+        with self.assertRaises(ValueError):
+            r.kw.assign(key='msg', rules=[rules.RuleStrNotNullOrEmpty])
+  
         rx = RunnerEx(msg='Hello World')
-        self.assertRaises(AttributeError, rx.kw.assign, key='msg',
-                          rules=[rules.RuleStrNotNullOrEmpty, rules.RuleAttrNotExist])
+        with self.assertRaises(AttributeError):
+            rx.kw.assign(key='msg', rules=[rules.RuleStrNotNullOrEmpty, rules.RuleAttrNotExist])
+  
         rx = RunnerEx(kw_args={"rule_error": False}, msg='')
         result = rx.kw.assign(
             key='msg', rules=[rules.RuleStrNotNullOrEmpty, rules.RuleAttrExist])
