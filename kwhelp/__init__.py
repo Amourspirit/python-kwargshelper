@@ -28,7 +28,7 @@ class HelperArgs(HelperBase):
     Helper class that provides KwArgs arguments
     """
 
-    def __init__(self, key: str, **kwargs):
+    def __init__(self, key: str, ** kwargs):
         """
         Constructor
 
@@ -36,27 +36,30 @@ class HelperArgs(HelperBase):
             key (str): Key Arg
 
         Keyword Arguments:
+            all_rules (bool, optional): Determines if all rules or any rules are to be matched.
+                Default ``False``.
+            default (obj, optional): Default arg. Default ``NO_THING``
             field (str, optional): field arg. Default ``None``
             require (bool, optional): require arg. Default ``False``
-            types (set, optional): types arg. Default Empty set
-            default (obj, optional): Default arg. Default ``NO_THING``
             rules (list, optional): rules list. Default Empty List.
+            types (set, optional): types arg. Default Empty set
         """
         self._key: str = ''
+        self.all_rules = False
         self._field = None
         self._require = False
         self._types = set()
         self._default = NO_THING
         self._rules = []
         self.key = key
-        keys = ('field', 'require', 'types', 'default', 'rules')
+        keys = ('field', 'require', 'types', 'default', 'rules', 'all_rules')
         for key in keys:
             if key in kwargs:
                 setattr(self, key, kwargs[key])
 
     def to_dict(self) -> dict:
         '''Gets a dictionary representation of current instance fields'''
-        arg = {'key': self.key, 'require': self.require}
+        arg = {'key': self.key, 'require': self.require, 'all_rules': self.match_all_rules}
         if self.field is not None:
             arg['field'] = self.field
         if self.types is not None and len(self.types) > 0:
@@ -82,6 +85,22 @@ class HelperArgs(HelperBase):
     @default.setter
     def default(self, value: object) -> None:
         self._default = value
+        return None
+
+    @property
+    def match_all_rules(self) -> bool:
+        """
+        Determines if all or any rule is to be matched
+        
+        :getter: Gets if all or any rule is to be matched
+        :setter: Sets if all or any rule is to be matched
+        """
+        return self.all_rules
+
+    @match_all_rules.setter
+    def match_all_rules(self, value: bool) -> None:
+        self._is_prop_bool(value=value, prop_name="match_all_rules",raise_error=True)
+        self.all_rules = bool(value)
         return None
 
     @property
@@ -363,6 +382,7 @@ class BeforeAssignAutoEventArgs:
             value (object): Value to be assigned
             field (str): Field that ``value`` is to be assigned to.
             originator (object): Object that ``value`` is to be assigned to.
+            all_rules (bool): Determines if all rules or any rules are to be matched
         """
         self._key = key
         self._field_value = value
@@ -513,6 +533,20 @@ class BeforeAssignEventArgs:
     # region Properties
 
     @property
+    def match_all_rules(self) -> bool:
+        """
+        Determines if all or any rule is to be matched
+        
+        :getter: Gets if all or any rule is to be matched
+        :setter: Sets if all or any rule is to be matched
+        """
+        return self._helper_args.match_all_rules
+
+    @match_all_rules.setter
+    def match_all_rules(self, value: bool):
+        self._helper_args.match_all_rules = value
+
+    @property
     def field_name(self) -> str:
         """
         The name of the field that value will be assigned
@@ -594,7 +628,15 @@ class AfterAssignEventArgs:
         self._rules_passed = True
         self._canceled = False
         self._success = False
+
     # region Properties
+
+    @property
+    def match_all_rules(self) -> bool:
+        """
+        Gets if all or any rule is to be matched
+        """
+        return self._helper_args.match_all_rules
 
     @property
     def key(self) -> str:
@@ -777,12 +819,13 @@ class KwargsHelper(HelperBase):
             return self._auto_assign_with_cb()
         return self._auto_assign_no_cb()
 
-    def assign(self, key: str, field: Optional[str] = None, require: bool = False, default: Optional[object] = NO_THING, types: Optional[List[type]] = None, rules: Optional[List[Callable[[IRule], bool]]] = None) -> bool:
+    def assign(self, key: str, field: Optional[str] = None, require: bool = False, default: Optional[object] = NO_THING, types: Optional[List[type]] = None, rules: Optional[List[Callable[[IRule], bool]]] = None, all_rules: Optional[bool] = False) -> bool:
         """
         Assigns attribute value to ``obj`` passed in to constructor. Attributes are created if they do not exist.
 
         Args:
             key (str): the key of the key, value pair that is required or optional in ``obj_kwargs`` passed into to constructor.
+            all_rules (bool, optional): Determines if all rules or any rules are to be matched. Default ``False``
             field (str, optional): the name of the field to assign a value. If ``field``
                 is omitted then field name is built using ``instance.field_prefix`` + ``key``.
                 If included then ``instance.field_prefix`` will be ignored.
@@ -833,7 +876,7 @@ class KwargsHelper(HelperBase):
             types = []
         if rules == None:
             rules = []
-        _args = HelperArgs(key=key, require=require)
+        _args = HelperArgs(key=key, require=require, all_rules=all_rules)
         _args.field = field
         # _args.require = require
         _args.types = set(types)
@@ -1015,24 +1058,29 @@ class KwargsHelper(HelperBase):
         # if any rule passes then validations is considered a success
         error_lst = []
         key = after_args.key
-        result = False
+        result = True
         if len(args.rules) > 0:
             for rule in args.rules:
-                if result == True:
-                    break
                 if not issubclass(rule, IRule):
                     raise TypeError('Rules must implement IRule')
                 rule_instance: IRule = rule(
                     key=key, name=field, value=value, raise_errors=self._rule_error, originator=self._obj)
+                rule_valid = False
                 try:
-                    if rule_instance.validate() == True:
-                        result = True
-                        break
+                    rule_valid = rule_instance.validate()
                 except Exception as e:
                     error_lst.append(e)
-        else:
-            result = True
-        if result == False and self._rule_error == True and len(error_lst) > 0:
+                    rule_valid = False
+                if after_args.match_all_rules is True:
+                    result = result & rule_valid
+                    if len(error_lst) > 0 or result is False:
+                        break
+                else:
+                    result = result & rule_valid
+                    if result is True:
+                        break
+
+        if result is False and self._rule_error is True and len(error_lst) > 0:
             # raise the first error in error list
             raise error_lst[0]
         after_args._rules_passed = result
@@ -1335,12 +1383,13 @@ class KwArg:
         """
         return self._kw_arg_internal.helper_instance.auto_assign()
 
-    def kw_assign(self, key: str, field: Optional[str] = None, require: bool = False, default: Optional[object] = NO_THING, types: Optional[List[type]] = None, rules: Optional[List[Callable[[IRule], bool]]] = None) -> bool:
+    def kw_assign(self, key: str, field: Optional[str] = None, require: bool = False, default: Optional[object] = NO_THING, types: Optional[List[type]] = None, rules: Optional[List[Callable[[IRule], bool]]] = None, all_rules: Optional[bool] = False) -> bool:
         """
         Assigns attribute value to current instance passed in to constructor. Attributes automatically.
 
         Args:
             key (str): the key of the key, value pair that is required or optional in ``kwargs`` passed into to constructor.
+            all_rules (bool, optional): Determines if all rules or any rules are to be matched. Default ``False``
             field (str, optional): the name of the field to assign a value. 
                 if ``field`` is omitted then field name is built using ``key``.
                 If included then ``kwargs_helper.field_prefix`` will be ignored.
@@ -1392,7 +1441,7 @@ class KwArg:
             if field in KwArg._RESERVED_INTERNAL_FIELDS:
                 raise ReservedAttributeError(
                     f"{self.__class__.__name__}.{field} is a reserved keyword. Try using a differne field name.")
-        return self._kw_arg_internal.helper_instance.assign(key=key, field=field, require=require, default=default, types=types, rules=rules)
+        return self._kw_arg_internal.helper_instance.assign(key=key, field=field, require=require, default=default, types=types, rules=rules, all_rules=all_rules)
 
     def kw_assign_helper(self, helper: HelperArgs) -> bool:
         """
