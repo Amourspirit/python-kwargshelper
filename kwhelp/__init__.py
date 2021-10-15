@@ -59,7 +59,7 @@ class HelperArgs(HelperBase):
 
     def to_dict(self) -> dict:
         '''Gets a dictionary representation of current instance fields'''
-        arg = {'key': self.key, 'require': self.require, 'all_rules': self.match_all_rules}
+        arg = {'key': self.key, 'require': self.require, 'all_rules': self.all_rules}
         if self.field is not None:
             arg['field'] = self.field
         if self.types is not None and len(self.types) > 0:
@@ -88,19 +88,41 @@ class HelperArgs(HelperBase):
         return None
 
     @property
+    def all_rules(self) -> bool:
+        """
+        Determines if all or any rule is to be matched
+        
+        :getter: Gets if all or any rule is to be matched
+        :setter: Sets if all or any rule is to be matched
+
+        See Also:
+            :py:attr:`~.HelperArgs.match_all_rules`
+        """
+        return self._all_rules
+
+    @all_rules.setter
+    def all_rules(self, value: bool) -> None:
+        self._is_prop_bool(
+            value=value, prop_name="match_all_rules", raise_error=True)
+        self._all_rules = bool(value)
+        return None
+
+    @property
     def match_all_rules(self) -> bool:
         """
         Determines if all or any rule is to be matched
         
         :getter: Gets if all or any rule is to be matched
         :setter: Sets if all or any rule is to be matched
+
+        Note:
+            Alias of :py:attr:`~.HelperArgs.all_rules`
         """
         return self.all_rules
 
     @match_all_rules.setter
     def match_all_rules(self, value: bool) -> None:
-        self._is_prop_bool(value=value, prop_name="match_all_rules",raise_error=True)
-        self.all_rules = bool(value)
+        self.all_rules = value
         return None
 
     @property
@@ -717,7 +739,7 @@ class KwargsHelper(HelperBase):
             name (str, optional): sets the `field_prefix` property.
                 Default is the name of ``originator`` object.
             cancel_error (bool, optional): sets the `cancel_error` property. Default ``True``.
-            rule_error (bool, optional): sets the ``rule_error`` property. Default ``False``.
+            rule_error (bool, optional): sets the ``rule_error`` property. Default ``True``.
             assign_true_not_required (bool, optional): sets the ``assign_true_not_required`` property.
                 Default ``True``.
             type_instance_check (bool, optional): If ``True`` and :py:meth:`.KwargsHelper.assign`` arg ``types`` is set
@@ -1079,8 +1101,8 @@ class KwargsHelper(HelperBase):
                     if len(error_lst) > 0 or result is False:
                         break
                 else:
-                    result = result & rule_valid
-                    if result is True:
+                    result = rule_valid
+                    if rule_valid is True:
                         break
 
         if result is False and self._rule_error is True and len(error_lst) > 0:
