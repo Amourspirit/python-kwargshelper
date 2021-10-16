@@ -19,12 +19,15 @@ class TestHelperArgs(unittest.TestCase):
         self.assertDictEqual(args.to_dict(), dic)
 
     def test_assign_fields(self):
+        rules_list = [rules.RuleInt, rules.RuleStr]
+        types_list = [int, float, str]
+        
         args = HelperArgs(key="test",
                           field="myfield",
                           require=True,
-                          types=[int, float, str],
+                          types=types_list,
                           default=11,
-                          rules=[rules.RuleInt, rules.RuleStr],
+                          rules=rules_list,
                           all_rules=True)
         self.assertEqual(args.key, "test")
         self.assertEqual(args.field, "myfield")
@@ -33,14 +36,20 @@ class TestHelperArgs(unittest.TestCase):
         self.assertEqual(args.default, 11)
         self.assertEqual(len(args.rules), 2)
         self.assertTrue(args.match_all_rules)
-        dic = {'all_rules': True,
-               'default': 11,
-               'field': 'myfield',
-               'key': 'test',
-               'require': True,
-               'rules': [rules.RuleInt, rules.RuleStr],
-               'types': [float, str, int]}
-        self.assertDictEqual(args.to_dict(), dic)
+        args_dic = args.to_dict()
+        _rules = args_dic["rules"]
+        _types = args_dic["types"]
+        self.assertTrue(args_dic['all_rules'])
+        self.assertEqual(args_dic['key'], "test")
+        self.assertEqual(args_dic['field'], "myfield")
+        self.assertTrue(args_dic['require'])
+        self.assertEqual(args_dic['default'], 11)
+        self.assertEqual(len(_rules), 2)
+        self.assertEqual(len(_types), 3)
+        for r in rules_list:
+            self.assertIn(r, _rules)
+        for t in types_list:
+            self.assertIn(t, _types)
 
     def test_constructor_err(self):
         with self.assertRaises(TypeError):
