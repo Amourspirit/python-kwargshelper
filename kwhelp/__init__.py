@@ -1087,6 +1087,7 @@ class KwargsHelper(HelperBase):
 
     def _validate_rules_any(self, args: HelperArgs, field: str, value: object,  after_args: AfterAssignEventArgs) -> bool:
         # if any rule passes then validations is considered a success
+        error_lst = []
         key = after_args.key
         result = True
         if len(args.rules_any) > 0:
@@ -1095,10 +1096,19 @@ class KwargsHelper(HelperBase):
                     raise TypeError('Rules must implement IRule')
                 rule_instance: IRule = rule(
                     key=key, name=field, value=value, raise_errors=self._rule_error, originator=self._obj)
-                result = result & rule_instance.validate()
-                if result is True:
+                rule_valid = False
+                try:
+                    rule_valid = rule_instance.validate()
+                except Exception as e:
+                    error_lst.append(e)
+                    rule_valid = False
+                result = rule_valid
+                if rule_valid is True:
                     break
 
+        if result is False and self._rule_error is True and len(error_lst) > 0:
+            # raise the first error in error list
+            raise error_lst[0]
         after_args._rules_passed = result
         return result
 

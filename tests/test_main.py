@@ -496,6 +496,7 @@ class TestKwArgsHelperCallback(unittest.TestCase):
         def cb_before(helper: KwargsHelper, args: BeforeAssignEventArgs):
             if args.key == 'msg' and args.match_all_rules == False:
                 args.match_all_rules = True
+
         def cb_after(helper: KwargsHelper, args: AfterAssignEventArgs):
             if args.key == 'msg':
                 self.assertTrue(args.match_all_rules)
@@ -503,8 +504,9 @@ class TestKwArgsHelperCallback(unittest.TestCase):
         r = Runner(msg='Hello World')
         r.kw.add_handler_before_assign(cb_before)
         r.kw.add_handler_after_assign(cb_after)
-        r.kw.assign(key='msg', rules_all=[rules.RuleStrNotNullEmptyWs, rules.RuleAttrNotExist], all_rules=False)
-        
+        r.kw.assign(key='msg', rules_all=[
+                    rules.RuleStrNotNullEmptyWs, rules.RuleAttrNotExist], all_rules=False)
+
         self.assertTrue(hasattr(r, '_msg'))
 
 
@@ -540,12 +542,12 @@ class TestKwArgsHelperRules(unittest.TestCase):
         r = Runner(msg='')
         with self.assertRaises(ValueError):
             r.kw.assign(key='msg', rules_all=[rules.RuleStrNotNullOrEmpty])
-  
+
         rx = RunnerEx(msg='Hello World')
         with self.assertRaises(AttributeError):
             rx.kw.assign(key='msg', rules_all=[rules.RuleStrNotNullOrEmpty, rules.RuleAttrNotExist],
                          all_rules=True)
-  
+
         rx = RunnerEx(kw_args={"rule_error": False}, msg='')
         result = rx.kw.assign(
             key='msg', rules_all=[rules.RuleStrNotNullOrEmpty, rules.RuleAttrExist], all_rules=True)
@@ -568,12 +570,14 @@ class TestKwArgsHelperRules(unittest.TestCase):
 
     def test_msg_ws_str_rule(self):
         rx = RunnerEx(kw_args={"rule_error": False}, msg="hello")
-        result = rx.kw.assign(key='msg', rules_all=[rules.RuleStrNotNullEmptyWs])
+        result = rx.kw.assign(key='msg', rules_all=[
+                              rules.RuleStrNotNullEmptyWs])
         self.assertTrue(result)
 
         # not required so result will be True
         rx = RunnerEx(kw_args={"rule_error": False}, msg="")
-        result = rx.kw.assign(key='msg', rules_all=[rules.RuleStrNotNullEmptyWs])
+        result = rx.kw.assign(key='msg', rules_all=[
+                              rules.RuleStrNotNullEmptyWs])
         self.assertTrue(result)
 
         rx = RunnerEx(kw_args={"rule_error": False}, msg="")
@@ -689,13 +693,15 @@ class TestKwArgsHelperRules(unittest.TestCase):
                           key='num', rules=[rules.RuleInt])
 
         rx = RunnerEx(kw_args={"rule_error": False}, num=False)
-        result = rx.kw.assign(key='num', require=True, rules_all=[rules.RuleInt])
+        result = rx.kw.assign(key='num', require=True,
+                              rules_all=[rules.RuleInt])
         self.assertFalse(result)
         self.assertFalse(hasattr(rx, '_num'))
 
         rx = RunnerEx(kw_args={
                       "rule_error": False, 'rule_test_before_assign': False}, num=True)
-        result = rx.kw.assign(key='num', require=True, rules_all=[rules.RuleInt])
+        result = rx.kw.assign(key='num', require=True,
+                              rules_all=[rules.RuleInt])
         self.assertFalse(result)
         self.assertTrue(hasattr(rx, '_num'))
         self.assertTrue(rx._num == True)
@@ -703,7 +709,8 @@ class TestKwArgsHelperRules(unittest.TestCase):
     def test_str_rule_positive_int_rule(self):
         r = Runner(msg='Hello World', age=35)
         r.kw.assign(key='msg', rules_all=[rules.RuleStrNotNullOrEmpty])
-        r.kw.assign(key='age', rules_all=[rules.RuleInt, rules.RuleIntPositive])
+        r.kw.assign(key='age', rules_all=[
+                    rules.RuleInt, rules.RuleIntPositive])
         self.assertTrue(hasattr(r, '_msg'))
         self.assertEqual(r._msg, 'Hello World')
         self.assertTrue(hasattr(r, '_age'))
@@ -749,7 +756,8 @@ class TestKwArgsHelperRules(unittest.TestCase):
 
     def test_str_rule_negative_int_rule(self):
         r = Runner(msg='Hello World', num=-35)
-        result = r.kw.assign(key='msg', rules_all=[rules.RuleStrNotNullOrEmpty])
+        result = r.kw.assign(key='msg', rules_all=[
+                             rules.RuleStrNotNullOrEmpty])
         self.assertTrue(result)
         result = r.kw.assign(key='num', rules_all=[rules.RuleIntNegative])
         self.assertTrue(result)
@@ -765,7 +773,8 @@ class TestKwArgsHelperRules(unittest.TestCase):
         self.assertRaises(ValueError, r.kw.assign,
                           key='num', rules=[rules.RuleIntNegative])
         rx = RunnerEx(kw_args={"rule_error": False}, msg='Hello World', num=0)
-        result = rx.kw.assign(key='msg', rules_all=[rules.RuleStrNotNullOrEmpty])
+        result = rx.kw.assign(key='msg', rules_all=[
+                              rules.RuleStrNotNullOrEmpty])
         self.assertTrue(result)
         result = rx.kw.assign(
             key='num', require=True, rules_all=[rules.RuleIntNegative])
@@ -820,7 +829,8 @@ class TestKwArgsHelperRules(unittest.TestCase):
         self.assertRaises(ValueError, r.kw.assign,
                           key='num', rules=[rules.RuleIntNegativeOrZero])
         rx = RunnerEx(kw_args={"rule_error": False}, msg='Hello World', num=1)
-        result = rx.kw.assign(key='msg', rules_all=[rules.RuleStrNotNullOrEmpty])
+        result = rx.kw.assign(key='msg', rules_all=[
+                              rules.RuleStrNotNullOrEmpty])
         self.assertTrue(result)
         result = rx.kw.assign(
             key='num', require=True, rules_all=[rules.RuleIntNegativeOrZero])
@@ -864,13 +874,15 @@ class TestKwArgsHelperRules(unittest.TestCase):
                           key='num', rules=[rules.RuleFloat])
 
         rx = RunnerEx(kw_args={"rule_error": False}, num=10)
-        result = rx.kw.assign(key='num', require=True, rules_all=[rules.RuleFloat])
+        result = rx.kw.assign(key='num', require=True,
+                              rules_all=[rules.RuleFloat])
         self.assertFalse(result)
         self.assertFalse(hasattr(rx, '_num'))
 
         rx = RunnerEx(kw_args={
                       "rule_error": False, 'rule_test_before_assign': False}, num=True)
-        result = rx.kw.assign(key='num', require=True, rules_all=[rules.RuleFloat])
+        result = rx.kw.assign(key='num', require=True,
+                              rules_all=[rules.RuleFloat])
         self.assertFalse(result)
         self.assertTrue(hasattr(rx, '_num'))
         self.assertTrue(rx._num == True)
@@ -892,7 +904,8 @@ class TestKwArgsHelperRules(unittest.TestCase):
 
         rx = RunnerEx(kw_args={"rule_error": False},
                       msg='Hello World', num=-1.0)
-        result = rx.kw.assign(key='msg', rules_all=[rules.RuleStrNotNullOrEmpty])
+        result = rx.kw.assign(key='msg', rules_all=[
+                              rules.RuleStrNotNullOrEmpty])
         self.assertTrue(result)
         result = rx.kw.assign(
             key='num', require=True, rules_all=[rules.RuleFloatPositive])
@@ -1365,59 +1378,60 @@ class TestKwargsHelperAssignAuto(unittest.TestCase):
         self.assertEqual(obj._msg, "Hello World")
         self.assertEqual(obj._month, "August")
 
+
 class TestAssignAllRules(unittest.TestCase):
 
     def test_assign_all_rules_runner(self):
         r = Runner(msg='Hello World')
-        result = r.kw.assign(key='msg', require=True, all_rules=True,
-                    rules_all=[rules.RuleAttrNotExist, rules.RuleStrNotNullEmptyWs])
+        result = r.kw.assign(key='msg', require=True,
+                             rules_all=[rules.RuleAttrNotExist, rules.RuleStrNotNullEmptyWs])
         self.assertTrue(result)
         self.assertEqual(r._msg, "Hello World")
 
     def test_assign_all_rules_runner_err(self):
         r = Runner(msg='  ')
         with self.assertRaises(ValueError):
-            r.kw.assign(key='msg', require=True, all_rules=True,
+            r.kw.assign(key='msg', require=True,
                         rules_all=[rules.RuleAttrNotExist, rules.RuleStrNotNullEmptyWs])
         r = Runner(msg='Hello World')
         with self.assertRaises(TypeError):
-            r.kw.assign(key='msg', require=True, all_rules=True,
+            r.kw.assign(key='msg', require=True,
                         rules_all=[rules.RuleAttrNotExist, rules.RuleStrNotNullEmptyWs, rules.RuleInt])
         rx = RunnerEx(kw_args={"rule_error": False}, msg='Hello World')
-        result = rx.kw.assign(key='msg', require=True, all_rules=True,
-                        rules_all=[rules.RuleAttrExist, rules.RuleStrNotNullEmptyWs])
+        result = rx.kw.assign(key='msg', require=True,
+                              rules_all=[rules.RuleAttrExist, rules.RuleStrNotNullEmptyWs])
         self.assertTrue(result)
         rx = RunnerEx(kw_args={"rule_error": False}, msg='  ')
-        result = rx.kw.assign(key='msg', require=True, all_rules=True,
-                             rules_all=[rules.RuleAttrExist, rules.RuleStrNotNullEmptyWs])
+        result = rx.kw.assign(key='msg', require=True,
+                              rules_all=[rules.RuleAttrExist, rules.RuleStrNotNullEmptyWs])
         self.assertFalse(result)
 
     def test_assign_all_rules_kw_args(self):
         obj = KwArg(msg='Hello World')
-        result = obj.kw_assign(key='msg', require=True, all_rules=True,
-                      rules_all=[rules.RuleAttrNotExist, rules.RuleStrNotNullEmptyWs])
+        result = obj.kw_assign(key='msg', require=True,
+                               rules_all=[rules.RuleAttrNotExist, rules.RuleStrNotNullEmptyWs])
         self.assertTrue(result)
         self.assertEqual(obj.msg, "Hello World")
 
     def test_assign_all_rules_kw_args_err(self):
         obj = KwArg(msg=' ')
         with self.assertRaises(ValueError):
-            obj.kw_assign(key='msg', require=True, all_rules=True,
-                        rules_all=[rules.RuleAttrNotExist, rules.RuleStrNotNullEmptyWs])
+            obj.kw_assign(key='msg', require=True,
+                          rules_all=[rules.RuleAttrNotExist, rules.RuleStrNotNullEmptyWs])
         obj = KwArg(msg='Hello World')
         with self.assertRaises(AttributeError):
-            obj.kw_assign(key='msg', require=True, all_rules=True,
+            obj.kw_assign(key='msg', require=True,
                           rules_all=[rules.RuleAttrExist, rules.RuleStrNotNullEmptyWs])
 
     def test_assign_any_rule_runner(self):
         r = Runner(msg='Hello World')
-        result = r.kw.assign(key='msg', require=True, all_rules=False,
-                             rules_all=[rules.RuleStrNotNullEmptyWs, rules.RuleIntPositive])
+        result = r.kw.assign(key='msg', require=True,
+                             rules_any=[rules.RuleStrNotNullEmptyWs, rules.RuleIntPositive])
         self.assertTrue(result)
         self.assertEqual(r._msg, "Hello World")
         r = Runner(msg=25)
-        result = r.kw.assign(key='msg', require=True, all_rules=False,
-                             rules_all=[rules.RuleStrNotNullEmptyWs, rules.RuleIntPositive])
+        result = r.kw.assign(key='msg', require=True,
+                             rules_any=[rules.RuleStrNotNullEmptyWs, rules.RuleIntPositive])
         self.assertTrue(result)
         self.assertEqual(r._msg, 25)
 
