@@ -11,7 +11,7 @@ class TestKwArg(unittest.TestCase):
     def test_assign_hello_world(self):
         #with self.assertWarns(DeprecationWarning):
         kw = KwArg(msg='Hello World')
-        kw.kw_assign(key='msg', types=[str], rules=[
+        kw.kw_assign(key='msg', types=[str], rules_all=[
                   rules.RuleStrNotNullOrEmpty], require=True)
         self.assertTrue(kw.is_attribute_exist('msg'))
         self.assertEqual(kw.msg, 'Hello World')
@@ -31,7 +31,7 @@ class TestKwArg(unittest.TestCase):
     
     def test_is_attribute_exist(self):
         kw = KwArg(msg='Hello World')
-        kw.kw_assign(key='msg', types=[str], rules=[
+        kw.kw_assign(key='msg', types=[str], rules_all=[
                   rules.RuleStrNotNullOrEmpty], require=True)
         self.assertTrue(kw.is_attribute_exist('msg'))
         self.assertEqual(kw.msg, 'Hello World')
@@ -40,7 +40,7 @@ class TestKwArg(unittest.TestCase):
 
     def test_assign_not_required(self):
         kw = KwArg()
-        kw.kw_assign(key='msg', types=[str], rules=[
+        kw.kw_assign(key='msg', types=[str], rules_all=[
                   rules.RuleStrNotNullOrEmpty], require=False)
         self.assertFalse(kw.is_attribute_exist('msg'))
         with self.assertRaises(AttributeError):
@@ -48,7 +48,7 @@ class TestKwArg(unittest.TestCase):
 
     def test_assign_not_required_default(self):
         kw = KwArg()
-        kw.kw_assign(key='msg', types=[str], rules=[
+        kw.kw_assign(key='msg', types=[str], rules_all=[
                   rules.RuleStrNotNullOrEmpty], default='Hello World')
         self.assertTrue(kw.is_attribute_exist('msg'))
         self.assertEqual(kw.msg, 'Hello World')
@@ -74,17 +74,23 @@ class TestKwArg(unittest.TestCase):
 
     def test_assign_rule_pos_int(self):
         kw = KwArg(num=1)
-        kw.kw_assign(key='num', types=[int], rules=[
+        kw.kw_assign(key='num', types=[int], rules_all=[
                   rules.RuleIntPositive], require=True)
         self.assertEqual(kw.num, 1)
         
         kw = KwArg(num=-1)
-        self.assertRaises(ValueError, kw.kw_assign, key='num', types=[int], rules=[
-            rules.RuleIntPositive], require=True)
-        
+        with self.assertRaises(ValueError):
+            kw.kw_assign(key='num', types=[int], rules_all=[
+                rules.RuleIntPositive], require=True)
+
+        kw = KwArg(num=-1)
+        with self.assertRaises(ValueError):
+            kw.kw_assign(key='num', types=[int], rules_any=[
+                rules.RuleIntPositive, rules.RuleFloatPositive], require=True)
+
         kw = KwArg(num=-1)
         kw.kwargs_helper.rule_error = False
-        result = kw.kw_assign(key='num', types=[int], rules=[
+        result = kw.kw_assign(key='num', types=[int], rules_all=[
             rules.RuleIntPositive], require=True)
         self.assertFalse(result)
         self.assertFalse(kw.is_attribute_exist('num'))
@@ -110,7 +116,7 @@ class TestKwArg(unittest.TestCase):
             kw = KwArg(**kwargs)
             kw.kw_assign(key='first', require=True, types=[int])
             kw.kw_assign(key='second', require=True, types=[int])
-            kw.kw_assign(key='msg', types=[str], default='Result:', rules=[rules.RuleStrNotNullOrEmpty])
+            kw.kw_assign(key='msg', types=[str], default='Result:', rules_all=[rules.RuleStrNotNullOrEmpty])
             kw.kw_assign(key='end', types=[str])
             first:int = kw.first
             second:int = kw.second
@@ -134,7 +140,7 @@ class TestKwArg(unittest.TestCase):
 
     def test_kw_assign_helper(self):
         kw = KwArg(msg='Hello World')
-        kw.kw_assign_helper(HelperArgs(key='msg', types=[str], rules=[
+        kw.kw_assign_helper(HelperArgs(key='msg', types=[str], rules_all=[
                   rules.RuleStrNotNullOrEmpty], require=True))
         self.assertTrue(kw.is_attribute_exist('msg'))
         self.assertEqual(kw.msg, 'Hello World')
@@ -142,7 +148,7 @@ class TestKwArg(unittest.TestCase):
     
     def test_unused_keys(self):
         kw = KwArg(msg='Hello World', width=12, height=24, length=6)
-        kw.kw_assign_helper(HelperArgs(key='msg', types=[str], rules=[
+        kw.kw_assign_helper(HelperArgs(key='msg', types=[str], rules_all=[
             rules.RuleStrNotNullOrEmpty], require=True))
         self.assertEqual(len(kw.kw_unused_keys), 3)
         self.assertIn('width', kw.kw_unused_keys)

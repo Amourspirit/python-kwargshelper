@@ -13,39 +13,51 @@ class TestAssignBuilder(unittest.TestCase):
         args = AssignBuilder()
         args.append(key="msg", field='test', types=[str], require=True)
         args.append(key="age", types=[int], require=True)
-        args.append(key="name", rules=[rules.RuleStr], default="unknown")
-        args.append(key="city", types=[str], rules=[
+        args.append(key="name", rules_all=[rules.RuleStr], default="unknown")
+        args.append(key="city", types=[str], rules_all=[
                     rules.RuleStr], default="North York")
+        args.append(key="zip", rules_any=[
+                    rules.RuleStr, rules.RuleIntPositive], default=0)
         self.assertEqual(args[0].key, 'msg')
         self.assertSetEqual(args[0].types, set([str]))
         self.assertTrue(args[0].require)
         self.assertEqual(args[0].field, 'test')
-        self.assertListEqual(args[3].rules, [rules.RuleStr])
+        self.assertListEqual(args[3].rules_all, [rules.RuleStr])
         self.assertEqual(args[3].default, 'North York')
+        self.assertEqual(args[4].default, 0)
 
-        self.assertRaises(TypeError, args.append, key=2)
+        with self.assertRaises(TypeError):
+            args.append(key=2)
+
         # empyty or whitespace not ok for key
-        self.assertRaises(ValueError, args.append, key=' ')
-        self.assertRaises(ValueError, args.append, key='')
+        with self.assertRaises(ValueError):
+            args.append(key=' ')
+
+        with self.assertRaises(ValueError):
+            args.append(key='')
         # duplicate, raises error, cannot have the same key twice
-        self.assertRaises(ValueError, args.append, key="msg",
-                          field='test', types=[str], require=True)
+        with self.assertRaises(ValueError):
+            args.append(key="msg",
+                        field='test', types=[str], require=True)
 
     def test_build_append_helper(self):
         args = AssignBuilder()
         args.append_helper(HelperArgs(key="msg", field='test',
                            types=[str], require=True))
         args.append_helper(HelperArgs(key="age", types=[int], require=True))
-        args.append_helper(HelperArgs(key="name", rules=[
+        args.append_helper(HelperArgs(key="name", rules_all=[
                            rules.RuleStr], default="unknown"))
-        args.append_helper(HelperArgs(key="city", types=[str], rules=[
+        args.append_helper(HelperArgs(key="city", types=[str], rules_all=[
             rules.RuleStr], default="North York"))
+        args.append_helper(HelperArgs(key="zip", rules_any=[
+            rules.RuleStr, rules.RuleInt], default=22376))
         self.assertEqual(args[0].key, 'msg')
         self.assertSetEqual(args[0].types, set([str]))
         self.assertTrue(args[0].require)
         self.assertEqual(args[0].field, 'test')
-        self.assertListEqual(args[3].rules, [rules.RuleStr])
+        self.assertListEqual(args[3].rules_all, [rules.RuleStr])
         self.assertEqual(args[3].default, 'North York')
+        self.assertEqual(args[4].default, 22376)
 
         h = HelperArgs(key="msg", field='_message',
                            types=[str], require=True)
@@ -82,15 +94,15 @@ class TestAssignBuilder(unittest.TestCase):
         args = AssignBuilder()
         args.append(key="msg", types=[str], require=True)
         args.append(key="age", types=[int], require=True)
-        args.append(key="name", rules=[rules.RuleStr], default="unknown")
-        args.append(key="city", types=[str], rules=[
+        args.append(key="name", rules_all=[rules.RuleStr], default="unknown")
+        args.append(key="city", types=[str], rules_all=[
                     rules.RuleStr], default="North York")
         self.assertTrue(len(args) == 4)
         args.remove(args[2])
         self.assertTrue(len(args) == 3)
         args.remove(args[2])
         self.assertTrue(len(args) == 2)
-        args.append(key="city", types=[str], rules=[
+        args.append(key="city", types=[str], rules_all=[
                     rules.RuleStr], default="North York")
         self.assertTrue(len(args) == 3)
         self.assertRaises(TypeError, args.remove, [])
@@ -101,8 +113,8 @@ class TestAssignBuilder(unittest.TestCase):
         args = AssignBuilder()
         args.append(key="msg", types=[str], require=True)
         args.append(key="age", types=[int], require=True)
-        args.append(key="name", rules=[rules.RuleStr], default="unknown")
-        args.append(key="city", types=[str], rules=[
+        args.append(key="name", rules_all=[rules.RuleStr], default="unknown")
+        args.append(key="city", types=[str], rules_all=[
                     rules.RuleStr], default="North York")
         self.assertTrue(len(args) == 4)
         args_ex = AssignBuilder()

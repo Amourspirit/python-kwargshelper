@@ -36,38 +36,40 @@ class HelperArgs(HelperBase):
             key (str): Key Arg
 
         Keyword Arguments:
-            all_rules (bool, optional): Determines if all rules or any rules are to be matched.
-                Default ``False``.
             default (obj, optional): Default arg. Default ``NO_THING``
             field (str, optional): field arg. Default ``None``
             require (bool, optional): require arg. Default ``False``
-            rules (list, optional): rules list. Default Empty List.
+            rules_all (list, optional): rules_any list. Default Empty List.
+            rules_any (list, optional): rules_all list. Default Empty List.
             types (set, optional): types arg. Default Empty set
         """
         self._key: str = ''
-        self.all_rules = False
         self._field = None
         self._require = False
         self._types = set()
         self._default = NO_THING
-        self._rules = []
+        self._rules_all = []
+        self._rules_any = []
         self.key = key
-        keys = ('field', 'require', 'types', 'default', 'rules', 'all_rules')
+        keys = ('field', 'require', 'types',
+                'default', 'rules_all', 'rules_any')
         for key in keys:
             if key in kwargs:
                 setattr(self, key, kwargs[key])
 
     def to_dict(self) -> dict:
         '''Gets a dictionary representation of current instance fields'''
-        arg = {'key': self.key, 'require': self.require, 'all_rules': self.all_rules}
+        arg = {'key': self.key, 'require': self.require}
         if self.field is not None:
             arg['field'] = self.field
         if self.types is not None and len(self.types) > 0:
             arg['types'] = [itm for itm in self.types]
         if self.default is not NO_THING:
             arg['default'] = self.default
-        if self.rules is not None and len(self.rules) > 0:
-            arg['rules'] = self.rules
+        if self.rules_all is not None and len(self.rules_all) > 0:
+            arg['rules_all'] = self.rules_all
+        if self.rules_any is not None and len(self.rules_any) > 0:
+            arg['rules_any'] = self.rules_any
         return arg
 
     # region Properties
@@ -85,44 +87,6 @@ class HelperArgs(HelperBase):
     @default.setter
     def default(self, value: object) -> None:
         self._default = value
-        return None
-
-    @property
-    def all_rules(self) -> bool:
-        """
-        Determines if all or any rule is to be matched
-        
-        :getter: Gets if all or any rule is to be matched
-        :setter: Sets if all or any rule is to be matched
-
-        See Also:
-            :py:attr:`~.HelperArgs.match_all_rules`
-        """
-        return self._all_rules
-
-    @all_rules.setter
-    def all_rules(self, value: bool) -> None:
-        self._is_prop_bool(
-            value=value, prop_name="match_all_rules", raise_error=True)
-        self._all_rules = bool(value)
-        return None
-
-    @property
-    def match_all_rules(self) -> bool:
-        """
-        Determines if all or any rule is to be matched
-        
-        :getter: Gets if all or any rule is to be matched
-        :setter: Sets if all or any rule is to be matched
-
-        Note:
-            Alias of :py:attr:`~.HelperArgs.all_rules`
-        """
-        return self.all_rules
-
-    @match_all_rules.setter
-    def match_all_rules(self, value: bool) -> None:
-        self.all_rules = value
         return None
 
     @property
@@ -197,20 +161,36 @@ class HelperArgs(HelperBase):
         return None
 
     @property
-    def rules(self) -> List[Callable[[IRule], bool]]:
+    def rules_all(self) -> List[Callable[[IRule], bool]]:
         """
         Rules values
 
-        :getter: Gets rules
-        :setter: Sets rules
+        :getter: Gets rules_all
+        :setter: Sets rules_all
         """
-        return self._rules
+        return self._rules_all
 
-    @rules.setter
-    def rules(self, value: List[Callable[[IRule], bool]]) -> None:
-        self._isinstance_prop(value=value, prop_name='rules',
+    @rules_all.setter
+    def rules_all(self, value: List[Callable[[IRule], bool]]) -> None:
+        self._isinstance_prop(value=value, prop_name='rules_all',
                               prop_type=list, raise_error=True)
-        self._rules = value
+        self._rules_all = value
+
+    @property
+    def rules_any(self) -> List[Callable[[IRule], bool]]:
+        """
+        Rules values
+
+        :getter: Gets rules_any
+        :setter: Sets rules_any
+        """
+        return self._rules_any
+
+    @rules_any.setter
+    def rules_any(self, value: List[Callable[[IRule], bool]]) -> None:
+        self._isinstance_prop(value=value, prop_name='rules_any',
+                              prop_type=list, raise_error=True)
+        self._rules_any = value
     # endregion Properties
 # endregion class HelperArgs
 
@@ -227,7 +207,7 @@ class AssignBuilder(UserList):
         super().__init__(initlist=None)
         self._keys = set()
 
-    def append(self, key: str, field: Optional[str] = None, require: bool = False, default: Optional[object] = None, types: Optional[List[type]] = None, rules: Optional[List[Callable[[IRule], bool]]] = None):
+    def append(self, key: str, field: Optional[str] = None, require: bool = False, default: Optional[object] = None, types: Optional[List[type]] = None, rules_all: Optional[List[Callable[[IRule], bool]]] = None, rules_any: Optional[List[Callable[[IRule], bool]]] = None):
         """
         Appends dictionary item of parameters to list
 
@@ -271,8 +251,10 @@ class AssignBuilder(UserList):
             _args.default = default
         if types is not None:
             _args.types = set(types)
-        if rules is not None:
-            _args.rules = rules
+        if rules_all is not None:
+            _args.rules_all = rules_all
+        if rules_any is not None:
+            _args.rules_any = rules_any
 
         super().append(_args)
         self._keys.add(_key)
@@ -555,20 +537,6 @@ class BeforeAssignEventArgs:
     # region Properties
 
     @property
-    def match_all_rules(self) -> bool:
-        """
-        Determines if all or any rule is to be matched
-        
-        :getter: Gets if all or any rule is to be matched
-        :setter: Sets if all or any rule is to be matched
-        """
-        return self._helper_args.match_all_rules
-
-    @match_all_rules.setter
-    def match_all_rules(self, value: bool):
-        self._helper_args.match_all_rules = value
-
-    @property
     def field_name(self) -> str:
         """
         The name of the field that value will be assigned
@@ -652,13 +620,6 @@ class AfterAssignEventArgs:
         self._success = False
 
     # region Properties
-
-    @property
-    def match_all_rules(self) -> bool:
-        """
-        Gets if all or any rule is to be matched
-        """
-        return self._helper_args.match_all_rules
 
     @property
     def key(self) -> str:
@@ -841,16 +802,12 @@ class KwargsHelper(HelperBase):
             return self._auto_assign_with_cb()
         return self._auto_assign_no_cb()
 
-    def assign(self, key: str, field: Optional[str] = None, require: bool = False, default: Optional[object] = NO_THING, types: Optional[List[type]] = None, rules: Optional[List[Callable[[IRule], bool]]] = None, all_rules: Optional[bool] = False) -> bool:
+    def assign(self, key: str, field: Optional[str] = None, require: bool = False, default: Optional[object] = NO_THING, types: Optional[List[type]] = None, rules_all: Optional[List[Callable[[IRule], bool]]] = None, rules_any: Optional[List[Callable[[IRule], bool]]] = None) -> bool:
         """
         Assigns attribute value to ``obj`` passed in to constructor. Attributes are created if they do not exist.
 
         Args:
             key (str): the key of the key, value pair that is required or optional in ``obj_kwargs`` passed into to constructor.
-            all_rules (bool, optional): Determines if all rules or any rules are to be matched.
-                If ``True`` then all rules included in ``rules`` must be valid to be considered a success.
-                If ``False`` then any rule included in ``rules`` that is valid is considered a success.
-                Default ``False``.
             field (str, optional): the name of the field to assign a value. If ``field``
                 is omitted then field name is built using ``instance.field_prefix`` + ``key``.
                 If included then ``instance.field_prefix`` will be ignored.
@@ -876,7 +833,15 @@ class KwargsHelper(HelperBase):
                 Defaults to ``None``.
 
                 See also: :doc:`../usage/KwargsHelper/assign_type`
-            rules (List[Callable[[IRule], bool]], optional): List of rules that must be passed before assignment can take place.
+            rules_all (List[Callable[[IRule], bool]], optional): List of rules that must be passed before assignment can take place.
+                If ``types`` is included then ``types`` takes priority over this arg.
+                All rules must validate as ``True`` before assignment takes place.
+                Defaults to ``None``.
+
+                See also: :doc:`../usage/KwargsHelper/assign_rules`
+            rules_any (List[Callable[[IRule], bool]], optional): List of rules that must be passed before assignment can take place.
+                If ``types`` is included then ``types`` takes priority over this arg.
+                Any rule that validates as ``True`` results in assignment taking place.
                 Defaults to ``None``.
 
                 See also: :doc:`../usage/KwargsHelper/assign_rules`
@@ -899,13 +864,14 @@ class KwargsHelper(HelperBase):
 
         if types == None:
             types = []
-        if rules == None:
-            rules = []
-        _args = HelperArgs(key=key, require=require, all_rules=all_rules)
+        if rules_all == None:
+            rules_all = []
+        if rules_any == None:
+            rules_any = []
+        _args = HelperArgs(key=key, require=require, rules_all=rules_all, rules_any=rules_any)
         _args.field = field
         # _args.require = require
         _args.types = set(types)
-        _args.rules = rules
         if default is not NO_THING:
             _args.default = default
         before_args = BeforeAssignEventArgs(_args, self._obj)
@@ -1078,14 +1044,40 @@ class KwargsHelper(HelperBase):
         after_args._field_name = _field
         after_args._field_value = _value
         return result
-
+    
     def _validate_rules(self, args: HelperArgs, field: str, value: object,  after_args: AfterAssignEventArgs) -> bool:
+        result = self._validate_rules_all(
+            args=args, field=field, value=value, after_args=after_args)
+        if result is False:
+            return False
+        result = self._validate_rules_any(
+            args=args, field=field, value=value, after_args=after_args)
+        return result
+
+    def _validate_rules_all(self, args: HelperArgs, field: str, value: object,  after_args: AfterAssignEventArgs) -> bool:
+        # if all rules pass then validations is considered a success
+        key = after_args.key
+        result = True
+        if len(args.rules_all) > 0:
+            for rule in args.rules_all:
+                if not issubclass(rule, IRule):
+                    raise TypeError('Rules must implement IRule')
+                rule_instance: IRule = rule(
+                    key=key, name=field, value=value, raise_errors=self._rule_error, originator=self._obj)
+                result = result & rule_instance.validate()
+                if result is False:
+                    break
+ 
+        after_args._rules_passed = result
+        return result
+
+    def _validate_rules_any(self, args: HelperArgs, field: str, value: object,  after_args: AfterAssignEventArgs) -> bool:
         # if any rule passes then validations is considered a success
         error_lst = []
         key = after_args.key
         result = True
-        if len(args.rules) > 0:
-            for rule in args.rules:
+        if len(args.rules_any) > 0:
+            for rule in args.rules_any:
                 if not issubclass(rule, IRule):
                     raise TypeError('Rules must implement IRule')
                 rule_instance: IRule = rule(
@@ -1096,14 +1088,9 @@ class KwargsHelper(HelperBase):
                 except Exception as e:
                     error_lst.append(e)
                     rule_valid = False
-                if after_args.match_all_rules is True:
-                    result = result & rule_valid
-                    if len(error_lst) > 0 or result is False:
-                        break
-                else:
-                    result = rule_valid
-                    if rule_valid is True:
-                        break
+                result = rule_valid
+                if rule_valid is True:
+                    break
 
         if result is False and self._rule_error is True and len(error_lst) > 0:
             # raise the first error in error list
@@ -1408,7 +1395,7 @@ class KwArg:
         """
         return self._kw_arg_internal.helper_instance.auto_assign()
 
-    def kw_assign(self, key: str, field: Optional[str] = None, require: bool = False, default: Optional[object] = NO_THING, types: Optional[List[type]] = None, rules: Optional[List[Callable[[IRule], bool]]] = None, all_rules: Optional[bool] = False) -> bool:
+    def kw_assign(self, key: str, field: Optional[str] = None, require: bool = False, default: Optional[object] = NO_THING, types: Optional[List[type]] = None, rules_all: Optional[List[Callable[[IRule], bool]]] = None, rules_any: Optional[List[Callable[[IRule], bool]]] = None) -> bool:
         """
         Assigns attribute value to current instance passed in to constructor. Attributes automatically.
 
@@ -1442,9 +1429,14 @@ class KwArg:
                 In this example if value is not type ``str`` then ``TypeError`` is raised
                 If value is required to be `str` or `int` then ``types=[str, int]``.
                 Defaults to ``None``.
-            rules (List[Callable[[IRule], bool]], optional): List of callable rules.
-                All rules must pass in order for attribute assignment to be a success.
-                Defaults to `None`.
+             rules_all (List[Callable[[IRule], bool]], optional): List of rules that must be passed before assignment can take place.
+                If ``types`` is included then ``types`` takes priority over this arg.
+                All rules must validate as ``True`` before assignment takes place.
+                Defaults to ``None``.
+            rules_any (List[Callable[[IRule], bool]], optional): List of rules that must be passed before assignment can take place.
+                If ``types`` is included then ``types`` takes priority over this arg.
+                Any rule that validates as ``True`` results in assignment taking place.
+                Defaults to ``None``.
 
         Raises:
             ReservedAttributeError: if ``key`` is a reserved keyword
@@ -1469,7 +1461,7 @@ class KwArg:
             if field in KwArg._RESERVED_INTERNAL_FIELDS:
                 raise ReservedAttributeError(
                     f"{self.__class__.__name__}.{field} is a reserved keyword. Try using a differne field name.")
-        return self._kw_arg_internal.helper_instance.assign(key=key, field=field, require=require, default=default, types=types, rules=rules, all_rules=all_rules)
+        return self._kw_arg_internal.helper_instance.assign(key=key, field=field, require=require, default=default, types=types, rules_all=rules_all, rules_any=rules_any)
 
     def kw_assign_helper(self, helper: HelperArgs) -> bool:
         """
