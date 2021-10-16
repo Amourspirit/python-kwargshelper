@@ -8,14 +8,15 @@ class TestHelperArgs(unittest.TestCase):
     def test_defaults(self):
         args = HelperArgs(key="test")
         self.assertEqual(args.key, "test")
-        self.assertFalse(args.match_all_rules)
         self.assertIsNone(args.field)
         self.assertIsInstance(args.types, set)
         self.assertEqual(len(args.types), 0)
         self.assertIs(args.default, NO_THING)
         self.assertIsInstance(args.rules_all, list)
+        self.assertIsInstance(args.rules_any, list)
         self.assertEqual(len(args.rules_all), 0)
-        dic = {'all_rules': False, 'key': 'test', 'require': False}
+        self.assertEqual(len(args.rules_any), 0)
+        dic = {'key': 'test', 'require': False}
         self.assertDictEqual(args.to_dict(), dic)
 
     def test_assign_fields(self):
@@ -57,44 +58,45 @@ class TestHelperArgs(unittest.TestCase):
         with self.assertRaises(TypeError):
             args = HelperArgs(key=22)
         with self.assertRaises(TypeError):
-            args = HelperArgs(key="test", all_rules="True")
-        with self.assertRaises(TypeError):
             args = HelperArgs(key="test", field=13)
         with self.assertRaises(TypeError):
             args = HelperArgs(key="test", types=str)
         with self.assertRaises(TypeError):
-            args = HelperArgs(key="test", rules=rules.RuleStr)
+            args = HelperArgs(key="test", rules_any=rules.RuleStr)
+        with self.assertRaises(TypeError):
+            args = HelperArgs(key="test", rules_all=rules.RuleStr)
         with self.assertRaises(TypeError):
             args = HelperArgs(key="test", require="Yes")
 
     def test_properties(self):
         args = HelperArgs(key="test")
-        args.all_rules = False
-        self.assertFalse(args.all_rules)
-        self.assertFalse(args.match_all_rules)
-        with self.assertRaises(TypeError):
-            args.match_all_rules = 10
-        args.match_all_rules = True
-        self.assertTrue(args.all_rules)
-        self.assertTrue(args.match_all_rules)
         args.default = 123
         self.assertEqual(args.default, 123)
+
         args.field = "_field"
         self.assertEqual(args.field, "_field")
         with self.assertRaises(TypeError):
             args.field = 12
+
         args.field = None
         self.assertIsNone(args.field)
+
         args.require = True
         self.assertTrue(args.require)
         with self.assertRaises(TypeError):
             args.require = 12
+
         args.rules_all = [rules.RuleBool, rules.RuleInt]
         self.assertEqual(len(args.rules_all), 2)
         with self.assertRaises(TypeError):
             args.rules_all = rules.RuleBool
+
+        args.rules_any = [rules.RuleBool, rules.RuleInt]
+        self.assertEqual(len(args.rules_any), 2)
+        with self.assertRaises(TypeError):
+            args.rules_any = rules.RuleBool
+
         args.types = [str, int, float]
         self.assertEqual(len(args.types), 3)
         with self.assertRaises(TypeError):
             args.types = str
-        
