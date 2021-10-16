@@ -79,9 +79,15 @@ class TestKwArg(unittest.TestCase):
         self.assertEqual(kw.num, 1)
         
         kw = KwArg(num=-1)
-        self.assertRaises(ValueError, kw.kw_assign, key='num', types=[int], rules=[
-            rules.RuleIntPositive], require=True)
-        
+        with self.assertRaises(ValueError):
+            kw.kw_assign(key='num', types=[int], rules_all=[
+                rules.RuleIntPositive], require=True)
+
+        kw = KwArg(num=-1)
+        with self.assertRaises(ValueError):
+            kw.kw_assign(key='num', types=[int], rules_any=[
+                rules.RuleIntPositive, rules.RuleFloatPositive], require=True)
+
         kw = KwArg(num=-1)
         kw.kwargs_helper.rule_error = False
         result = kw.kw_assign(key='num', types=[int], rules_all=[
