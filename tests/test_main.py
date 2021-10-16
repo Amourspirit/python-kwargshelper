@@ -1438,21 +1438,42 @@ class TestAssignAllRules(unittest.TestCase):
     def test_assign_any_rule_runner_err(self):
         r = Runner(msg=' ')
         with self.assertRaises(ValueError):
-            r.kw.assign(key='msg', require=True, all_rules=False,
-                        rules_all=[rules.RuleStrNotNullEmptyWs, rules.RuleIntPositive])
+            r.kw.assign(key='msg', require=True,
+                        rules_any=[rules.RuleStrNotNullEmptyWs, rules.RuleIntPositive])
         r = Runner(msg=-2)
         with self.assertRaises(TypeError):
             # TypeError because first error found will be the error raised with assign.
             # if rules were reversed this would result in a ValueError
-            r.kw.assign(key='msg', require=True, all_rules=False,
-                        rules_all=[rules.RuleStrNotNullEmptyWs, rules.RuleIntPositive])
+            r.kw.assign(key='msg', require=True,
+                        rules_any=[rules.RuleStrNotNullEmptyWs, rules.RuleIntPositive])
         r = Runner(msg=-2)
         with self.assertRaises(ValueError):
             # ValueError because first error found will be the error raised with assign.
             # if rules were reversed this would result in a TypeError
-            r.kw.assign(key='msg', require=True, all_rules=False,
-                        rules_all=[rules.RuleIntPositive, rules.RuleStrNotNullEmptyWs])
+            r.kw.assign(key='msg', require=True,
+                        rules_any=[rules.RuleIntPositive, rules.RuleStrNotNullEmptyWs])
 
+
+    def test_assign_any_all_rules_kw_args(self):
+        obj = KwArg(val=0)
+        result = obj.kw_assign(key='val', require=True,
+                               rules_all=[rules.RuleAttrNotExist],
+                               rules_any=[rules.RuleIntNegativeOrZero, rules.RuleFloatNegativeOrZero])
+
+        self.assertTrue(result)
+        self.assertEqual(obj.val, 0)
+
+        obj = KwArg(val=1)
+        with self.assertRaises(ValueError):
+            obj.kw_assign(key='val', require=True,
+                          rules_all=[rules.RuleAttrNotExist],
+                          rules_any=[rules.RuleIntNegativeOrZero, rules.RuleFloatNegativeOrZero])
+
+        obj = KwArg(val="True")
+        with self.assertRaises(TypeError):
+            obj.kw_assign(key='val', require=True,
+                          rules_all=[rules.RuleAttrNotExist],
+                          rules_any=[rules.RuleIntNegativeOrZero, rules.RuleFloatNegativeOrZero])
 
 if __name__ == '__main__':
     unittest.main()
