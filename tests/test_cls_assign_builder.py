@@ -16,20 +16,29 @@ class TestAssignBuilder(unittest.TestCase):
         args.append(key="name", rules_all=[rules.RuleStr], default="unknown")
         args.append(key="city", types=[str], rules_all=[
                     rules.RuleStr], default="North York")
+        args.append(key="zip", rules_any=[
+                    rules.RuleStr, rules.RuleIntPositive], default=0)
         self.assertEqual(args[0].key, 'msg')
         self.assertSetEqual(args[0].types, set([str]))
         self.assertTrue(args[0].require)
         self.assertEqual(args[0].field, 'test')
         self.assertListEqual(args[3].rules_all, [rules.RuleStr])
         self.assertEqual(args[3].default, 'North York')
+        self.assertEqual(args[4].default, 0)
 
-        self.assertRaises(TypeError, args.append, key=2)
+        with self.assertRaises(TypeError):
+            args.append(key=2)
+
         # empyty or whitespace not ok for key
-        self.assertRaises(ValueError, args.append, key=' ')
-        self.assertRaises(ValueError, args.append, key='')
+        with self.assertRaises(ValueError):
+            args.append(key=' ')
+
+        with self.assertRaises(ValueError):
+            args.append(key='')
         # duplicate, raises error, cannot have the same key twice
-        self.assertRaises(ValueError, args.append, key="msg",
-                          field='test', types=[str], require=True)
+        with self.assertRaises(ValueError):
+            args.append(key="msg",
+                        field='test', types=[str], require=True)
 
     def test_build_append_helper(self):
         args = AssignBuilder()
@@ -49,7 +58,6 @@ class TestAssignBuilder(unittest.TestCase):
         self.assertListEqual(args[3].rules_all, [rules.RuleStr])
         self.assertEqual(args[3].default, 'North York')
         self.assertEqual(args[4].default, 22376)
-
 
         h = HelperArgs(key="msg", field='_message',
                            types=[str], require=True)

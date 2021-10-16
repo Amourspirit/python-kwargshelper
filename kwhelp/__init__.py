@@ -537,20 +537,6 @@ class BeforeAssignEventArgs:
     # region Properties
 
     @property
-    def match_all_rules(self) -> bool:
-        """
-        Determines if all or any rule is to be matched
-        
-        :getter: Gets if all or any rule is to be matched
-        :setter: Sets if all or any rule is to be matched
-        """
-        return self._helper_args.match_all_rules
-
-    @match_all_rules.setter
-    def match_all_rules(self, value: bool):
-        self._helper_args.match_all_rules = value
-
-    @property
     def field_name(self) -> str:
         """
         The name of the field that value will be assigned
