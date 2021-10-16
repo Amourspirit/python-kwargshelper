@@ -36,16 +36,20 @@ class TestAssignBuilder(unittest.TestCase):
         args.append_helper(HelperArgs(key="msg", field='test',
                            types=[str], require=True))
         args.append_helper(HelperArgs(key="age", types=[int], require=True))
-        args.append_helper(HelperArgs(key="name", rules=[
+        args.append_helper(HelperArgs(key="name", rules_all=[
                            rules.RuleStr], default="unknown"))
-        args.append_helper(HelperArgs(key="city", types=[str], rules=[
+        args.append_helper(HelperArgs(key="city", types=[str], rules_all=[
             rules.RuleStr], default="North York"))
+        args.append_helper(HelperArgs(key="zip", rules_any=[
+            rules.RuleStr, rules.RuleInt], default=22376))
         self.assertEqual(args[0].key, 'msg')
         self.assertSetEqual(args[0].types, set([str]))
         self.assertTrue(args[0].require)
         self.assertEqual(args[0].field, 'test')
         self.assertListEqual(args[3].rules_all, [rules.RuleStr])
         self.assertEqual(args[3].default, 'North York')
+        self.assertEqual(args[4].default, 22376)
+
 
         h = HelperArgs(key="msg", field='_message',
                            types=[str], require=True)
