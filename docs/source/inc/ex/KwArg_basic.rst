@@ -1,11 +1,13 @@
 .. code-block:: python
 
+    from kwhelp import KwArg
+
     def my_method(**kwargs) -> str:
         kw = KwArg(**kwargs)
-        kw.assign(key='first', require=True, types=[int])
-        kw.assign(key='second', require=True, types=[int])
-        kw.assign(key='msg', types=[str], default='Result:')
-        kw.assign(key='end', types=[str])
+        kw.kw_assign(key='first', require=True, types=[int])
+        kw.kw_assign(key='second', require=True, types=[int])
+        kw.kw_assign(key='msg', types=[str], default='Result:')
+        kw.kw_assign(key='end', types=[str])
         first:int = kw.first
         second:int = kw.second
         msg: str = kw.msg

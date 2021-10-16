@@ -41,6 +41,8 @@ See Also: :py:attr:`.KwargsHelper.field_prefix`
             kw = KwargsHelper(originator=self, obj_kwargs={**kwargs}, field_prefix='')
             kw.auto_assign()
 
+.. code-block:: python
+
     >>> myclass = MyClass(speed=123)
     >>> print(myclass.speed)
     123

@@ -1,21 +1,22 @@
 README
 ======
-
-.. image:: https://codecov.io/gh/Amourspirit/python-kwargshelper/branch/master/graph/badge.svg?token=mJ2HdGwSGy
+.. |codecov| image:: https://codecov.io/gh/Amourspirit/python-kwargshelper/branch/master/graph/badge.svg?token=mJ2HdGwSGy
     :target: https://codecov.io/gh/Amourspirit/python-kwargshelper
     :alt: codecov
 
-.. image:: https://img.shields.io/github/workflow/status/Amourspirit/python-kwargshelper/CodeCov
+.. |gws| image:: https://img.shields.io/github/workflow/status/Amourspirit/python-kwargshelper/CodeCov
     :alt: GitHub Workflow Status
 
-.. image:: https://img.shields.io/github/license/Amourspirit/python-kwargshelper
+.. |lic| image:: https://img.shields.io/github/license/Amourspirit/python-kwargshelper
     :alt: License MIT
 
-.. image:: https://img.shields.io/pypi/pyversions/kwargshelper
+.. |pver| image:: https://img.shields.io/pypi/pyversions/kwargshelper
     :alt: PyPI - Python Version
 
-.. image:: https://img.shields.io/pypi/wheel/kwargshelper
+.. |pwheel| image:: https://img.shields.io/pypi/wheel/kwargshelper
     :alt: PyPI - Wheel
+
+|codecov| |gws| |lic| |pver| |pwheel|
 
 kwargshelper
 ------------
@@ -56,7 +57,7 @@ Many other options avaliable for more complex usage.
 KwArg Class
 +++++++++++
 
-Helper class for working with python ```**kwargs`` in a method/function
+Helper class for working with python ``**kwargs`` in a method/function
 Wrapper for ``KwargsHelper`` Class.
 
 Assigns values of ``**kwargs`` to itself with validation

@@ -120,29 +120,6 @@ class IRule(ABC):
     # endregion Properties
 # endregion Interface
 
-
-def create_rule(rule: IRule, new_rule: Type[IRule]) -> IRule:
-    """
-    Creates a new instance of a rule from an existing rule.
-
-    Args:
-        rule (IRule): Exisiting ``IRule`` instance
-        new_rule (Type[IRule]): Rule type to create an instance of
-
-    Returns:
-        IRule: New instance of IRule of type ``new_rule``
-
-    Notes:
-        This function can be useful for rules that need to generate instances of other rules.
-    """
-    return new_rule(
-        key=rule.key,
-        name=rule.field_name,
-        value=rule.field_value,
-        raise_errors=rule.raise_errors,
-        originator=rule.originator
-    )
-
 # region Attrib rules
 
 
@@ -276,7 +253,7 @@ class RuleInt(IRule):
         return True
 
 
-class RuleIntPositive(IRule):
+class RuleIntPositive(RuleInt):
     '''
     Rule to ensure a positive integer is assigned to attribute.
     '''
@@ -291,8 +268,7 @@ class RuleIntPositive(IRule):
         Returns:
             bool: ``True`` if ``field_value`` is a positive int; Otherwise, ``False``.
         """
-        int_rule = create_rule(rule=self, new_rule=RuleInt)
-        if int_rule.validate() == False:
+        if not super().validate():
             return False
         if self.field_value < 0:
             if self.raise_errors:
@@ -302,7 +278,7 @@ class RuleIntPositive(IRule):
         return True
 
 
-class RuleIntNegative(IRule):
+class RuleIntNegative(RuleInt):
     '''
     Rule to ensure a negative integer is assigned to attribute.
     '''
@@ -317,11 +293,8 @@ class RuleIntNegative(IRule):
         Returns:
             bool: ``True`` if ``field_value`` is a negative int; Otherwise, ``False``.
         """
-        int_rule = create_rule(rule=self, new_rule=RuleInt)
-        if int_rule.validate() == False:
+        if not super().validate():
             return False
-        # if not isinstance(self.field_value, int):
-        #     return False
         if self.field_value >= 0:
             if self.raise_errors:
                 raise ValueError(
@@ -330,9 +303,9 @@ class RuleIntNegative(IRule):
         return True
 
 
-class RuleIntNegativeOrZero(IRule):
+class RuleIntNegativeOrZero(RuleInt):
     '''
-    Rule to ensure a negative or zero integer is assigned to attribute.
+    Rule to ensure an integer value less than or equal to ``0`` is assigned to attribute.
     '''
 
     def validate(self) -> bool:
@@ -345,11 +318,8 @@ class RuleIntNegativeOrZero(IRule):
         Returns:
             bool: ``True`` if ``field_value`` is equal to zero or a negative int; Otherwise, ``False``.
         """
-        int_rule = create_rule(rule=self, new_rule=RuleInt)
-        if int_rule.validate() == False:
+        if not super().validate():
             return False
-        # if not isinstance(self.field_value, int):
-        #     return False
         if self.field_value > 0:
             if self.raise_errors:
                 raise ValueError(
@@ -381,9 +351,10 @@ class RuleFloat(IRule):
                 raise TypeError(self._get_type_error_msg(
                     self.field_value, self.key, 'float'))
             return False
+        return True
 
 
-class RuleFloatPositive(IRule):
+class RuleFloatPositive(RuleFloat):
     '''
     Rule to ensure a positive float is assigned to attribute.
     '''
@@ -398,8 +369,7 @@ class RuleFloatPositive(IRule):
         Returns:
             bool: ``True`` if ``field_value`` is a positive float; Otherwise, ``False``.
         """
-        float_rule = create_rule(rule=self, new_rule=RuleFloat)
-        if float_rule.validate() == False:
+        if not super().validate():
             return False
         if self.field_value < 0.0:
             if self.raise_errors:
@@ -409,7 +379,7 @@ class RuleFloatPositive(IRule):
         return True
 
 
-class RuleFloatNegative(IRule):
+class RuleFloatNegative(RuleFloat):
     '''
     Rule to ensure a negative float is assigned to attribute.
     '''
@@ -424,8 +394,7 @@ class RuleFloatNegative(IRule):
         Returns:
             bool: ``True`` if ``field_value`` is a negative float; Otherwise, ``False``.
         """
-        float_rule = create_rule(rule=self, new_rule=RuleFloat)
-        if float_rule.validate() == False:
+        if not super().validate():
             return False
         if self.field_value >= 0.0:
             if self.raise_errors:
@@ -435,23 +404,22 @@ class RuleFloatNegative(IRule):
         return True
 
 
-class RuleFloatNegativeOrZero(IRule):
+class RuleFloatNegativeOrZero(RuleFloat):
     '''
-    Rule to ensure a negative float is assigned to attribute.
+    Rule to ensure a float value less than or equal to ``0.0`` is assigned to attribute.
     '''
 
     def validate(self) -> bool:
         """
-        Validates that value to assign is equal to 0.0 or a negative float
+        Validates that value to assign is equal to ``0.0`` or a negative float
 
         Raises:
             ValueError: If ``raise_errors`` is ``True`` and ``field_value`` is not a negative float.
 
         Returns:
-            bool: ``True`` if ``field_value`` is equal to 0.0 or a negative float; Otherwise, ``False``.
+            bool: ``True`` if ``field_value`` is equal to ``0.0`` or a negative float; Otherwise, ``False``.
         """
-        float_rule = create_rule(rule=self, new_rule=RuleFloat)
-        if float_rule.validate() == False:
+        if not super().validate():
             return False
         if self.field_value > 0.0:
             if self.raise_errors:
@@ -489,7 +457,34 @@ class RuleStr(IRule):
         return True
 
 
-class RuleStrNotNullOrEmpty(IRule):
+class RuleStrNotNullOrEmpty(RuleStr):
+    '''
+    Rule to ensure a string that is not empty is assigned to attribute.
+    '''
+
+    def validate(self) -> bool:
+        """
+        Validates that value to assign is a string and is not a empty string.
+
+        Raises:
+            ValueError: If ``raise_errors`` is ``True`` and ``field_value``
+                is not instance of string or is empty string
+
+        Returns:
+            bool: ``True`` if value is valid; Otherwise; ``False``.
+        """
+        if not super().validate():
+            return False
+        value = self.field_value
+        if len(value) == 0:
+            if self.raise_errors:
+                raise ValueError(
+                    f"Arg error: {self.key} must not be empty str")
+            return False
+        return True
+
+
+class RuleStrNotNullEmptyWs(RuleStrNotNullOrEmpty):
     '''
     Rule to ensure a string that is not empty or whitespace is assigned to attribute.
     '''
@@ -505,13 +500,13 @@ class RuleStrNotNullOrEmpty(IRule):
         Returns:
             bool: ``True`` if value is valid; Otherwise; ``False``.
         """
-        if not isinstance(self.field_value, str):
+        if not super().validate():
             return False
         value = self.field_value.strip()
         if len(value) == 0:
             if self.raise_errors:
                 raise ValueError(
-                    f"Arg error: {self.key} must not be empty or whitespace")
+                    f"Arg error: {self.key} must not be empty or whitespace str")
             return False
         return True
 # endregion String

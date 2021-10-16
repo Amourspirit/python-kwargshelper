@@ -1,7 +1,7 @@
-RuleStrNotNullOrEmpty Class
+RuleStrNotNullEmptyWs Class
 ===========================
 
-.. autoclass:: kwhelp.rules.RuleStrNotNullOrEmpty
+.. autoclass:: kwhelp.rules.RuleStrNotNullEmptyWs
    :members:
    :inherited-members:
    :show-inheritance:

@@ -1,12 +1,12 @@
 # coding: utf-8
-VERSION = __version__ = '1.2.2'
-from typing import Any, Dict, List, Optional, Set, Callable, Union
-from collections import UserList
-from typing import List, Optional, Callable
-from warnings import warn
-from . rules import IRule
-from . helper.base import HelperBase
 from .helper import NO_THING
+from . helper.base import HelperBase
+from . rules import IRule
+from warnings import warn
+from typing import List, Optional, Callable
+from collections import UserList
+from typing import Any, Dict, List, Optional, Set, Callable, Union
+VERSION = __version__ = '1.2.2'
 
 
 # region Custom Errors
@@ -27,35 +27,39 @@ class HelperArgs(HelperBase):
     """
     Helper class that provides KwArgs arguments
     """
-    def __init__(self, key: str, **kwargs):
+
+    def __init__(self, key: str, ** kwargs):
         """
         Constructor
 
         Args:
             key (str): Key Arg
-        
+
         Keyword Arguments:
-            field (str, optional): field arg. Default ``None``
-            require (bool: optional): require arg. Default ``False``
-            types (set, optional): types arg. Default Empty set
+            all_rules (bool, optional): Determines if all rules or any rules are to be matched.
+                Default ``False``.
             default (obj, optional): Default arg. Default ``NO_THING``
+            field (str, optional): field arg. Default ``None``
+            require (bool, optional): require arg. Default ``False``
             rules (list, optional): rules list. Default Empty List.
+            types (set, optional): types arg. Default Empty set
         """
         self._key: str = ''
+        self.all_rules = False
         self._field = None
         self._require = False
         self._types = set()
         self._default = NO_THING
         self._rules = []
         self.key = key
-        keys = ('field', 'require', 'types', 'default', 'rules')
+        keys = ('field', 'require', 'types', 'default', 'rules', 'all_rules')
         for key in keys:
             if key in kwargs:
                 setattr(self, key, kwargs[key])
 
     def to_dict(self) -> dict:
         '''Gets a dictionary representation of current instance fields'''
-        arg = {'key': self.key, 'require': self.require}
+        arg = {'key': self.key, 'require': self.require, 'all_rules': self.all_rules}
         if self.field is not None:
             arg['field'] = self.field
         if self.types is not None and len(self.types) > 0:
@@ -72,7 +76,7 @@ class HelperArgs(HelperBase):
     def default(self) -> object:
         """
         Default Value
-        
+
         :getter: Gets default value
         :setter: Sets default value
         """
@@ -81,6 +85,44 @@ class HelperArgs(HelperBase):
     @default.setter
     def default(self, value: object) -> None:
         self._default = value
+        return None
+
+    @property
+    def all_rules(self) -> bool:
+        """
+        Determines if all or any rule is to be matched
+        
+        :getter: Gets if all or any rule is to be matched
+        :setter: Sets if all or any rule is to be matched
+
+        See Also:
+            :py:attr:`~.HelperArgs.match_all_rules`
+        """
+        return self._all_rules
+
+    @all_rules.setter
+    def all_rules(self, value: bool) -> None:
+        self._is_prop_bool(
+            value=value, prop_name="match_all_rules", raise_error=True)
+        self._all_rules = bool(value)
+        return None
+
+    @property
+    def match_all_rules(self) -> bool:
+        """
+        Determines if all or any rule is to be matched
+        
+        :getter: Gets if all or any rule is to be matched
+        :setter: Sets if all or any rule is to be matched
+
+        Note:
+            Alias of :py:attr:`~.HelperArgs.all_rules`
+        """
+        return self.all_rules
+
+    @match_all_rules.setter
+    def match_all_rules(self, value: bool) -> None:
+        self.all_rules = value
         return None
 
     @property
@@ -103,7 +145,7 @@ class HelperArgs(HelperBase):
     def field(self) -> Union[str, None]:
         """
         Field Value
-        
+
         :getter: Gets field value
         :setter: Sets field value
         """
@@ -122,7 +164,7 @@ class HelperArgs(HelperBase):
     def require(self) -> bool:
         """
         Require Value
-        
+
         :getter: Gets require value
         :setter: Sets require value
         """
@@ -348,7 +390,11 @@ class AssignBuilder(UserList):
 class BeforeAssignAutoEventArgs:
     """
     Before Assign Auto Event Args
+
+    See Also:
+        :doc:`../usage/KwargsHelper/auto_assign_callback`    
     """
+
     def __init__(self, key: str, value: object, field: str, originator: object):
         """
         Constructor
@@ -358,6 +404,7 @@ class BeforeAssignAutoEventArgs:
             value (object): Value to be assigned
             field (str): Field that ``value`` is to be assigned to.
             originator (object): Object that ``value`` is to be assigned to.
+            all_rules (bool): Determines if all rules or any rules are to be matched
         """
         self._key = key
         self._field_value = value
@@ -377,7 +424,7 @@ class BeforeAssignAutoEventArgs:
     def field_name(self) -> str:
         '''
         The field that will be assigned representing ``key``
-        
+
         :getter: Gets the field that will be assigned representing ``key``
         :setter: Setts the field that will be assigned representing ``key``
         '''
@@ -391,7 +438,7 @@ class BeforeAssignAutoEventArgs:
     def field_value(self) -> object:
         '''
         The value to be blindly assigned to property
-        
+
         :getter: Gets the value to be blindly assigned to property
         :setter: Sets the value to be blindly assigned to property
         '''
@@ -425,7 +472,11 @@ class BeforeAssignAutoEventArgs:
 class AfterAssignAutoEventArgs:
     """
     After Assign Auto Event Args
+
+    See Also:
+        :doc:`../usage/KwargsHelper/auto_assign_callback` 
     """
+
     def __init__(self, key: str, originator: object):
         """
         Constructor
@@ -453,7 +504,7 @@ class AfterAssignAutoEventArgs:
     def field_name(self) -> str:
         '''
         The field that will be assigned representing ``key``.
-        
+
         :getter: Gets the field that will be assigned representing ``key``.
         :setter: Sets the field that will be assigned representing ``key``.
         '''
@@ -483,7 +534,11 @@ class AfterAssignAutoEventArgs:
 class BeforeAssignEventArgs:
     """
     Before assign event args
+
+    See Also:
+        :doc:`../usage/KwargsHelper/callback` 
     """
+
     def __init__(self, help_args: HelperArgs, originator: object):
         """
         Constructor
@@ -500,10 +555,24 @@ class BeforeAssignEventArgs:
     # region Properties
 
     @property
+    def match_all_rules(self) -> bool:
+        """
+        Determines if all or any rule is to be matched
+        
+        :getter: Gets if all or any rule is to be matched
+        :setter: Sets if all or any rule is to be matched
+        """
+        return self._helper_args.match_all_rules
+
+    @match_all_rules.setter
+    def match_all_rules(self, value: bool):
+        self._helper_args.match_all_rules = value
+
+    @property
     def field_name(self) -> str:
         """
         The name of the field that value will be assigned
-        
+
         :getter: Gets the name of the field that value will be assigned.
         :setter: Sets the name of the field that value will be assigned.
         """
@@ -561,7 +630,11 @@ class BeforeAssignEventArgs:
 class AfterAssignEventArgs:
     """
     After Assign Event Args
+
+    See Also:
+        :doc:`../usage/KwargsHelper/callback` 
     """
+
     def __init__(self, help_args: HelperArgs, originator: object) -> None:
         """
         Constructor
@@ -577,7 +650,15 @@ class AfterAssignEventArgs:
         self._rules_passed = True
         self._canceled = False
         self._success = False
+
     # region Properties
+
+    @property
+    def match_all_rules(self) -> bool:
+        """
+        Gets if all or any rule is to be matched
+        """
+        return self._helper_args.match_all_rules
 
     @property
     def key(self) -> str:
@@ -658,7 +739,7 @@ class KwargsHelper(HelperBase):
             name (str, optional): sets the `field_prefix` property.
                 Default is the name of ``originator`` object.
             cancel_error (bool, optional): sets the `cancel_error` property. Default ``True``.
-            rule_error (bool, optional): sets the ``rule_error`` property. Default ``False``.
+            rule_error (bool, optional): sets the ``rule_error`` property. Default ``True``.
             assign_true_not_required (bool, optional): sets the ``assign_true_not_required`` property.
                 Default ``True``.
             type_instance_check (bool, optional): If ``True`` and :py:meth:`.KwargsHelper.assign`` arg ``types`` is set
@@ -741,7 +822,8 @@ class KwargsHelper(HelperBase):
     def auto_assign(self) -> bool:
         """
         Assigns all of the key, value pairs of ``obj_kwargs`` passed into constructor to ``originator``,
-        unless the event is canceled in ``BeforeAssignBlindEventArgs`` then key, value pair will be added automacally to ``originator``.
+        unless the event is canceled in :py:class:`.BeforeAssignAutoEventArgs` then key,
+        value pair will be added automacally to ``originator``.
 
         Returns:
             bool: ``True`` of all key, value pairs are added; Otherwise, ``False``.
@@ -749,28 +831,43 @@ class KwargsHelper(HelperBase):
         Note:
             Call back events are supported via :py:meth:`~.KwargsHelper.add_handler_before_assign_auto`
             and :py:meth:`~.KwargsHelper.add_handler_after_assign_auto` methods.
+
+        See Also:
+            * :doc:`../usage/KwargsHelper/auto_assign`
+            * :doc:`../usage/KwargsHelper/auto_assign_callback`
+            * :py:meth:`~.KwargsHelper.assign`
         """
         if self._is_auto_assign_handlers():
             return self._auto_assign_with_cb()
         return self._auto_assign_no_cb()
 
-    def assign(self, key: str, field: Optional[str] = None, require: bool = False, default: Optional[object] = NO_THING, types: Optional[List[type]] = None, rules: Optional[List[Callable[[IRule], bool]]] = None) -> bool:
+    def assign(self, key: str, field: Optional[str] = None, require: bool = False, default: Optional[object] = NO_THING, types: Optional[List[type]] = None, rules: Optional[List[Callable[[IRule], bool]]] = None, all_rules: Optional[bool] = False) -> bool:
         """
         Assigns attribute value to ``obj`` passed in to constructor. Attributes are created if they do not exist.
 
         Args:
             key (str): the key of the key, value pair that is required or optional in ``obj_kwargs`` passed into to constructor.
+            all_rules (bool, optional): Determines if all rules or any rules are to be matched.
+                If ``True`` then all rules included in ``rules`` must be valid to be considered a success.
+                If ``False`` then any rule included in ``rules`` that is valid is considered a success.
+                Default ``False``.
             field (str, optional): the name of the field to assign a value. If ``field``
                 is omitted then field name is built using ``instance.field_prefix`` + ``key``.
                 If included then ``instance.field_prefix`` will be ignored.
                 Defaults to ``None``.
+
+                See also: :doc:`../usage/KwargsHelper/assign_field`
             require (bool, optional): Determins if ``key`` is required to be in ``obj_kwargs`` passed into to constructor.
                 if ``default`` is passed in then ``require`` is ignored.
                 Defaults to ``False``.
+
+                See also: :doc:`../usage/KwargsHelper/assign_require`
             default (object, optional): default value to assign to key attribute if no value is found in
                 ``obj_kwargs`` passed into to constructor.
                 If ``default`` is passed in then ``require`` is ignored.
-                Defaults to ``NO_THING``.
+                Defaults to ``NO_THING`` which will result in default being ignored.
+
+                See also: :doc:`../usage/KwargsHelper/assign_default`
             types (List[type], optional): a type list of one or more types that the value of the key value pair must match.
                 For example if a value is required to be only ``str`` then ``types=[str]``.
                 If value is required to be ``str`` or ``int`` then ``types=[str, int]``.
@@ -778,12 +875,21 @@ class KwargsHelper(HelperBase):
                 If ``types`` is omitted then a value can be any type unless there is a rule in ``rules`` that is otherwise.
                 Defaults to ``None``.
 
-                See Also: :doc:`../usage/KwargsHelper/assign_type`
+                See also: :doc:`../usage/KwargsHelper/assign_type`
             rules (List[Callable[[IRule], bool]], optional): List of rules that must be passed before assignment can take place.
                 Defaults to ``None``.
 
+                See also: :doc:`../usage/KwargsHelper/assign_rules`
+
         Returns:
             bool: ``True`` if attribute assignment is successful; Otherwise, ``False``
+
+        See Also:
+            * :doc:`../usage/KwargsHelper/assign_field`
+            * :doc:`../usage/KwargsHelper/assign_default`
+            * :doc:`../usage/KwargsHelper/assign_type`
+            * :doc:`../usage/KwargsHelper/assign_rules`
+            * :py:meth:`~.KwargsHelper.auto_assign`
         """
         m_name = 'assign'
         self._is_arg_str_empty_null(
@@ -795,7 +901,7 @@ class KwargsHelper(HelperBase):
             types = []
         if rules == None:
             rules = []
-        _args = HelperArgs(key=key, require=require)
+        _args = HelperArgs(key=key, require=require, all_rules=all_rules)
         _args.field = field
         # _args.require = require
         _args.types = set(types)
@@ -874,7 +980,7 @@ class KwargsHelper(HelperBase):
             if before_args.cancel == True:
                 if self._cancel_error == True:
                     raise CancelEventError(
-                        f"{self.__class__.__name__}.assign() canceled in 'BeforeAssignBlindEventArgs'")
+                        f"{self.__class__.__name__}.auto_assign() canceled in 'BeforeAssignBlindEventArgs'")
                 else:
                     result = False
             else:
@@ -888,7 +994,7 @@ class KwargsHelper(HelperBase):
         return result
 
     def _assign(self, args: HelperArgs, before_args: BeforeAssignEventArgs, after_args: AfterAssignEventArgs) -> None:
-        def _is_type_instance(_types:Set[type], _value ):
+        def _is_type_instance(_types: Set[type], _value):
             result = False
             for t in _types:
                 if isinstance(_value, t):
@@ -908,7 +1014,7 @@ class KwargsHelper(HelperBase):
                     is_valid_type = False
                     if self._type_instance_check == True and _is_type_instance(args.types, value):
                         is_valid_type = True
-                    
+
                     if is_valid_type is False:
                         msg = f"{self._name} arg '{key}' is expected to be of '{self._get_formated_types(args.types)}' but got '{type(value).__name__}'"
                         raise TypeError(msg)
@@ -974,18 +1080,36 @@ class KwargsHelper(HelperBase):
         return result
 
     def _validate_rules(self, args: HelperArgs, field: str, value: object,  after_args: AfterAssignEventArgs) -> bool:
+        # if any rule passes then validations is considered a success
+        error_lst = []
         key = after_args.key
+        result = True
         if len(args.rules) > 0:
             for rule in args.rules:
                 if not issubclass(rule, IRule):
                     raise TypeError('Rules must implement IRule')
                 rule_instance: IRule = rule(
                     key=key, name=field, value=value, raise_errors=self._rule_error, originator=self._obj)
-                if rule_instance.validate() == False:
-                    after_args._rules_passed = False
-                    return False
-        after_args._rules_passed = True
-        return True
+                rule_valid = False
+                try:
+                    rule_valid = rule_instance.validate()
+                except Exception as e:
+                    error_lst.append(e)
+                    rule_valid = False
+                if after_args.match_all_rules is True:
+                    result = result & rule_valid
+                    if len(error_lst) > 0 or result is False:
+                        break
+                else:
+                    result = rule_valid
+                    if rule_valid is True:
+                        break
+
+        if result is False and self._rule_error is True and len(error_lst) > 0:
+            # raise the first error in error list
+            raise error_lst[0]
+        after_args._rules_passed = result
+        return result
 
     def _remove_key(self, key: str) -> bool:
         '''
@@ -1027,7 +1151,7 @@ class KwargsHelper(HelperBase):
                 callback(self, eventArgs)
 
     # endregion callback funcs
-    
+
     # region raise events
     def _on_before_assign(self, event_args: BeforeAssignEventArgs):
         self._trigger("on_before_assign", event_args)
@@ -1049,6 +1173,9 @@ class KwargsHelper(HelperBase):
 
         Args:
             callback (Callable[['KwargsHelper', BeforeAssignEventArgs], None]): Callback Method
+
+        See Also:
+            :doc:`../usage/KwargsHelper/callback`
         """
         self._on("on_before_assign", callback)
 
@@ -1058,6 +1185,9 @@ class KwargsHelper(HelperBase):
 
         Args:
             callback (Callable[['KwargsHelper', AfterAssignEventArgs], None]): Callback Method
+
+        See Also:
+            :doc:`../usage/KwargsHelper/callback`
         """
         self._on("on_after_assign", callback)
 
@@ -1067,6 +1197,9 @@ class KwargsHelper(HelperBase):
 
         Args:
             callback (Callable[['KwargsHelper', BeforeAssignAutoEventArgs], None]): Callback Method
+
+        See Also:
+            :doc:`../usage/KwargsHelper/callback`
         """
         self._on("on_before_assign_auto", callback)
 
@@ -1076,6 +1209,9 @@ class KwargsHelper(HelperBase):
 
         Args:
             callback (Callable[['KwargsHelper', AfterAssignAutoEventArgs], None]): Callback Method
+
+        See Also:
+            :doc:`../usage/KwargsHelper/callback`
         """
         self._on("on_after_assign_auto", callback)
     # endregion
@@ -1230,16 +1366,19 @@ class KwargsHelper(HelperBase):
 # region class KwArg
 
 
-class KwArg(HelperBase):
+class KwArg:
     '''Class for assigning kwargs to autogen fields with type checking and testing'''
+    class _KwArgInternal(HelperBase):
+        def __init__(self, orig, **kwargs):
+            self.helper_instance = KwargsHelper(
+                originator=orig, obj_kwargs={**kwargs})
+            self.helper_instance.field_prefix = ''
+
     _RESERVED_INTERNAL_FIELDS: Set[str] = set(
-        ['kwargs_helper', 'assign', 'assign_helper', '_kw_args_helper_class_instance',
+        ['_kw_arg_internal', '_KwArgInternal', 'kwargs_helper',
          '__init__', 'is_attribute_exist', 'is_key_existing',
-         '_get_type_error_method_msg', '_get_value_error_msg',
-         '_get_type_error_prop_msg', '_isinstance_prop',
-         '_prop_error', '_is_prop_str', '_is_prop_bool', '_is_prop_int',
-         '_isinstance_method', '_is_arg_str', '_is_arg_bool',
-         '_arg_type_error', '_get_name_type_obj', 'kw_unused_keys', 'kw_auto_assign', 'kw_assign', 'kw_assign_helper'])
+         'kw_unused_keys', 'kw_auto_assign', 'kw_assign',
+         'kw_assign_helper'])
 
     def __init__(self, **kwargs):
         """
@@ -1251,52 +1390,52 @@ class KwArg(HelperBase):
         Example:
             .. include:: ../inc/ex/KwArg_basic.rst
         """
-        self._kw_args_helper_class_instance = KwargsHelper(
-            originator=self, obj_kwargs={**kwargs})
-        self._kw_args_helper_class_instance.field_prefix = ''
+        self._kw_arg_internal = KwArg._KwArgInternal(orig=self, **kwargs)
 
     def kw_auto_assign(self) -> bool:
         """
         Assigns all of the key, value pairs of `obj_kwargs` passed into constructor to ``originator``,
         unless the event is canceled in :py:class:`.BeforeAssignAutoEventArgs` then key, value pair
         will be added automacally to ``originator``.
-        
+
         Call back events are supported via :py:meth:`.kwargs_helper.add_handler_before_assign_auto`
         and :py:meth:`.kwargs_helper.add_handler_after_assign_auto` methods.
-        
+
         Wrapper method for :py:meth:`.KwargsHelper.auto_assign`
 
         Returns:
             bool: ``True`` of all key, value pairs are added; Otherwise, ``False``
         """
-        return self._kw_args_helper_class_instance.auto_assign()
+        return self._kw_arg_internal.helper_instance.auto_assign()
 
-    def assign(self, key: str, field: Optional[str] = None, require: bool = False, default: Optional[object] = NO_THING, types: Optional[List[type]] = None, rules: Optional[List[Callable[[IRule], bool]]] = None) -> bool:
-        """
-        .. deprecated:: 1.2.0
-            use :py:meth:`~.KwArg.kw_assign` instead
-        """
-        # https://docs.python.org/3/library/warnings.html#warnings.warn
-        warn("use kw_assign instead", DeprecationWarning, stacklevel=2)
-        return self.kw_assign(key=key,field=field,require=require,default=default,types=types,rules=rules)
-    
-    def kw_assign(self, key: str, field: Optional[str] = None, require: bool = False, default: Optional[object] = NO_THING, types: Optional[List[type]] = None, rules: Optional[List[Callable[[IRule], bool]]] = None) -> bool:
+    def kw_assign(self, key: str, field: Optional[str] = None, require: bool = False, default: Optional[object] = NO_THING, types: Optional[List[type]] = None, rules: Optional[List[Callable[[IRule], bool]]] = None, all_rules: Optional[bool] = False) -> bool:
         """
         Assigns attribute value to current instance passed in to constructor. Attributes automatically.
 
         Args:
             key (str): the key of the key, value pair that is required or optional in ``kwargs`` passed into to constructor.
+            all_rules (bool, optional): Determines if all rules or any rules are to be matched.
+                If ``True`` then all rules included in ``rules`` must be valid to be considered a success.
+                If ``False`` then any rule included in ``rules`` that is valid is considered a success.
+                Default ``False``.
             field (str, optional): the name of the field to assign a value. 
                 if ``field`` is omitted then field name is built using ``key``.
                 If included then ``kwargs_helper.field_prefix`` will be ignored.
-                Defaults to ``None``.
+                Defaults to **Empty string**.
+                
+                See also: :doc:`../usage/KwArg/kw_assign_field`,
+                :py:attr:`.KwArg.kwargs_helper`
             require (bool, optional): Determins if ``key`` is required to be in `kwargs` passed into to constructor.
                 if ``default`` is passed in then ``require`` is ignored.
                 Defaults to ``False``.
+                
+                See also: :doc:`../usage/KwArg/kw_assign_require`
             default (object, optional): default value to assign to key attribute if no value is
                 found in ``kwargs`` passed into to constructor.
                 If ``default`` is passed in then ``require`` is ignored.
                 Defaults to ``NO_THING``.
+                
+                See also: :doc:`../usage/KwArg/kw_assign_default`
             types (List[type], optional): a type list of one or more types that the value of the
                 key value pair must match.
                 For example if a value is required to be only ``str`` then ``types=[str]``.
@@ -1313,9 +1452,14 @@ class KwArg(HelperBase):
 
         Returns:
             bool: ``True`` if attribute assignment is successful; Otherwise, ``False``
+
+        See Also:
+            * :doc:`../usage/KwArg/kw_assign_default`
+            * :doc:`../usage/KwArg/kw_assign_field`
+            * :doc:`../usage/KwArg/kw_assign_require`
         """
         m_name = 'assign'
-        self._is_arg_str_empty_null(
+        self._kw_arg_internal._is_arg_str_empty_null(
             method_name=m_name, arg=key, arg_name='key', raise_error=True)
         if field is None:
             if key in KwArg._RESERVED_INTERNAL_FIELDS:
@@ -1325,12 +1469,7 @@ class KwArg(HelperBase):
             if field in KwArg._RESERVED_INTERNAL_FIELDS:
                 raise ReservedAttributeError(
                     f"{self.__class__.__name__}.{field} is a reserved keyword. Try using a differne field name.")
-        return self._kw_args_helper_class_instance.assign(key=key, field=field, require=require, default=default, types=types, rules=rules)
-
-    def assign_helper(self, helper: HelperArgs) -> bool:
-        # https://docs.python.org/3/library/warnings.html#warnings.warn
-        warn("use kw_assign_helper instead", DeprecationWarning, stacklevel=2)
-        return self.kw_assign_helper(helper=helper)
+        return self._kw_arg_internal.helper_instance.assign(key=key, field=field, require=require, default=default, types=types, rules=rules, all_rules=all_rules)
 
     def kw_assign_helper(self, helper: HelperArgs) -> bool:
         """
@@ -1342,8 +1481,8 @@ class KwArg(HelperBase):
         Returns:
             bool: ``True`` if attribute assignment is successful; Otherwise, ``False``
         """
-        self._isinstance_method(method_name='assign_helper', arg=helper,
-                                arg_name='helper', arg_type=HelperArgs, raise_error=True)
+        self._kw_arg_internal._isinstance_method(method_name='assign_helper', arg=helper,
+                                                  arg_name='helper', arg_type=HelperArgs, raise_error=True)
         d = helper.to_dict()
         return self.kw_assign(**d)
 
@@ -1351,7 +1490,7 @@ class KwArg(HelperBase):
     def is_attribute_exist(self, attrib_name: str) -> bool:
         """
         Gets if ``attrib_name`` exist the current instance.
-        
+
         Use this method when:
 
         * When assigning a key that is not required it may not exist in the current instance.
@@ -1365,7 +1504,7 @@ class KwArg(HelperBase):
             bool: ``True`` if ``attrib_name`` exist in current instance; Otherwise, ``False``.
         """
         # if an key is assigned and not required it may not exist in curren instance
-        valid_key = self._is_arg_str_empty_null(
+        valid_key = self._kw_arg_internal._is_arg_str_empty_null(
             method_name='has_attribute', arg=attrib_name, arg_name='key', raise_error=False)
         if valid_key == False:
             return False
@@ -1377,7 +1516,7 @@ class KwArg(HelperBase):
         Gets if the key exist in current kwargs.
         Basically shortcut for `key in kwargs`
         '''
-        return self._kw_args_helper_class_instance.is_key_existing(key)
+        return self._kw_arg_internal.helper_instance.is_key_existing(key)
     # endregion Public Methods
 
     # region Properties
@@ -1385,7 +1524,7 @@ class KwArg(HelperBase):
     @property
     def kwargs_helper(self) -> KwargsHelper:
         '''Get instance of KwargsHelper used to add fields current instance'''
-        return self._kw_args_helper_class_instance
+        return self._kw_arg_internal.helper_instance
 
     @property
     def kw_unused_keys(self) -> Set[str]:
@@ -1394,7 +1533,7 @@ class KwArg(HelperBase):
 
         This would be a set of keys that were never used passed into the constructor.
         '''
-        return self._kw_args_helper_class_instance.unused_keys
+        return self._kw_arg_internal.helper_instance.unused_keys
     # endregion Properties
 
 # endregion class KwArg
