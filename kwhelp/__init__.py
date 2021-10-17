@@ -1429,7 +1429,7 @@ class KwArg:
                 In this example if value is not type ``str`` then ``TypeError`` is raised
                 If value is required to be `str` or `int` then ``types=[str, int]``.
                 Defaults to ``None``.
-             rules_all (List[Callable[[IRule], bool]], optional): List of rules that must be passed before assignment can take place.
+            rules_all (List[Callable[[IRule], bool]], optional): List of rules that must be passed before assignment can take place.
                 If ``types`` is included then ``types`` takes priority over this arg.
                 All rules must validate as ``True`` before assignment takes place.
                 Defaults to ``None``.
