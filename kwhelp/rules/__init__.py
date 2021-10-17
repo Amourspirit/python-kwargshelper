@@ -1,7 +1,6 @@
 # coding: utf-8
 from abc import ABC, abstractmethod
 import numbers
-from typing import Callable, Type
 
 # region Interface
 
@@ -172,9 +171,31 @@ class RuleAttrExist(IRule):
 # region None
 
 
+class RuleNone(IRule):
+    '''
+    Rule that matched only if value is ``None``.
+    '''
+
+    def validate(self) -> bool:
+        """
+        Validates that value to assign to attribute is ``None``.
+
+        Raises:
+            ValueError: If ``raise_errors`` is ``True`` and ``field_value`` is not ``None``.
+
+        Returns:
+            bool: ``True`` if ``field_value`` is ``None``; Otherwise, ``False``.
+        """
+        if self.field_value is not None:
+            if self.raise_errors:
+                raise ValueError(
+                    f"Arg error: {self.key} must be assigned a value")
+            return False
+        return True
+
 class RuleNotNone(IRule):
     '''
-    Rule to ensure the value of ``None`` is not assigned to attribute.
+    Rule that matched only if value is not ``None``.
     '''
 
     def validate(self) -> bool:
@@ -201,7 +222,10 @@ class RuleNotNone(IRule):
 
 class RuleNumber(IRule):
     '''
-    Rule to ensure a number is assigned to attribute.
+    Rule that matched only if value is a valid number.
+
+    Note:
+        If value is a of type ``bool`` then validation will fail for this rule.
     '''
 
     def validate(self) -> bool:
@@ -229,7 +253,10 @@ class RuleNumber(IRule):
 
 class RuleInt(IRule):
     '''
-    Rule to ensure a integer is assigned to attribute.
+    Rule that matched only if value is instance of ``int``.
+
+    Note:
+        If value is a of type ``bool`` then validation will fail for this rule.
     '''
 
     def validate(self) -> bool:
@@ -240,7 +267,7 @@ class RuleInt(IRule):
             TypeError: If ``raise_errors`` is ``True`` and ``field_value`` is not an int.
 
         Returns:
-            bool: ``True`` if ``field_value`` is a positive int; Otherwise, ``False``.
+            bool: ``True`` if ``field_value`` is an ``int``; Otherwise, ``False``.
         """
         # isinstance(False, int) is True
         # print(int(True)) 1
@@ -253,9 +280,33 @@ class RuleInt(IRule):
         return True
 
 
+class RuleIntZero(RuleInt):
+    '''
+    Rule that matched only if value is equal to ``0``.
+    '''
+
+    def validate(self) -> bool:
+        """
+        Validates that value to assign is equal to ``0`` int.
+
+        Raises:
+            ValueError: If ``raise_errors`` is ``True`` and ``field_value`` is not equal to ``0`` int.
+
+        Returns:
+            bool: ``True`` if ``field_value`` equals ``0`` int; Otherwise, ``False``.
+        """
+        if not super().validate():
+            return False
+        if self.field_value != 0.0:
+            if self.raise_errors:
+                raise ValueError(
+                    f"Arg error: '{self.key}' must be equal to 0 int value")
+            return False
+        return True
+
 class RuleIntPositive(RuleInt):
     '''
-    Rule to ensure a positive integer is assigned to attribute.
+    Rule that matched only if value is equal or greater than ``0``.
     '''
 
     def validate(self) -> bool:
@@ -280,7 +331,7 @@ class RuleIntPositive(RuleInt):
 
 class RuleIntNegative(RuleInt):
     '''
-    Rule to ensure a negative integer is assigned to attribute.
+    Rule that matched only if value is less than ``0``.
     '''
 
     def validate(self) -> bool:
@@ -305,7 +356,7 @@ class RuleIntNegative(RuleInt):
 
 class RuleIntNegativeOrZero(RuleInt):
     '''
-    Rule to ensure an integer value less than or equal to ``0`` is assigned to attribute.
+    Rule that matched only if value is equal or less than ``0``.
     '''
 
     def validate(self) -> bool:
@@ -333,7 +384,7 @@ class RuleIntNegativeOrZero(RuleInt):
 
 class RuleFloat(IRule):
     '''
-    Rule to ensure a float is assigned to attribute.
+    Rule that matched only if value is ot type ``float``.
     '''
 
     def validate(self) -> bool:
@@ -354,9 +405,33 @@ class RuleFloat(IRule):
         return True
 
 
+class RuleFloatZero(RuleFloat):
+    '''
+    Rule that matched only if value is equal to ``0.0``.
+    '''
+
+    def validate(self) -> bool:
+        """
+        Validates that value to assign equals ``0.0`` float
+
+        Raises:
+            ValueError: If ``raise_errors`` is ``True`` and ``field_value`` is not equal to ``0.0`` float.
+
+        Returns:
+            bool: ``True`` if ``field_value`` equals ``0.0`` float; Otherwise, ``False``.
+        """
+        if not super().validate():
+            return False
+        if self.field_value != 0.0:
+            if self.raise_errors:
+                raise ValueError(
+                    f"Arg error: '{self.key}' must be equal to 0.0 float value")
+            return False
+        return True
+
 class RuleFloatPositive(RuleFloat):
     '''
-    Rule to ensure a positive float is assigned to attribute.
+    Rule that matched only if value is equal or greater than ``0.0``.
     '''
 
     def validate(self) -> bool:
@@ -381,7 +456,7 @@ class RuleFloatPositive(RuleFloat):
 
 class RuleFloatNegative(RuleFloat):
     '''
-    Rule to ensure a negative float is assigned to attribute.
+    Rule that matched only if value is less than ``0.0``.
     '''
 
     def validate(self) -> bool:
@@ -406,7 +481,7 @@ class RuleFloatNegative(RuleFloat):
 
 class RuleFloatNegativeOrZero(RuleFloat):
     '''
-    Rule to ensure a float value less than or equal to ``0.0`` is assigned to attribute.
+    Rule that matched only if value is equal or less than ``0.0``.
     '''
 
     def validate(self) -> bool:
@@ -436,7 +511,7 @@ class RuleFloatNegativeOrZero(RuleFloat):
 
 class RuleStr(IRule):
     '''
-    Rule to ensure a str is assigned to attribute.
+    Rule that matched only if value is of type ``str``.
     '''
 
     def validate(self) -> bool:
@@ -457,9 +532,36 @@ class RuleStr(IRule):
         return True
 
 
+class RuleStrEmpty(RuleStr):
+    '''
+    Rule that matched only if value is equal to empty string.
+    '''
+
+    def validate(self) -> bool:
+        """
+        Validates that value to assign is a string and is an empty string.
+
+        Raises:
+            ValueError: If ``raise_errors`` is ``True`` and ``field_value``
+                is not an empty string.
+
+        Returns:
+            bool: ``True`` if value is an empty string; Otherwise; ``False``.
+        """
+        if not super().validate():
+            return False
+        value = self.field_value
+        if len(value) != 0:
+            if self.raise_errors:
+                raise ValueError(
+                    f"Arg error: {self.key} must be empty str")
+            return False
+        return True
+
+
 class RuleStrNotNullOrEmpty(RuleStr):
     '''
-    Rule to ensure a string that is not empty is assigned to attribute.
+    Rule that matched only if value is not ``None`` or empty string.
     '''
 
     def validate(self) -> bool:
@@ -486,7 +588,7 @@ class RuleStrNotNullOrEmpty(RuleStr):
 
 class RuleStrNotNullEmptyWs(RuleStrNotNullOrEmpty):
     '''
-    Rule to ensure a string that is not empty or whitespace is assigned to attribute.
+    Rule that matched only if value is not ``None``, empty or whitespace.
     '''
 
     def validate(self) -> bool:
@@ -516,7 +618,7 @@ class RuleStrNotNullEmptyWs(RuleStrNotNullOrEmpty):
 
 class RuleBool(IRule):
     """
-     Rule to ensure a bool is assigned to attribute.
+     Rule that matched only if value is instance of bool.
     """
 
     def validate(self) -> bool:
