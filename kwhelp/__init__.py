@@ -1433,10 +1433,14 @@ class KwArg:
                 If ``types`` is included then ``types`` takes priority over this arg.
                 All rules must validate as ``True`` before assignment takes place.
                 Defaults to ``None``.
+                
+                See also: :doc:`../usage/KwArg/kw_assign_rules`
             rules_any (List[Callable[[IRule], bool]], optional): List of rules that must be passed before assignment can take place.
                 If ``types`` is included then ``types`` takes priority over this arg.
                 Any rule that validates as ``True`` results in assignment taking place.
                 Defaults to ``None``.
+                
+                See also: :doc:`../usage/KwArg/kw_assign_rules`
 
         Raises:
             ReservedAttributeError: if ``key`` is a reserved keyword

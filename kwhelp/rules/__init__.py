@@ -297,7 +297,7 @@ class RuleIntZero(RuleInt):
         """
         if not super().validate():
             return False
-        if self.field_value != 0.0:
+        if self.field_value != 0:
             if self.raise_errors:
                 raise ValueError(
                     f"Arg error: '{self.key}' must be equal to 0 int value")
@@ -384,7 +384,7 @@ class RuleIntNegativeOrZero(RuleInt):
 
 class RuleFloat(IRule):
     '''
-    Rule that matched only if value is ot type ``float``.
+    Rule that matched only if value is to type ``float``.
     '''
 
     def validate(self) -> bool:
