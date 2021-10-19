@@ -157,7 +157,7 @@ class TestKwArg(unittest.TestCase):
         
     def test_kw_auto_assign(self):
         kw = KwArg(msg='Hello World', width=12, height=24, length=6)
-        kw.kw_auto_assign()
+        kw.kwargs_helper.auto_assign()
         self.assertEqual(len(kw.kw_unused_keys), 0)
         self.assertEqual(kw.msg, 'Hello World')
         self.assertEqual(kw.length, 6)

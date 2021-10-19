@@ -1379,22 +1379,6 @@ class KwArg:
         """
         self._kw_arg_internal = KwArg._KwArgInternal(orig=self, **kwargs)
 
-    def kw_auto_assign(self) -> bool:
-        """
-        Assigns all of the key, value pairs of `obj_kwargs` passed into constructor to ``originator``,
-        unless the event is canceled in :py:class:`.BeforeAssignAutoEventArgs` then key, value pair
-        will be added automacally to ``originator``.
-
-        Call back events are supported via :py:meth:`.kwargs_helper.add_handler_before_assign_auto`
-        and :py:meth:`.kwargs_helper.add_handler_after_assign_auto` methods.
-
-        Wrapper method for :py:meth:`.KwargsHelper.auto_assign`
-
-        Returns:
-            bool: ``True`` of all key, value pairs are added; Otherwise, ``False``
-        """
-        return self._kw_arg_internal.helper_instance.auto_assign()
-
     def kw_assign(self, key: str, field: Optional[str] = None, require: bool = False, default: Optional[object] = NO_THING, types: Optional[List[type]] = None, rules_all: Optional[List[Callable[[IRule], bool]]] = None, rules_any: Optional[List[Callable[[IRule], bool]]] = None) -> bool:
         """
         Assigns attribute value to current instance passed in to constructor. Attributes automatically.
