@@ -65,7 +65,7 @@ class TestKwArg(unittest.TestCase):
     def test_assign_reserved_field_word(self):
         kw = KwArg(needs_help=True)
         with self.assertRaises(ReservedAttributeError):
-            kw.kw_assign(key='needs_help', field='kw_assign_helper',
+            kw.kw_assign(key='needs_help', field='kwargs_helper',
                          types=[bool], require=True)
         kw.kw_assign(key='needs_help', field='requires_helper',
                   types=[bool], require=True)

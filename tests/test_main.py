@@ -1376,6 +1376,110 @@ class TestKwargsHelperAssignAuto(unittest.TestCase):
         self.assertEqual(obj._msg, "Hello World")
         self.assertEqual(obj._month, "August")
 
+    def test_assign_auto_type_checks(self):
+        obj = EmptyObj()
+        d = {
+            "age": 12,
+            "height": 5.2
+        }
+        kw = KwargsHelper(originator=obj, obj_kwargs=d)
+        result = kw.auto_assign(types=[])
+        self.assertTrue(result)
+        self.assertEqual(obj._age, 12)
+        self.assertEqual(obj._height, 5.2)
+        kw = KwargsHelper(originator=obj, obj_kwargs=d)
+        result = kw.auto_assign(types=[int, float])
+        self.assertTrue(result)
+        self.assertEqual(obj._age, 12)
+        self.assertEqual(obj._height, 5.2)
+        d['height'] = "5.2"
+        kw = KwargsHelper(originator=obj, obj_kwargs=d)
+        with self.assertRaises(TypeError):
+            result = kw.auto_assign(types=[int, float])
+        # test assing and then test
+        kw = KwargsHelper(originator=obj, obj_kwargs=d,
+                          rule_test_before_assign=False)
+        with self.assertRaises(TypeError):
+            result = kw.auto_assign(types=[int, float])
+        self.assertTrue(hasattr(obj, "_height"))
+        self.assertTrue(hasattr(obj, "_age"))
+
+    def test_assign_auto_rules_all(self):
+        obj = EmptyObj()
+        d = {
+            "age": 12,
+            "height": 5
+        }
+        kw = KwargsHelper(originator=obj, obj_kwargs=d, rule_error=True)
+        result = kw.auto_assign(rules_all=[])
+        self.assertTrue(result)
+        self.assertEqual(obj._age, 12)
+        self.assertEqual(obj._height, 5)
+        kw = KwargsHelper(originator=obj, obj_kwargs=d, rule_error=True)
+        result = kw.auto_assign(rules_all=[rules.RuleNumber, rules.RuleInt])
+        self.assertTrue(result)
+        self.assertEqual(obj._age, 12)
+        self.assertEqual(obj._height, 5)
+        d['height'] = 5.2
+        kw = KwargsHelper(originator=obj, obj_kwargs=d, rule_error=True)
+        with self.assertRaises(TypeError):
+            result = kw.auto_assign(
+                rules_all=[rules.RuleNumber, rules.RuleInt])
+        kw = KwargsHelper(originator=obj, obj_kwargs=d, rule_error=False)
+        result = kw.auto_assign(
+            rules_all=[rules.RuleNumber, rules.RuleInt])
+        self.assertFalse(result)
+
+    def test_assign_auto_rules_any(self):
+        obj = EmptyObj()
+        d = {
+            "age": 12,
+            "height": 5
+        }
+        kw = KwargsHelper(originator=obj, obj_kwargs=d, rule_error=True)
+        result = kw.auto_assign(rules_any=[])
+        self.assertTrue(result)
+        self.assertEqual(obj._age, 12)
+        self.assertEqual(obj._height, 5)
+        kw = KwargsHelper(originator=obj, obj_kwargs=d, rule_error=True)
+        result = kw.auto_assign(rules_any=[rules.RuleFloat, rules.RuleInt])
+        self.assertTrue(result)
+        self.assertEqual(obj._age, 12)
+        self.assertEqual(obj._height, 5)
+        d['height'] = '5.2'
+        kw = KwargsHelper(originator=obj, obj_kwargs=d, rule_error=True)
+        with self.assertRaises(TypeError):
+            result = kw.auto_assign(
+                rules_any=[rules.RuleFloat, rules.RuleInt])
+        kw = KwargsHelper(originator=obj, obj_kwargs=d, rule_error=False)
+        result = kw.auto_assign(
+            rules_any=[rules.RuleFloat, rules.RuleInt])
+        self.assertFalse(result)
+
+    def test_assign_auto_rules_any_all(self):
+        obj = EmptyObj()
+        d = {
+            "age": 12,
+            "height": 5.6
+        }
+        kw = KwargsHelper(originator=obj, obj_kwargs=d)
+        result = kw.auto_assign(rules_all=[rules.RuleNumber], rules_any=[
+                                rules.RuleFloatPositive, rules.RuleIntPositive])
+        self.assertTrue(result)
+        self.assertEqual(obj._age, 12)
+        self.assertEqual(obj._height, 5.6)
+        d['height'] = -2
+        kw = KwargsHelper(originator=obj, obj_kwargs=d)
+        with self.assertRaises(TypeError):
+            result = kw.auto_assign(
+                rules_all=[rules.RuleNumber],
+                rules_any=[rules.RuleFloatPositive, rules.RuleIntPositive])
+        kw = KwargsHelper(originator=obj, obj_kwargs=d, rule_error=False)
+        result = kw.auto_assign(
+            rules_all=[rules.RuleNumber],
+            rules_any=[rules.RuleFloatPositive, rules.RuleIntPositive])
+        self.assertFalse(result)
+
 
 class TestAssignAllRules(unittest.TestCase):
 
