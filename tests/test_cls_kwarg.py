@@ -140,15 +140,16 @@ class TestKwArg(unittest.TestCase):
 
     def test_kw_assign_helper(self):
         kw = KwArg(msg='Hello World')
-        kw.kw_assign_helper(HelperArgs(key='msg', types=[str], rules_all=[
+        kw.kwargs_helper.assign_helper(HelperArgs(key='msg', types=[str], rules_all=[
                   rules.RuleStrNotNullOrEmpty], require=True))
         self.assertTrue(kw.is_attribute_exist('msg'))
         self.assertEqual(kw.msg, 'Hello World')
-        self.assertRaises(TypeError, kw.kw_assign_helper, 'hello')
-    
+        with self.assertRaises(TypeError):
+            kw.kwargs_helper.assign_helper("hello")
+            
     def test_unused_keys(self):
         kw = KwArg(msg='Hello World', width=12, height=24, length=6)
-        kw.kw_assign_helper(HelperArgs(key='msg', types=[str], rules_all=[
+        kw.kwargs_helper.assign_helper(HelperArgs(key='msg', types=[str], rules_all=[
             rules.RuleStrNotNullOrEmpty], require=True))
         self.assertEqual(len(kw.kw_unused_keys), 3)
         self.assertIn('width', kw.kw_unused_keys)

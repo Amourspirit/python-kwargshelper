@@ -1364,8 +1364,7 @@ class KwArg:
     _RESERVED_INTERNAL_FIELDS: Set[str] = set(
         ['_kw_arg_internal', '_KwArgInternal', 'kwargs_helper',
          '__init__', 'is_attribute_exist', 'is_key_existing',
-         'kw_unused_keys', 'kw_assign',
-         'kw_assign_helper'])
+         'kw_unused_keys', 'kw_assign'])
 
     def __init__(self, **kwargs):
         """
@@ -1454,21 +1453,6 @@ class KwArg:
                 raise ReservedAttributeError(
                     f"{self.__class__.__name__}.{field} is a reserved keyword. Try using a differne field name.")
         return self._kw_arg_internal.helper_instance.assign(key=key, field=field, require=require, default=default, types=types, rules_all=rules_all, rules_any=rules_any)
-
-    def kw_assign_helper(self, helper: HelperArgs) -> bool:
-        """
-        Assigns attribute value using instance of HelperArgs. See :py:meth:`~.KwArg.kw_assign` method.
-
-        Args:
-            helper (HelperArgs): instance to assign.
-
-        Returns:
-            bool: ``True`` if attribute assignment is successful; Otherwise, ``False``
-        """
-        self._kw_arg_internal._isinstance_method(method_name='assign_helper', arg=helper,
-                                                  arg_name='helper', arg_type=HelperArgs, raise_error=True)
-        d = helper.to_dict()
-        return self.kw_assign(**d)
 
     # region Public Methods
     def is_attribute_exist(self, attrib_name: str) -> bool:
