@@ -1364,7 +1364,7 @@ class KwArg:
     _RESERVED_INTERNAL_FIELDS: Set[str] = set(
         ['_kw_arg_internal', '_KwArgInternal', 'kwargs_helper',
          '__init__', 'is_attribute_exist', 'is_key_existing',
-         'kw_unused_keys', 'kw_auto_assign', 'kw_assign',
+         'kw_unused_keys', 'kw_assign',
          'kw_assign_helper'])
 
     def __init__(self, **kwargs):
