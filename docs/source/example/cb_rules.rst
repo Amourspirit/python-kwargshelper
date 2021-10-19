@@ -6,7 +6,6 @@ Using rules with Callback:
 **Example:**
 
 .. code-block:: python
-    :caption: Custom Class
 
     from kwhelp import KwargsHelper, AfterAssignEventArgs, BeforeAssignEventArgs, AssignBuilder
     import kwhelp.rules as rules
@@ -21,9 +20,9 @@ Using rules with Callback:
             ab.append(key='exporter', rules=[rules.RuleStr])
             ab.append(key='name', require=True, rules=[rules.RuleStr],
                     default='unknown')
-            ab.append(key='file_name', require=True, rules=[
+            ab.append(key='file_name', require=True, rules_all=[
                 rules.RuleStr, rules.RuleStrNotNullOrEmpty])
-            ab.append(key='loop_count', require=True, rules=[
+            ab.append(key='loop_count', require=True, rules_all=[
                     rules.RuleInt, rules.RuleIntPositive],
                     default=self._loop_count)
             result = True
@@ -64,7 +63,6 @@ Using rules with Callback:
             return self._loop_count
 
 .. code-block:: python
-    :caption: Assignment
 
     >>> my_class = MyClass(exporter='json', file_name='data.json', loop_count=3)
     >>> print(my_class.exporter)
@@ -77,9 +75,11 @@ Using rules with Callback:
     3
 
 .. seealso::
-
-    :doc:`KwargsHelper <../kwhelp/KwargsHelper>`,
-    :doc:`AfterAssignEventArgs <../kwhelp/AfterAssignEventArgs>`,
-    :doc:`BeforeAssignEventArgs <../kwhelp/BeforeAssignEventArgs>`,
-    :doc:`AssignBuilder <../kwhelp/AssignBuilder>`,
-    :doc:`Rules <../kwhelp/rules/index>`
+    * :doc:`KwargsHelper <../kwhelp/KwargsHelper>`,
+    * :doc:`KwargsHelper Assign Rule Checking </source/usage/KwargsHelper/assign_rules>`
+    * :doc:`KwArg Kw_assign Rule Checking </source/usage/KwArg/kw_assign_rules>`
+    * :doc:`AfterAssignEventArgs <../kwhelp/AfterAssignEventArgs>`,
+    * :doc:`BeforeAssignEventArgs <../kwhelp/BeforeAssignEventArgs>`,
+    * :doc:`AssignBuilder <../kwhelp/AssignBuilder>`,
+    * :doc:`Rules <../kwhelp/rules/index>`
+    * :doc:`Simple Uasage Example <../example/simple_usage>`

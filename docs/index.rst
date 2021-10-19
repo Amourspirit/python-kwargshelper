@@ -3,15 +3,18 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to kwargs's documentation!
-==================================
+.. include:: ../README.rst
+
+TOC
+---
+
 .. toctree::
    :caption: General
    :maxdepth: 2
 
-   source/index
-   source/example/index
    source/usage/index
+   source/example/index
+   source/general/rules
 
 .. toctree::
    :caption: Modules:

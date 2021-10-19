@@ -3,7 +3,8 @@ Rules
 
 Rules allow validation of ``kwargs`` values.
 
-See :doc:`Simple Uasage Example <../example/simple_usage>`
+IRule
+-----
 
 New rules can be created by inheriting from :py:class:`~.rules.IRule` interface/class
 
@@ -26,6 +27,13 @@ New rules can be created by inheriting from :py:class:`~.rules.IRule` interface/
                 return False
             return True
 
+
+Related
+-------
+
+  * :doc:`KwargsHelper Assign Rule Checking </source/usage/KwargsHelper/assign_rules>`
+  * :doc:`KwArg Kw_assign Rule Checking </source/usage/KwArg/kw_assign_rules>`
+  * :doc:`Simple Uasage Example <../example/simple_usage>`
 
 Included Rules
 --------------

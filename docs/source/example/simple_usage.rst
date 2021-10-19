@@ -15,10 +15,8 @@ Simple usage
             kw = KwargsHelper(self, {**kwargs}, field_prefix='')
             kw.assign(key='exporter', types=[str], default='None')
             kw.assign(key='name', types=[str], default='unknown')
-            kw.assign(key='file_name', rules=[
-                    rules.RuleStr, rules.RuleStrNotNullOrEmpty])
-            kw.assign(key='loop_count', rules=[
-                    rules.RuleInt, rules.RuleIntPositive],
+            kw.assign(key='file_name', rules_all=[rules.RuleStrNotNullOrEmpty])
+            kw.assign(key='loop_count', rules_all=[rules.RuleIntPositive],
                     default=self._loop_count)
 
 .. code-block:: python
