@@ -40,8 +40,8 @@ class HelperArgs(HelperBase):
             default (obj, optional): Default arg. Default ``NO_THING``
             field (str, optional): field arg. Default ``None``
             require (bool, optional): require arg. Default ``False``
-            rules_all (list, optional): rules_any list. Default Empty List.
-            rules_any (list, optional): rules_all list. Default Empty List.
+            rules_all (Iterable, optional): rules_any list. Default Empty List.
+            rules_any (Iterable, optional): rules_all list. Default Empty List.
             types (set, optional): types arg. Default Empty set
         """
         self._key: str = ''
@@ -838,7 +838,7 @@ class KwargsHelper(HelperBase):
                                                  rules_any=rules_any)
         return valid
 
-    def assign(self, key: str, field: Optional[str] = None, require: bool = False, default: Optional[object] = NO_THING, types: Optional[List[type]] = None, rules_all: Optional[List[Callable[[IRule], bool]]] = None, rules_any: Optional[List[Callable[[IRule], bool]]] = None) -> bool:
+    def assign(self, key: str, field: Optional[str] = None, require: bool = False, default: Optional[object] = NO_THING, types: Optional[Iterable[type]] = None, rules_all: Optional[Iterable[Callable[[IRule], bool]]] = None, rules_any: Optional[Iterable[Callable[[IRule], bool]]] = None) -> bool:
         """
         Assigns attribute value to ``obj`` passed in to constructor. Attributes are created if they do not exist.
 
@@ -861,7 +861,7 @@ class KwargsHelper(HelperBase):
                 Defaults to ``NO_THING`` which will result in default being ignored.
 
                 See also: :doc:`../usage/KwargsHelper/assign_default`
-            types (List[type], optional): a type list of one or more types that the value of the key value pair must match.
+            types (Iterable[type], optional): a type list of one or more types that the value of the key value pair must match.
                 For example if a value is required to be only ``str`` then ``types=[str]``.
                 If value is required to be ``str`` or ``int`` then ``types=[str, int]``.
                 In this example if value is not type ``str`` then ``TypeError`` is raised.
@@ -869,13 +869,13 @@ class KwargsHelper(HelperBase):
                 Defaults to ``None``.
 
                 See also: :doc:`../usage/KwargsHelper/assign_type`
-            rules_all (List[Callable[[IRule], bool]], optional): List of rules that must be passed before assignment can take place.
+            rules_all (Iterable[Callable[[IRule], bool]], optional): List of rules that must be passed before assignment can take place.
                 If ``types`` is included then ``types`` takes priority over this arg.
                 All rules must validate as ``True`` before assignment takes place.
                 Defaults to ``None``.
 
                 See also: :doc:`../usage/KwargsHelper/assign_rules`
-            rules_any (List[Callable[[IRule], bool]], optional): List of rules that must be passed before assignment can take place.
+            rules_any (Iterable[Callable[[IRule], bool]], optional): List of rules that must be passed before assignment can take place.
                 If ``types`` is included then ``types`` takes priority over this arg.
                 Any rule that validates as ``True`` results in assignment taking place.
                 Defaults to ``None``.
