@@ -955,48 +955,8 @@ class KwargsHelper(HelperBase):
     # endregion Public Methods
 
     # region private methods
-    def _auto_assign_validation(self, types: Optional[Iterable[type]] = None, rules_all: Optional[Iterable[Callable[[IRule], bool]]] = None, rules_any: Optional[Iterable[Callable[[IRule], bool]]] = None) -> bool:
-        if isinstance(types, Iterable):
-            self._validate_types(types)
-        valid = True
-        if isinstance(rules_all, Iterable):
-            valid = self._validate_auto_assign_rules_all(
-                rules=rules_all)
-        if valid is False:
-            return False
-        if isinstance(rules_any, Iterable):
-            valid = self._validate_auto_assign_rules_any(
-                rules=rules_any)
-        return valid
 
-    def _validate_type(self, key: str, value: object, types: Iterable[type]):
-        def _is_type_instance(_types: Set[type], _value):
-            result = False
-            for t in _types:
-                if isinstance(_value, t):
-                    result = True
-                    break
-            return result
-        if len(types) == 0:
-            return
-        if not type(value) in types:
-            # object such as PosixPath inherit from more than on class (Path, PurePosixPath)
-            # testing if PosixPath is type of Path is False.
-            # for this reason will do an instace check as well. isinstance(_posx, Path) is True
-            is_valid_type = False
-            if self._type_instance_check == True and _is_type_instance(types, value):
-                is_valid_type = True
-
-            if is_valid_type is False:
-                msg = f"{self._name} arg '{key}' is expected to be of '{self._get_formated_types(types)}' but got '{type(value).__name__}'"
-                raise TypeError(msg)
-
-    def _validate_types(self, types: Iterable[type]):
-        if len(types) == 0:
-            return
-        for k, v in self._kwargs.items():
-           self._validate_type(key=k, value=v, types=types)
-
+    # region internal assign methods
     def _auto_assign_no_cb(self) -> bool:
         for k, v in self._kwargs.items():
             field_name = f"{self._field_prefix}{k}"
@@ -1064,6 +1024,8 @@ class KwargsHelper(HelperBase):
         after_args._success
         return None
 
+    # endregion internal assign methods
+
     def _get_formated_types(self, types: Set[str]) -> str:
         result = ''
         for i, t in enumerate(types):
@@ -1103,7 +1065,50 @@ class KwargsHelper(HelperBase):
         after_args._field_name = _field
         after_args._field_value = _value
         return result
-    
+
+    # region internal validation methods
+    def _auto_assign_validation(self, types: Optional[Iterable[type]] = None, rules_all: Optional[Iterable[Callable[[IRule], bool]]] = None, rules_any: Optional[Iterable[Callable[[IRule], bool]]] = None) -> bool:
+        if isinstance(types, Iterable):
+            self._validate_types(types)
+        valid = True
+        if isinstance(rules_all, Iterable):
+            valid = self._validate_auto_assign_rules_all(
+                rules=rules_all)
+        if valid is False:
+            return False
+        if isinstance(rules_any, Iterable):
+            valid = self._validate_auto_assign_rules_any(
+                rules=rules_any)
+        return valid
+
+    def _validate_type(self, key: str, value: object, types: Iterable[type]):
+        def _is_type_instance(_types: Set[type], _value):
+            result = False
+            for t in _types:
+                if isinstance(_value, t):
+                    result = True
+                    break
+            return result
+        if len(types) == 0:
+            return
+        if not type(value) in types:
+            # object such as PosixPath inherit from more than on class (Path, PurePosixPath)
+            # testing if PosixPath is type of Path is False.
+            # for this reason will do an instace check as well. isinstance(_posx, Path) is True
+            is_valid_type = False
+            if self._type_instance_check == True and _is_type_instance(types, value):
+                is_valid_type = True
+
+            if is_valid_type is False:
+                msg = f"{self._name} arg '{key}' is expected to be of '{self._get_formated_types(types)}' but got '{type(value).__name__}'"
+                raise TypeError(msg)
+
+    def _validate_types(self, types: Iterable[type]):
+        if len(types) == 0:
+            return
+        for k, v in self._kwargs.items():
+           self._validate_type(key=k, value=v, types=types)
+
     def _validate_assign_rules(self, args: HelperArgs, field: str, value: object,  after_args: AfterAssignEventArgs) -> bool:
         result = self._validate_assign_rules_all(
             args=args, field=field, value=value, after_args=after_args)
@@ -1187,6 +1192,8 @@ class KwargsHelper(HelperBase):
             # raise the first error in error list
             raise error_lst[0]
         return result
+
+    # endregion internal validation methods
 
     def _remove_key(self, key: str) -> bool:
         '''
