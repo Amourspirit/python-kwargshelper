@@ -1,0 +1,8 @@
+rules
+=====
+
+.. toctree::
+    :titlesonly:
+    :glob:
+
+    *
