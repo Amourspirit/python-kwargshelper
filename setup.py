@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 import pathlib
-import sys
 import os
-import platform
 from setuptools import setup
 from kwhelp import __version__
 PKG_NAME = 'kwargshelper'
