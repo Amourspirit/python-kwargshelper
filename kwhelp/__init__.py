@@ -5,7 +5,7 @@ from . rules import IRule
 from typing import Iterable, List, Optional, Callable
 from collections import UserList
 from typing import Any, Dict, List, Optional, Set, Callable, Union
-VERSION = __version__ = '1.2.2'
+VERSION = __version__ = '2.0.0'
 
 
 # region Custom Errors
