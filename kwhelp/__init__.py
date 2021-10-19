@@ -1,9 +1,7 @@
 # coding: utf-8
-from docutils.parsers.rst.languages import ru
 from .helper import NO_THING
 from . helper.base import HelperBase
 from . rules import IRule
-from warnings import warn
 from typing import Iterable, List, Optional, Callable
 from collections import UserList
 from typing import Any, Dict, List, Optional, Set, Callable, Union
