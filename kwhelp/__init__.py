@@ -2,8 +2,7 @@
 from .helper import NO_THING
 from . helper.base import HelperBase
 from . rules import IRule
-from warnings import warn
-from typing import List, Optional, Callable
+from typing import Iterable, List, Optional, Callable
 from collections import UserList
 from typing import Any, Dict, List, Optional, Set, Callable, Union
 VERSION = __version__ = '1.2.2'
@@ -39,8 +38,8 @@ class HelperArgs(HelperBase):
             default (obj, optional): Default arg. Default ``NO_THING``
             field (str, optional): field arg. Default ``None``
             require (bool, optional): require arg. Default ``False``
-            rules_all (list, optional): rules_any list. Default Empty List.
-            rules_any (list, optional): rules_all list. Default Empty List.
+            rules_all (Iterable, optional): rules_any list. Default Empty List.
+            rules_any (Iterable, optional): rules_all list. Default Empty List.
             types (set, optional): types arg. Default Empty set
         """
         self._key: str = ''
@@ -780,11 +779,33 @@ class KwargsHelper(HelperBase):
     # endregion init
 
     # region Public Methods
-    def auto_assign(self) -> bool:
+    def auto_assign(self, types: Optional[Iterable[type]] = None, rules_all: Optional[Iterable[Callable[[IRule], bool]]] = None, rules_any: Optional[Iterable[Callable[[IRule], bool]]] = None) -> bool:
         """
         Assigns all of the key, value pairs of ``obj_kwargs`` passed into constructor to ``originator``,
         unless the event is canceled in :py:class:`.BeforeAssignAutoEventArgs` then key,
         value pair will be added automacally to ``originator``.
+        
+        Args:
+            types (Iterable[type], optional): a type list of one or more types that the value of the key value pair must match.
+                For example if all values are required to be only ``str`` then ``types=[str]``.
+                If all values are required to be ``str`` or ``int`` then ``types=[str, int]``.
+
+                If ``types`` is omitted then values can be any type unless there is a rule in ``rules`` that is otherwise.
+                Defaults to ``None``.
+
+                See also: :doc:`../usage/KwargsHelper/assign_type`
+            rules_all (Iterable[Callable[[IRule], bool]], optional): List of rules that must be passed before assignment can take place.
+                If ``types`` is included then ``types`` takes priority over this arg.
+                All rules must validate as ``True`` before assignment takes place.
+                Defaults to ``None``.
+
+                See also: :doc:`../usage/KwargsHelper/assign_rules`
+            rules_any (Iterable[Callable[[IRule], bool]], optional): List of rules that must be passed before assignment can take place.
+                If ``types`` is included then ``types`` takes priority over this arg.
+                Any rule that validates as ``True`` results in assignment taking place.
+                Defaults to ``None``.
+
+                See also: :doc:`../usage/KwargsHelper/assign_rules`
 
         Returns:
             bool: ``True`` of all key, value pairs are added; Otherwise, ``False``.
@@ -798,11 +819,24 @@ class KwargsHelper(HelperBase):
             * :doc:`../usage/KwargsHelper/auto_assign_callback`
             * :py:meth:`~.KwargsHelper.assign`
         """
+        valid = True
+        if self._rule_test_early is True:
+            valid = self._auto_assign_validation(types=types,
+                                                rules_all=rules_all,
+                                                rules_any=rules_any)
+            if valid is False:
+               return False
         if self._is_auto_assign_handlers():
-            return self._auto_assign_with_cb()
-        return self._auto_assign_no_cb()
+            valid = self._auto_assign_with_cb()
+        else:
+            valid = self._auto_assign_no_cb()
+        if self._rule_test_early is False:
+            valid = valid & self._auto_assign_validation(types=types,
+                                                 rules_all=rules_all,
+                                                 rules_any=rules_any)
+        return valid
 
-    def assign(self, key: str, field: Optional[str] = None, require: bool = False, default: Optional[object] = NO_THING, types: Optional[List[type]] = None, rules_all: Optional[List[Callable[[IRule], bool]]] = None, rules_any: Optional[List[Callable[[IRule], bool]]] = None) -> bool:
+    def assign(self, key: str, field: Optional[str] = None, require: bool = False, default: Optional[object] = NO_THING, types: Optional[Iterable[type]] = None, rules_all: Optional[Iterable[Callable[[IRule], bool]]] = None, rules_any: Optional[Iterable[Callable[[IRule], bool]]] = None) -> bool:
         """
         Assigns attribute value to ``obj`` passed in to constructor. Attributes are created if they do not exist.
 
@@ -825,7 +859,7 @@ class KwargsHelper(HelperBase):
                 Defaults to ``NO_THING`` which will result in default being ignored.
 
                 See also: :doc:`../usage/KwargsHelper/assign_default`
-            types (List[type], optional): a type list of one or more types that the value of the key value pair must match.
+            types (Iterable[type], optional): a type list of one or more types that the value of the key value pair must match.
                 For example if a value is required to be only ``str`` then ``types=[str]``.
                 If value is required to be ``str`` or ``int`` then ``types=[str, int]``.
                 In this example if value is not type ``str`` then ``TypeError`` is raised.
@@ -833,13 +867,13 @@ class KwargsHelper(HelperBase):
                 Defaults to ``None``.
 
                 See also: :doc:`../usage/KwargsHelper/assign_type`
-            rules_all (List[Callable[[IRule], bool]], optional): List of rules that must be passed before assignment can take place.
+            rules_all (Iterable[Callable[[IRule], bool]], optional): List of rules that must be passed before assignment can take place.
                 If ``types`` is included then ``types`` takes priority over this arg.
                 All rules must validate as ``True`` before assignment takes place.
                 Defaults to ``None``.
 
                 See also: :doc:`../usage/KwargsHelper/assign_rules`
-            rules_any (List[Callable[[IRule], bool]], optional): List of rules that must be passed before assignment can take place.
+            rules_any (Iterable[Callable[[IRule], bool]], optional): List of rules that must be passed before assignment can take place.
                 If ``types`` is included then ``types`` takes priority over this arg.
                 Any rule that validates as ``True`` results in assignment taking place.
                 Defaults to ``None``.
@@ -919,6 +953,8 @@ class KwargsHelper(HelperBase):
     # endregion Public Methods
 
     # region private methods
+
+    # region internal assign methods
     def _auto_assign_no_cb(self) -> bool:
         for k, v in self._kwargs.items():
             field_name = f"{self._field_prefix}{k}"
@@ -960,30 +996,11 @@ class KwargsHelper(HelperBase):
         return result
 
     def _assign(self, args: HelperArgs, before_args: BeforeAssignEventArgs, after_args: AfterAssignEventArgs) -> None:
-        def _is_type_instance(_types: Set[type], _value):
-            result = False
-            for t in _types:
-                if isinstance(_value, t):
-                    result = True
-                    break
-            return result
-
         result = False
         key = args.key
         if key in self._kwargs:
             value = self._kwargs[key]
-            if len(args.types) > 0:
-                if not type(value) in args.types:
-                    # object such as PosixPath inherit from more than on class (Path, PurePosixPath)
-                    # testing if PosixPath is type of Path is False.
-                    # for this reason will do an instace check as well. isinstance(_posx, Path) is True
-                    is_valid_type = False
-                    if self._type_instance_check == True and _is_type_instance(args.types, value):
-                        is_valid_type = True
-
-                    if is_valid_type is False:
-                        msg = f"{self._name} arg '{key}' is expected to be of '{self._get_formated_types(args.types)}' but got '{type(value).__name__}'"
-                        raise TypeError(msg)
+            self._validate_type(key=key, value=value, types=args.types)
             if args.field:
                 result = self._setattr(
                     args.field, value, before_args, after_args, args=args)
@@ -1004,6 +1021,8 @@ class KwargsHelper(HelperBase):
         after_args._success = result
         after_args._success
         return None
+
+    # endregion internal assign methods
 
     def _get_formated_types(self, types: Set[str]) -> str:
         result = ''
@@ -1029,7 +1048,7 @@ class KwargsHelper(HelperBase):
         _value = before_args.field_value
         result = True
         if self._rule_test_early:
-            result = self._validate_rules(
+            result = self._validate_assign_rules(
                 args=args, field=_field, value=_value, after_args=after_args)
             if result == False:
                 return result
@@ -1037,29 +1056,108 @@ class KwargsHelper(HelperBase):
         # self._obj.__dict__[_field] = _value
         self._remove_key(args.key)
         if self._rule_test_early == False:
-            result = self._validate_rules(
+            result = self._validate_assign_rules(
                 args=args, field=_field, value=_value, after_args=after_args)
             if result == False:
                 return result
         after_args._field_name = _field
         after_args._field_value = _value
         return result
-    
-    def _validate_rules(self, args: HelperArgs, field: str, value: object,  after_args: AfterAssignEventArgs) -> bool:
-        result = self._validate_rules_all(
+
+    # region internal validation methods
+    def _auto_assign_validation(self, types: Optional[Iterable[type]] = None, rules_all: Optional[Iterable[Callable[[IRule], bool]]] = None, rules_any: Optional[Iterable[Callable[[IRule], bool]]] = None) -> bool:
+        if isinstance(types, Iterable):
+            self._validate_types(types)
+        valid = True
+        if isinstance(rules_all, Iterable):
+            valid = self._validate_auto_assign_rules_all(
+                rules=rules_all)
+        if valid is False:
+            return False
+        if isinstance(rules_any, Iterable):
+            valid = self._validate_auto_assign_rules_any(
+                rules=rules_any)
+        return valid
+
+    def _validate_type(self, key: str, value: object, types: Iterable[type]):
+        def _is_type_instance(_types: Set[type], _value):
+            result = False
+            for t in _types:
+                if isinstance(_value, t):
+                    result = True
+                    break
+            return result
+        if len(types) == 0:
+            return
+        if not type(value) in types:
+            # object such as PosixPath inherit from more than on class (Path, PurePosixPath)
+            # testing if PosixPath is type of Path is False.
+            # for this reason will do an instace check as well. isinstance(_posx, Path) is True
+            is_valid_type = False
+            if self._type_instance_check == True and _is_type_instance(types, value):
+                is_valid_type = True
+
+            if is_valid_type is False:
+                msg = f"{self._name} arg '{key}' is expected to be of '{self._get_formated_types(types)}' but got '{type(value).__name__}'"
+                raise TypeError(msg)
+
+    def _validate_types(self, types: Iterable[type]):
+        if len(types) == 0:
+            return
+        for k, v in self._kwargs.items():
+           self._validate_type(key=k, value=v, types=types)
+
+    def _validate_assign_rules(self, args: HelperArgs, field: str, value: object,  after_args: AfterAssignEventArgs) -> bool:
+        result = self._validate_assign_rules_all(
             args=args, field=field, value=value, after_args=after_args)
         if result is False:
             return False
-        result = self._validate_rules_any(
+        result = self._validate_assign_rules_any(
             args=args, field=field, value=value, after_args=after_args)
         return result
 
-    def _validate_rules_all(self, args: HelperArgs, field: str, value: object,  after_args: AfterAssignEventArgs) -> bool:
-        # if all rules pass then validations is considered a success
-        key = after_args.key
+    def _validate_auto_assign_rules_all(self, rules: Iterable[IRule]) -> bool:
         result = True
-        if len(args.rules_all) > 0:
-            for rule in args.rules_all:
+        if len(rules) > 0:
+            for k, v in self._kwargs.items():
+                result = self._validate_rules_all(rules=rules,
+                                                  key=k,
+                                                  field=self._field_prefix + k,
+                                                  value=v)
+                if result is False:
+                    break
+        return result
+
+    def _validate_auto_assign_rules_any(self, rules: Iterable[IRule]) -> bool:
+        result = True
+        if len(rules) > 0:
+            for k, v in self._kwargs.items():
+                rules_valid = self._validate_rules_any(rules=rules,
+                                                  key=k,
+                                                  field=self._field_prefix + k,
+                                                  value=v)
+                if rules_valid is False:
+                    result = False
+                    break
+        return result
+
+    def _validate_assign_rules_all(self, args: HelperArgs, field: str, value: object,  after_args: AfterAssignEventArgs) -> bool:
+        # if all rules pass then validations is considered a success
+        result = self._validate_rules_all(rules=args.rules_all, key=after_args.key, field=field, value=value)
+        after_args._rules_passed = result
+        return result
+
+    def _validate_assign_rules_any(self, args: HelperArgs, field: str, value: object,  after_args: AfterAssignEventArgs) -> bool:
+        # if any rule passes then validations is considered a success
+        result = self._validate_rules_any(rules=args.rules_any, key=after_args.key, field=field, value=value)
+        after_args._rules_passed = result
+        return result
+
+    def _validate_rules_all(self, rules: Iterable[IRule], key: str, field: str, value: object) -> bool:
+        # if all rules pass then validations is considered a success
+        result = True
+        if len(rules) > 0:
+            for rule in rules:
                 if not issubclass(rule, IRule):
                     raise TypeError('Rules must implement IRule')
                 rule_instance: IRule = rule(
@@ -1067,17 +1165,14 @@ class KwargsHelper(HelperBase):
                 result = result & rule_instance.validate()
                 if result is False:
                     break
- 
-        after_args._rules_passed = result
         return result
 
-    def _validate_rules_any(self, args: HelperArgs, field: str, value: object,  after_args: AfterAssignEventArgs) -> bool:
+    def _validate_rules_any(self, rules: Iterable[IRule], key: str, field: str, value: object) -> bool:
         # if any rule passes then validations is considered a success
         error_lst = []
-        key = after_args.key
         result = True
-        if len(args.rules_any) > 0:
-            for rule in args.rules_any:
+        if len(rules) > 0:
+            for rule in rules:
                 if not issubclass(rule, IRule):
                     raise TypeError('Rules must implement IRule')
                 rule_instance: IRule = rule(
@@ -1091,12 +1186,12 @@ class KwargsHelper(HelperBase):
                 result = rule_valid
                 if rule_valid is True:
                     break
-
         if result is False and self._rule_error is True and len(error_lst) > 0:
             # raise the first error in error list
             raise error_lst[0]
-        after_args._rules_passed = result
         return result
+
+    # endregion internal validation methods
 
     def _remove_key(self, key: str) -> bool:
         '''
@@ -1364,8 +1459,7 @@ class KwArg:
     _RESERVED_INTERNAL_FIELDS: Set[str] = set(
         ['_kw_arg_internal', '_KwArgInternal', 'kwargs_helper',
          '__init__', 'is_attribute_exist', 'is_key_existing',
-         'kw_unused_keys', 'kw_auto_assign', 'kw_assign',
-         'kw_assign_helper'])
+         'kw_unused_keys', 'kw_assign'])
 
     def __init__(self, **kwargs):
         """
@@ -1378,22 +1472,6 @@ class KwArg:
             .. include:: ../inc/ex/KwArg_basic.rst
         """
         self._kw_arg_internal = KwArg._KwArgInternal(orig=self, **kwargs)
-
-    def kw_auto_assign(self) -> bool:
-        """
-        Assigns all of the key, value pairs of `obj_kwargs` passed into constructor to ``originator``,
-        unless the event is canceled in :py:class:`.BeforeAssignAutoEventArgs` then key, value pair
-        will be added automacally to ``originator``.
-
-        Call back events are supported via :py:meth:`.kwargs_helper.add_handler_before_assign_auto`
-        and :py:meth:`.kwargs_helper.add_handler_after_assign_auto` methods.
-
-        Wrapper method for :py:meth:`.KwargsHelper.auto_assign`
-
-        Returns:
-            bool: ``True`` of all key, value pairs are added; Otherwise, ``False``
-        """
-        return self._kw_arg_internal.helper_instance.auto_assign()
 
     def kw_assign(self, key: str, field: Optional[str] = None, require: bool = False, default: Optional[object] = NO_THING, types: Optional[List[type]] = None, rules_all: Optional[List[Callable[[IRule], bool]]] = None, rules_any: Optional[List[Callable[[IRule], bool]]] = None) -> bool:
         """
@@ -1429,14 +1507,20 @@ class KwArg:
                 In this example if value is not type ``str`` then ``TypeError`` is raised
                 If value is required to be `str` or `int` then ``types=[str, int]``.
                 Defaults to ``None``.
-             rules_all (List[Callable[[IRule], bool]], optional): List of rules that must be passed before assignment can take place.
+                
+                See also: :doc:`../usage/KwArg/kw_assign_type`
+            rules_all (List[Callable[[IRule], bool]], optional): List of rules that must be passed before assignment can take place.
                 If ``types`` is included then ``types`` takes priority over this arg.
                 All rules must validate as ``True`` before assignment takes place.
                 Defaults to ``None``.
+                
+                See also: :doc:`../usage/KwArg/kw_assign_rules`
             rules_any (List[Callable[[IRule], bool]], optional): List of rules that must be passed before assignment can take place.
                 If ``types`` is included then ``types`` takes priority over this arg.
                 Any rule that validates as ``True`` results in assignment taking place.
                 Defaults to ``None``.
+                
+                See also: :doc:`../usage/KwArg/kw_assign_rules`
 
         Raises:
             ReservedAttributeError: if ``key`` is a reserved keyword
@@ -1449,6 +1533,8 @@ class KwArg:
             * :doc:`../usage/KwArg/kw_assign_default`
             * :doc:`../usage/KwArg/kw_assign_field`
             * :doc:`../usage/KwArg/kw_assign_require`
+            * :doc:`../usage/KwArg/kw_assign_rules` 
+            * :doc:`../usage/KwArg/kw_assign_type`
         """
         m_name = 'assign'
         self._kw_arg_internal._is_arg_str_empty_null(
@@ -1462,21 +1548,6 @@ class KwArg:
                 raise ReservedAttributeError(
                     f"{self.__class__.__name__}.{field} is a reserved keyword. Try using a differne field name.")
         return self._kw_arg_internal.helper_instance.assign(key=key, field=field, require=require, default=default, types=types, rules_all=rules_all, rules_any=rules_any)
-
-    def kw_assign_helper(self, helper: HelperArgs) -> bool:
-        """
-        Assigns attribute value using instance of HelperArgs. See :py:meth:`~.KwArg.kw_assign` method.
-
-        Args:
-            helper (HelperArgs): instance to assign.
-
-        Returns:
-            bool: ``True`` if attribute assignment is successful; Otherwise, ``False``
-        """
-        self._kw_arg_internal._isinstance_method(method_name='assign_helper', arg=helper,
-                                                  arg_name='helper', arg_type=HelperArgs, raise_error=True)
-        d = helper.to_dict()
-        return self.kw_assign(**d)
 
     # region Public Methods
     def is_attribute_exist(self, attrib_name: str) -> bool:
