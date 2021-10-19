@@ -20,8 +20,12 @@ in ``MyClass._arg_before_cb()``.
 
 .. note::
 
-    If :py:meth:`KwargsHelper constructor <.KwargsHelper.__init__>` has ``cancel_error`` set to ``False`` then
+    If :py:meth:`KwargsHelper constructor <.KwargsHelper.__init__>` has ``cancel_error`` set
+    to ``False`` or :py:attr:`.KwargsHelper.cancel_error` property is set to ``False`` then
     no error will be raised when :py:attr:`.BeforeAssignEventArgs.cancel` is set to ``True``.
+
+    If no error is raised then :py:attr:`.AfterAssignEventArgs.canceled` can be used to check if
+    an event was canceled in :py:class:`.BeforeAssignEventArgs`
 
 .. seealso::
 

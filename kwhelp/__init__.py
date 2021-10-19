@@ -1429,6 +1429,8 @@ class KwArg:
                 In this example if value is not type ``str`` then ``TypeError`` is raised
                 If value is required to be `str` or `int` then ``types=[str, int]``.
                 Defaults to ``None``.
+                
+                See also: :doc:`../usage/KwArg/kw_assign_type`
             rules_all (List[Callable[[IRule], bool]], optional): List of rules that must be passed before assignment can take place.
                 If ``types`` is included then ``types`` takes priority over this arg.
                 All rules must validate as ``True`` before assignment takes place.
@@ -1453,6 +1455,8 @@ class KwArg:
             * :doc:`../usage/KwArg/kw_assign_default`
             * :doc:`../usage/KwArg/kw_assign_field`
             * :doc:`../usage/KwArg/kw_assign_require`
+            * :doc:`../usage/KwArg/kw_assign_rules` 
+            * :doc:`../usage/KwArg/kw_assign_type`
         """
         m_name = 'assign'
         self._kw_arg_internal._is_arg_str_empty_null(

@@ -12,8 +12,8 @@ Default value can be assigned by adding ``default`` args to :py:meth:`~.KwargsHe
         def __init__(self, **kwargs):
             self._duration = "Long"
             kw = KwargsHelper(self, {**kwargs})
-            kw.assign(key="speed", require=True, rules=[rules.RuleIntPositive])
-            kw.assign(key="unit", default="MPH", rules=[rules.RuleStrNotNullOrEmpty])
+            kw.assign(key="speed", require=True, rules_all=[rules.RuleIntPositive])
+            kw.assign(key="unit", default="MPH", rules_all=[rules.RuleStrNotNullOrEmpty])
             kw.assign(key="duration", default=self._duration,
                 rules=[rules.RuleStrNotNullOrEmpty])
 

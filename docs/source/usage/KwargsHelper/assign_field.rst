@@ -15,9 +15,9 @@ Setting ``field`` arg overrides attribute name that is assigned to current class
         def __init__(self, **kwargs):
             kw = KwargsHelper(self, {**kwargs})
             kw.assign(key="speed", field="race_speed", require=True,
-                rules=[rules.RuleIntPositive])
+                rules_all=[rules.RuleIntPositive])
             kw.assign(key="unit", field="unit", default="MPH",
-                rules=[rules.RuleStrNotNullOrEmpty])
+                rules_all=[rules.RuleStrNotNullOrEmpty])
 
 .. code-block:: python
 
