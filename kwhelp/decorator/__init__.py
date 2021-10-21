@@ -78,13 +78,15 @@ class TypeCheckerKw(object):
         def wrapper(*args, **kwargs):
             is_valid = True
             arg_name_values = self._get_args_dict(func, args, kwargs)
-            for k, v in arg_name_values.items():
-                types = self._get_types(key=k)
+            arg_keys = arg_name_values.keys()
+
+            for key in self._arg_index.keys():
+                types = self._get_types(key=key)
                 if len(types) == 0:
                     continue
+                value = arg_name_values[key]
                 tc = TypeChecker(types=types, **self._kwargs)
-                # is_valid = tc.validate(**arg_name_values)
-                is_valid = tc.validate(**{k:v})
+                is_valid = tc.validate(**{key: value})
                 if is_valid is False:
                     break
             wrapper.is_types_valid = is_valid
