@@ -1,27 +1,34 @@
 # coding: utf-8
-from typing import Iterable, Iterator, Optional, Set, Union
+from typing import Iterable, Iterator, List, Optional, Set, Union
+
+from ..rules import IRule
 
 
 class Singleton(type):
     """Singleton abstrace class"""
     _instances = {}
     # https://stackoverflow.com/questions/6760685/creating-a-singleton-in-python
+
     def __call__(cls, *args, **kwargs):
         if cls not in cls._instances:
             cls._instances[cls] = super(
                 Singleton, cls).__call__(*args, **kwargs)
         return cls._instances[cls]
+
+
 class NoThing(metaclass=Singleton):
     '''Singleton Class to mimic null'''
+
 
 NO_THING = NoThing()
 """
 Singleton Class instance that represents null object.
 """
 
+
 class TypeChecker:
-    
-    def __init__(self, types: Iterator[type], **kwargs):
+
+    def __init__(self, types: Iterable[type], **kwargs):
         """
         [summary]
 
@@ -37,7 +44,7 @@ class TypeChecker:
                 Default ``True``
         """
         self._types = types
-        
+
         if self._types is None:
             self._types = []
 
@@ -53,7 +60,6 @@ class TypeChecker:
         else:
             self._type_instance_check: bool = True
 
-
     def _get_formated_types(self) -> str:
         result = ''
         for i, t in enumerate(self._types):
@@ -63,7 +69,7 @@ class TypeChecker:
         return result
 
     def _validate_type(self, value: object,  key: Union[str, None] = None):
-        def _is_type_instance(_types: Iterator[type], _value):
+        def _is_type_instance(_types: Iterable[type], _value):
             result = False
             for t in _types:
                 if isinstance(_value, t):
@@ -100,31 +106,129 @@ class TypeChecker:
         for arg in args:
             result = result & self._validate_type(value=arg)
             if result is False:
-               break
+                break
         if result is False:
             return result
         for k, v in kwargs.items():
-           result = result & self._validate_type(value=v, key=k)
-           if result is False:
-               break
+            result = result & self._validate_type(value=v, key=k)
+            if result is False:
+                break
         return result
-       
+
     # region Properties
     @property
     def type_instance_check(self) -> bool:
         """
         Determines if instance checking is done with type checking.
-        
+
         If ``True`` then :py:meth:`~.TypeChecker.validate`` args
         are tested also for isinstance if type does not match, rather then just type check if type is a match.
         If ``False`` then values willl only be tested as type.
-        
+
         :getter: Gets type_instance_check value
         :setter: sets type_instance_check value
         """
         return self._type_instance_check
-    
+
     @type_instance_check.setter
     def type_instance_check(self, value: bool) -> bool:
         self._type_instance_check = bool(value)
     # endregion Properties
+
+
+class RuleChecker:
+    def __init__(self, rules_all: Optional[Iterable[IRule]] = None, rules_any: Optional[Iterable[IRule]] = None, ** kwargs):
+        if rules_all is None:
+            self._rules_all = []
+            self._len_all = 0
+        else:
+            self._rules_all = rules_all
+            self._len_all = len(self._rules_all)
+        if rules_any is None:
+            self._rules_any = []
+            self._len_any = 0
+        else:
+            self._rules_any = rules_any
+            self._len_any = len(self._rules_any)
+        key = 'raise_error'
+        if key in kwargs:
+            self._raise_error: bool = bool(kwargs[key])
+        else:
+            self._raise_error: bool = True
+
+    # region internal validation methods
+
+    def _validate_rules_all(self, key: str, field: str, value: object) -> bool:
+        # if all rules pass then validations is considered a success
+        result = True
+        if self._len_all > 0:
+            for rule in self._rules_all:
+                if not issubclass(rule, IRule):
+                    raise TypeError('Rules must implement IRule')
+                rule_instance: IRule = rule(
+                    key=key, name=field, value=value, raise_errors=self._raise_error, originator=self)
+                result = result & rule_instance.validate()
+                if result is False:
+                    break
+        return result
+
+    def _validate_rules_any(self, key: str, field: str, value: object) -> bool:
+        # if any rule passes then validations is considered a success
+        error_lst = []
+        result = True
+        if self._len_any > 0:
+            for rule in self._rules_any:
+                if not issubclass(rule, IRule):
+                    raise TypeError('Rules must implement IRule')
+                rule_instance: IRule = rule(
+                    key=key, name=field, value=value, raise_errors=self._raise_error, originator=self)
+                rule_valid = False
+                try:
+                    rule_valid = rule_instance.validate()
+                except Exception as e:
+                    error_lst.append(e)
+                    rule_valid = False
+                result = rule_valid
+                if rule_valid is True:
+                    break
+        if result is False and self._raise_error is True and len(error_lst) > 0:
+            # raise the last error in error list
+            raise error_lst[0]
+        return result
+
+    # endregion internal validation methods
+    
+ 
+    def validate_all(self, *args, **kwargs) -> bool:
+        if self._len_all == 0:
+            return True
+        result = True
+        for arg in args:
+            result = result & self._validate_rules_all(
+                key="arg", field="arg", value=arg)
+            if result is False:
+                break
+        if result is False:
+            return result
+        for k, v in kwargs.items():
+            result = result & self._validate_rules_all(key=k, field=k, value=v)
+            if result is False:
+                break
+        return result
+
+    def validate_any(self, *args, **kwargs) -> bool:
+        if self._len_any == 0:
+            return True
+        result = True
+        for arg in args:
+            result = self._validate_rules_any(
+                key="arg", field="arg", value=arg)
+            if result is False:
+                break
+        if result is False:
+            return result
+        for k, v in kwargs.items():
+            result = result & self._validate_rules_any(key=k, field=k, value=v)
+            if result is False:
+                break
+        return result

@@ -1024,7 +1024,7 @@ class KwargsHelper(HelperBase):
 
     # endregion internal assign methods
 
-    def _get_formated_types(self, types: Set[str]) -> str:
+    def _get_formated_types(self, types: Iterable[type]) -> str:
         result = ''
         for i, t in enumerate(types):
             if i > 0:

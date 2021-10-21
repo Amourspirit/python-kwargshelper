@@ -7,7 +7,7 @@ if __name__ == '__main__':
 
 from kwhelp.helper import TypeChecker
 from pathlib import Path
-from kwhelp.decorator import type_checker_any, TypeCheckerAny, KwTypeChecker
+from kwhelp.decorator import TypeCheckerAny, TypeCheckerKw
 
 class TestTypeChecker(unittest.TestCase):
 
@@ -34,6 +34,9 @@ class TestTypeChecker(unittest.TestCase):
         tc.type_instance_check = False
         with self.assertRaises(TypeError):
             tc.validate(str_path, Path(str_path))
+
+
+class TestTypeDecorators(unittest.TestCase):
 
     def test_type_checker_dec(self):
 
@@ -65,7 +68,7 @@ class TestTypeChecker(unittest.TestCase):
             result = type_test(3, 4, 5.5, 7, "")
     
     def test_kw_type_checker_dec(self):
-        @KwTypeChecker(arg_index={"one":0, "two": 0},types=[(int,float)])
+        @TypeCheckerKw(arg_index={"one":0, "two": 0},types=[(int,float)])
         def type_test(one, two) -> float:
             return float(one) + float(two)
     
@@ -78,7 +81,7 @@ class TestTypeChecker(unittest.TestCase):
             type_test(Two=19, one="one")
 
     def test_kw_type_checker_dec_no_error(self):
-        @KwTypeChecker(arg_index={"one": 0, "two": 0}, types=[(int, float)], raise_error=False)
+        @TypeCheckerKw(arg_index={"one": 0, "two": 0}, types=[(int, float)], raise_error=False)
         def type_test(one, two) -> float:
             return float(one) + float(two)
 
