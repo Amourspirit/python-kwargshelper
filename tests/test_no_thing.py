@@ -1,9 +1,11 @@
 # coding: utf-8
-if __name__ == '__main__':
-    import path_imports
 import unittest
-from kwhelp.helper import NoThing, NO_THING
+if __name__ == '__main__':
+    import os
+    import sys
+    sys.path.append(os.path.realpath('.'))
 
+from kwhelp.helper import NoThing, NO_THING
 
 class TestKwArg(unittest.TestCase):
 
