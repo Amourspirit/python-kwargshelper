@@ -5,7 +5,7 @@ if __name__ == '__main__':
     import sys
     sys.path.append(os.path.realpath('.'))
 
-from kwhelp.helper import TypeChecker
+from kwhelp.checks import TypeChecker
 from pathlib import Path
 from kwhelp.decorator import TypeCheckerAny, TypeCheckerKw
 

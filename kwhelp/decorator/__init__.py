@@ -1,15 +1,20 @@
 import functools
-import inspect
-import itertools
 from typing import Dict, Iterable
-
 from inspect import signature
-from ..helper import TypeChecker, RuleChecker
+from ..checks import TypeChecker, RuleChecker
 from ..rules import IRule
 
 class TypeCheckerAny(object):
-
+    """
+    Decorator that decorates methods that require args to match a type specificed in a list
+    """
     def __init__(self, types: Iterable[type], **kwargs):
+        """
+        Constructor
+
+        Args:
+            types (Iterable[type]): List of type for args to match
+        """
         self._types = types
         if kwargs:
             self._kwargs = {**kwargs}

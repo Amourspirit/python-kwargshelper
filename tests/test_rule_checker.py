@@ -4,7 +4,7 @@ if __name__ == '__main__':
     import sys
     sys.path.append(os.path.realpath('.'))
 
-from kwhelp.helper import RuleChecker
+from kwhelp.checks import RuleChecker
 from kwhelp.decorator import RuleCheckAny, RuleCheckAll, RuleCheckAllKw, RuleCheckAnyKw, TypeCheckerKw
 from kwhelp import rules
 
