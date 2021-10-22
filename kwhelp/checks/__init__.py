@@ -12,10 +12,10 @@ class TypeChecker:
         Args:
             types (Iterator[type]): Types used for Validation purposes.
 
-         Keyword Arguments:
-            raise_error: (bool, optional): If ``True`` then an error will be raised if a :py:meth:`~.TypeChecker.validate`` fails:
-                Othwewise :py:meth:`~.TypeChecker.validate`` will return a boolean value indicationg success or failure.
-            type_instance_check (bool, optional): If ``True`` then :py:meth:`~.TypeChecker.validate`` args
+        Keyword Arguments:
+            raise_error: (bool, optional): If ``True`` then an error will be raised if a :py:meth:`~.TypeChecker.validate` fails:
+                Othwewise :py:meth:`~.TypeChecker.validate` will return a boolean value indicationg success or failure.
+            type_instance_check (bool, optional): If ``True`` then :py:meth:`~.TypeChecker.validate` args
                 are tested also for isinstance if type does not match, rather then just type check if type is a match.
                 If ``False`` then values willl only be tested as type.
                 Default ``True``
@@ -157,6 +157,10 @@ class RuleChecker:
         Args:
             rules_all (Iterable[IRule], optional): List of rules that must all be matched. Defaults to ``None``.
             rules_any (Iterable[IRule], optional): List of rules that any one must be matched. Defaults to ``None``.
+
+        Keyword Arguments:
+            raise_error (bool, optional): If ``True`` then rules can raise errors when validation fails.
+                Default ``False``.
         """
         if rules_all is None:
             self._rules_all = []
@@ -278,14 +282,14 @@ class RuleChecker:
     @property
     def rules_all(self) -> Iterable[IRule]:
         """
-        Gets rules passed into ``rules_all` of constructor used for validation of args.
+        Gets rules passed into ``rules_all`` of constructor used for validation of args.
         """
         return self._rules_all
 
     @property
     def rules_any(self) -> Iterable[IRule]:
         """
-        Gets rules passed into ``rules_any` of constructor used for validation of args.
+        Gets rules passed into ``rules_any`` of constructor used for validation of args.
         """
         return self._rules_any
 
