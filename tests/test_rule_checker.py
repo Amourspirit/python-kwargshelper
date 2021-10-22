@@ -41,7 +41,6 @@ class TestRuleDecorators(unittest.TestCase):
             return float(one) + float(two)
 
         result = rule_test(10, 12.3)
-        assert rule_test.is_rules_any_valid == True
         assert result == 22.3
 
         with self.assertRaises(TypeError):
@@ -97,6 +96,38 @@ class TestRuleDecorators(unittest.TestCase):
             rule_test(-1, -2, 0)
         with self.assertRaises(TypeError):
             rule_test("-1", -2, 0)
+    
+    def test_rules_all_kw_rule_single(self):
+        @RuleCheckAnyKw(arg_index={"start": 0, "middle": 1, "end": 2},
+                        rules=[rules.RuleInt, (rules.RuleIntPositive, rules.RuleFloatPositive),
+                               (rules.RuleIntNegativeOrZero, rules.RuleFloatNegativeOrZero)])
+        def rule_test(start, middle, end) -> tuple:
+            return (start, middle, end)
+        result = rule_test(-1, 2, 0)
+        assert result == (-1, 2, 0)
+        
+        result = rule_test(99, 2.6, 0)
+        assert result == (99, 2.6, 0)
+        with self.assertRaises(ValueError):
+            rule_test(-1, -2, 0)
+        with self.assertRaises(TypeError):
+            rule_test("-1", -2, 0)
+    
+    def test_rules_all_kw_start_rule(self):
+        @RuleCheckAnyKw(arg_index={"start": rules.RuleInt, "middle": 0, "end": 1},
+                        rules=[(rules.RuleIntPositive, rules.RuleFloatPositive),
+                               (rules.RuleIntNegativeOrZero, rules.RuleFloatNegativeOrZero)])
+        def rule_test(start, middle, end) -> tuple:
+            return (start, middle, end)
+        result = rule_test(-1, 2, 0)
+        assert result == (-1, 2, 0)
+
+        result = rule_test(99, 2.6, 0)
+        assert result == (99, 2.6, 0)
+        with self.assertRaises(ValueError):
+            rule_test(-1, -2, 0)
+        with self.assertRaises(TypeError):
+            rule_test("-1", -2, 0)
 
     def test_rules_any_all_kw(self):
         @RuleCheckAllKw(arg_index={"start": 0},
@@ -114,8 +145,8 @@ class TestRuleDecorators(unittest.TestCase):
             rule_test(start="hello", middle="m", end=-3.4)
 
     def test_rules_any_all_type_kw(self):
-        @TypeCheckerKw(arg_index={"start": 0, "middle": 1, "end": 1},
-                       types=[(str,),(int, float)])
+        @TypeCheckerKw(arg_index={"start": str, "middle": 0, "end": 0},
+                       types=[(int, float)])
         @RuleCheckAllKw(arg_index={"start": 0},
                         rules=[(rules.RuleStrNotNullEmptyWs,)])
         @RuleCheckAnyKw(arg_index={"middle": 0, "end": 1},

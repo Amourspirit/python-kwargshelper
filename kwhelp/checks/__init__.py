@@ -132,11 +132,11 @@ class TypeChecker:
         :getter: Gets if errors can be raised.
         :setter: Sets if errors can be raised.
         """
-        return self._type_instance_check
+        return self._raise_error
 
     @raise_error.setter
     def raise_error(self, value: bool) -> bool:
-        self._type_instance_check = bool(value)
+        self._raise_error = bool(value)
     
     @property
     def types(self) -> Iterable[type]:
@@ -304,9 +304,9 @@ class RuleChecker:
         :getter: Gets if errors can be raised.
         :setter: Sets if errors can be raised.
         """
-        return self._type_instance_check
+        return self._raise_error
 
     @raise_error.setter
     def raise_error(self, value: bool) -> bool:
-        self._type_instance_check = bool(value)
+        self._raise_error = bool(value)
     # endregion Properties

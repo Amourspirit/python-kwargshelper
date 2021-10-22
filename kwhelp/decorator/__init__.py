@@ -1,5 +1,6 @@
 import functools
-from typing import Dict, Iterable
+from typing import Dict
+from collections.abc import Iterable
 from inspect import signature
 from ..checks import TypeChecker, RuleChecker
 from ..rules import IRule
@@ -37,11 +38,8 @@ class TypeCheckerAny(object):
             tc = TypeChecker(types=self._types, **self._kwargs)
             is_valid = tc.validate(*args, **kwargs)
             if tc.raise_error is False:
-                if hasattr(wrapper, "is_types_valid"):
-                    wrapper.is_types_valid = bool(wrapper.is_types_valid) & is_valid
-                else:
-                    wrapper.is_types_valid = is_valid
-                return func(*args, **kwargs)
+                wrapper.is_types_valid = is_valid
+            return func(*args, **kwargs)
         # wrapper.is_types_valid = self.is_valid
         return wrapper
 class TypeCheckerKw(object):
@@ -76,13 +74,20 @@ class TypeCheckerKw(object):
     def _get_types(self, key: str) -> Iterable:
         if not key in self._arg_index:
             return []
-        result = []
-        try:
-            index = int(self._arg_index[key])
-            result = self._types[index]
-        except IndexError:
-            result = []
-        return result
+
+        value = self._arg_index[key]
+        if isinstance(value, int):
+            t = self._types[value]
+            if isinstance(t, Iterable):
+                return t
+            return [t]
+        if isinstance(value, Iterable):
+            # iterable
+            return value
+        else:
+            # make iterable
+            return (value,)
+
 
     def _get_args_dict(self, fn, args, kwargs):
         # https://stackoverflow.com/questions/218616/how-to-get-method-parameter-names
@@ -96,7 +101,6 @@ class TypeCheckerKw(object):
         def wrapper(*args, **kwargs):
             is_valid = True
             arg_name_values = self._get_args_dict(func, args, kwargs)
-            arg_keys = arg_name_values.keys()
 
             for key in self._arg_index.keys():
                 types = self._get_types(key=key)
@@ -108,11 +112,7 @@ class TypeCheckerKw(object):
                 if is_valid is False:
                     break
             if tc.raise_error is False:
-                if hasattr(wrapper, "is_types_kw_valid"):
-                    wrapper.is_types_kw_valid = bool(
-                        wrapper.is_types_kw_valid) & is_valid
-                else:
-                    wrapper.is_types_kw_valid = is_valid
+                wrapper.is_types_kw_valid = is_valid
             return func(*args, **kwargs)
         # wrapper.is_types_valid = self.is_valid
         return wrapper
@@ -152,11 +152,7 @@ class RuleCheckAny(object):
             rc = RuleChecker(rules_any=self._rules, **self._kwargs)
             is_valid = rc.validate_any(*args, **kwargs)
             if rc.raise_error is False:
-                if hasattr(wrapper, "is_rules_any_valid"):
-                    wrapper.is_rules_any_valid = bool(
-                        wrapper.is_rules_any_valid) & is_valid
-                else:
-                    wrapper.is_rules_any_valid = is_valid
+                wrapper.is_rules_any_valid = is_valid
             return func(*args, **kwargs)
         # wrapper.is_types_valid = self.is_valid
         return wrapper
@@ -196,11 +192,7 @@ class RuleCheckAll(object):
             rc = RuleChecker(rules_all=self._rules, **self._kwargs)
             is_valid = rc.validate_all(*args, **kwargs)
             if rc.raise_error is False:
-                if hasattr(wrapper, "is_rules_all_valid"):
-                    wrapper.is_rules_all_valid = bool(
-                        wrapper.is_rules_all_valid) & is_valid
-                else:
-                    wrapper.is_rules_all_valid = is_valid
+                wrapper.is_rules_all_valid = is_valid
             return func(*args, **kwargs)
         # wrapper.is_types_valid = self.is_valid
         return wrapper
@@ -240,13 +232,20 @@ class RuleCheckAllKw(object):
     def _get_rules(self, key: str) -> Iterable:
         if not key in self._arg_index:
             return []
-        result = []
-        try:
-            index = int(self._arg_index[key])
-            result = self._rules[index]
-        except IndexError:
-            result = []
-        return result
+        value = self._arg_index[key]
+        if isinstance(value, int):
+            r = self._rules[value]
+            if isinstance(r, Iterable):
+                return r
+            return [r]
+        if issubclass(value, IRule):
+            return (value,)
+        if isinstance(value, Iterable):
+            # iterable
+            return value
+        else:
+            # make iterable
+            return (value,)
 
     def _get_args_dict(self, fn, args, kwargs):
         # https://stackoverflow.com/questions/218616/how-to-get-method-parameter-names
@@ -276,11 +275,7 @@ class RuleCheckAllKw(object):
                     if is_valid is False:
                         break
             if add_attrib:
-                if hasattr(wrapper, "is_rules_kw_all_valid"):
-                    wrapper.is_rules_kw_all_valid = bool(
-                        wrapper.is_rules_kw_all_valid) & is_valid
-                else:
-                    wrapper.is_rules_kw_all_valid = is_valid
+                wrapper.is_rules_kw_all_valid = is_valid
             return func(*args, **kwargs)
         # wrapper.is_types_valid = self.is_valid
         return wrapper
@@ -312,11 +307,7 @@ class RuleCheckAnyKw(RuleCheckAllKw):
                     if is_valid is False:
                         break
             if add_attrib:
-                if hasattr(wrapper, "is_rules_any_valid"):
-                    wrapper.is_rules_any_valid = bool(
-                        wrapper.is_rules_any_valid) & is_valid
-                else:
-                    wrapper.is_rules_any_valid = is_valid
+                wrapper.is_rules_any_valid = is_valid
             return func(*args, **kwargs)
         # wrapper.is_types_valid = self.is_valid
         return wrapper

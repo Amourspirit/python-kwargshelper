@@ -45,7 +45,6 @@ class TestTypeDecorators(unittest.TestCase):
             return float(one) + float(two)
 
         result = type_test(10, 12.3)
-        assert type_test.is_types_valid == True
         assert result == 22.3
         
         with self.assertRaises(TypeError):
@@ -78,7 +77,47 @@ class TestTypeDecorators(unittest.TestCase):
         with self.assertRaises(TypeError):
             type_test(19, "one")
         with self.assertRaises(TypeError):
-            type_test(Two=19, one="one")
+            type_test(two=19, one="one")
+    
+    def test_kw_type_checker_dec_types_type(self):
+        @TypeCheckerKw(arg_index={"one":0, "two": 1},types=[int, float])
+        def type_test(one, two) -> float:
+            return float(one) + float(two)
+    
+        result = type_test(10, 12.3)
+        assert result == 22.3
+        
+        with self.assertRaises(TypeError):
+            type_test(19, 10)
+        with self.assertRaises(TypeError):
+            type_test(two=19.2, one=1.2)
+    
+    def test_kw_type_checker_dec_arg_index_three_list(self):
+        @TypeCheckerKw(arg_index={"one":0, "two": 0, "three": [int]},types=[(int,float)])
+        def type_test(one, two, three) -> float:
+            return float(one) + float(two) + float(three)
+    
+        result = type_test(10, 12.3, 1)
+        assert result == 23.3
+        
+        with self.assertRaises(TypeError):
+            type_test(19, 1, 3.4)
+        with self.assertRaises(TypeError):
+            type_test(two=19, one=2.2, three="2")
+    
+    def test_kw_type_checker_dec_arg_index_type(self):
+        @TypeCheckerKw(arg_index={"one": 0, "two": 0, "three": int}, types=[(int, float)])
+        def type_test(one, two, three) -> float:
+            return float(one) + float(two) + float(three)
+
+        result = type_test(10, 12.3, 1)
+        assert result == 23.3
+
+        with self.assertRaises(TypeError):
+            type_test(19, 1, 3.4)
+        with self.assertRaises(TypeError):
+            type_test(two=19, one=2.2, three="2")
+
 
     def test_kw_type_checker_dec_no_error(self):
         @TypeCheckerKw(arg_index={"one": 0, "two": 0}, types=[(int, float)], raise_error=False)
@@ -90,10 +129,10 @@ class TestTypeDecorators(unittest.TestCase):
         try:
             result = type_test(19, "one")
         except ValueError:
-            assert type_test.is_types_valid == False
+            assert type_test.is_types_kw_valid == False
         result = type_test(two=23.4, one=10)
         assert result == 33.4
-        assert type_test.is_types_valid == True
+        assert type_test.is_types_kw_valid == True
 
 
 if __name__ == '__main__':
