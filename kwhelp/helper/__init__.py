@@ -1,6 +1,6 @@
 # coding: utf-8
 import collections
-import six
+
 class Singleton(type):
     """Singleton abstrace class"""
     _instances = {}
@@ -53,5 +53,5 @@ def is_iterable(arg: object) -> bool:
     """
     return (
         isinstance(arg, collections.Iterable)
-        and not isinstance(arg, six.string_types)
+        and not isinstance(arg, str)
     )
