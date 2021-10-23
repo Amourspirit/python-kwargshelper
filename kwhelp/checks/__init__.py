@@ -1,8 +1,8 @@
 # coding: utf-8
 from inspect import isclass
-from typing import Iterable, Iterator, List, Optional, Set, Union
+from typing import Iterable, Optional, Union
 from ..rules import IRule
-
+from ..helper import is_iterable
 class TypeChecker:
     """Class that validates args match a give type"""
 
@@ -20,11 +20,16 @@ class TypeChecker:
                 are tested also for isinstance if type does not match, rather then just type check if type is a match.
                 If ``False`` then values willl only be tested as type.
                 Default ``True``
+
+        Raises:
+            TypeError: if ``types`` arg is not a iterable object such as a list or tuple.
         """
         self._types = types
 
         if self._types is None:
             self._types = []
+        if is_iterable(self._types) == False:
+            raise TypeError("types arg must be an iterable object such as list or tuple.")
 
         key = 'raise_error'
         if key in kwargs:
@@ -160,19 +165,31 @@ class RuleChecker:
         Keyword Arguments:
             raise_error (bool, optional): If ``True`` then rules can raise errors when validation fails.
                 Default ``False``.
+
+        Raises:
+            TypeError: If ``rule_all`` is not an iterable object
+            TypeError: If ``rule_any`` is not an iterable object
         """
         if rules_all is None:
             self._rules_all = []
             self._len_all = 0
         else:
+            if is_iterable(rules_all) == False:
+                raise TypeError(
+                    "rules_all arg must be an iterable object such as list or tuple.")
             self._rules_all = rules_all
             self._len_all = len(self._rules_all)
         if rules_any is None:
             self._rules_any = []
             self._len_any = 0
         else:
+            if is_iterable(rules_any) == False:
+                raise TypeError(
+                    "rules_aany arg must be an iterable object such as list or tuple.")
             self._rules_any = rules_any
             self._len_any = len(self._rules_any)
+            
+        
         key = 'raise_error'
         if key in kwargs:
             self._raise_error: bool = bool(kwargs[key])

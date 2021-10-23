@@ -1,9 +1,9 @@
 import functools
-from typing import Dict, Optional, Union
-from collections.abc import Iterable
+from typing import Dict, Iterable, Optional, Union
 from inspect import signature, isclass
 from ..checks import TypeChecker, RuleChecker
 from ..rules import IRule
+from ..helper import is_iterable
 
 class TypeCheckerAny(object):
     """
@@ -24,7 +24,13 @@ class TypeCheckerAny(object):
             type_instance_check (bool, optional): If ``True`` then args are tested also for ``isinstance()``
                 if type does not match, rather then just type check. If ``False`` then values willl only be
                 tested as type. Default ``True``
+
+        Raises:
+            TypeError: if ``types`` arg is not a iterable object such as a list or tuple.
         """
+        if is_iterable(types) == False:
+            raise TypeError(
+                "types arg must be an iterable object such as list or tuple.")
         self._types = types
         if kwargs:
             # keyword args are passed to TypeChecker
@@ -84,8 +90,7 @@ class TypeCheckerKw(object):
             if isinstance(t, Iterable):
                 return t
             return [t]
-        if isinstance(value, Iterable):
-            # iterable
+        if is_iterable(value):
             return value
         else:
             # make iterable
@@ -143,7 +148,13 @@ class RuleCheckAny(object):
                 If ``False`` then an attribute will be set on decorated function
                 named ``is_rules_any_valid`` indicating if validation status.
                 Default ``True``.
+
+        Raises:
+            TypeError: if ``rules`` arg is not a iterable object such as a list or tuple.
         """
+        if is_iterable(rules) == False:
+            raise TypeError(
+                "rules arg must be an iterable object such as list or tuple.")
         self._rules = rules
         if kwargs:
             self._kwargs = {**kwargs}
@@ -183,7 +194,13 @@ class RuleCheckAll(object):
                 If ``False`` then an attribute will be set on decorated function
                 named ``is_rules_all_valid`` indicating if validation status.
                 Default ``True``.
+
+         Raises:
+            TypeError: if ``rules`` arg is not a iterable object such as a list or tuple.
         """
+        if is_iterable(rules) == False:
+            raise TypeError(
+                "rules arg must be an iterable object such as list or tuple.")
         self._rules = rules
         if kwargs:
             self._kwargs = {**kwargs}

@@ -29,6 +29,10 @@ class TestTypeChecker(unittest.TestCase):
         assert tc.validate(1, 3, 4.6, 5, 5.8) == True
         assert tc.validate(1, "a", int, self) == True
 
+    def test_types_err(self):
+        with self.assertRaises(TypeError):
+            tc = TypeChecker(types=str)
+
     def test_no_err(self):
         tc = TypeChecker(types=[int, float], raise_error=False)
         assert tc.validate(one=2, two=2.0) == True
@@ -68,7 +72,14 @@ class TestTypeDecorators(unittest.TestCase):
         
         with self.assertRaises(TypeError):
             result = type_test(3, "")
-    
+
+    def test_type_checker_dec_type_err(self):
+        with self.assertRaises(TypeError):
+            @TypeCheckerAny(types=int)
+            def type_test(one) -> float:
+                return one
+
+
     def test_type_checker_args_dec(self):
 
         @TypeCheckerAny(types=[float, int], raise_error=True)

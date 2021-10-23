@@ -35,6 +35,15 @@ class TestRuleChecker(unittest.TestCase):
         with self.assertRaises(TypeError):
             rc.validate_any(start=1, end="2")
 
+    def test_rules_all_err(self):
+        with self.assertRaises(TypeError):
+            rc = RuleChecker(rules_all=rules.RuleInt, rules_any=[
+                    rules.RuleIntPositive, rules.RuleFloatPositive])
+
+    def test_rules_any_err(self):
+        with self.assertRaises(TypeError):
+            rc = RuleChecker(rules_all=[rules.RuleInt], rules_any=rules.RuleFloatPositive)
+
     def test_no_err(self):
         rc = RuleChecker(rules_all=[rules.RuleInt], rules_any=[
                          rules.RuleIntPositive, rules.RuleFloatPositive], raise_error=False)
@@ -81,7 +90,13 @@ class TestRuleDecorators(unittest.TestCase):
             result = rule_test(3, "")
         with self.assertRaises(TypeError):
             result = rule_test(3, -2.3)
-    
+
+    def test_rule_check_any_dec_rules_err(self):
+        with self.assertRaises(TypeError):
+            @RuleCheckAny(rules=rules.RuleFloatPositive)
+            def rule_test(one, two) -> float:
+                return float(one) + float(two)
+
     def test_rule_check_any_dec_kwargs(self):
         @RuleCheckAny(rules=[rules.RuleIntPositive, rules.RuleFloatPositive], raise_error=True)
         def rule_test(one, two) -> float:
@@ -115,6 +130,12 @@ class TestRuleDecorators(unittest.TestCase):
             rule_test("1", "2", 1)
         with self.assertRaises(TypeError):
             rule_test(start="1", middle=2, end=".")
+
+    def test_rule_check_all_dec_rules_err(self):
+        with self.assertRaises(TypeError):
+            @RuleCheckAll(rules=rules.RuleFloatPositive)
+            def rule_test(one, two) -> float:
+                return float(one) + float(two)
 
     def test_rule_str_no_err(self):
         @RuleCheckAll(rules=[rules.RuleStrNotNullEmptyWs], raise_error=False)
