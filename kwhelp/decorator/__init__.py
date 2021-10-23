@@ -1,7 +1,7 @@
 import functools
-from typing import Dict
+from typing import Dict, Optional, Union
 from collections.abc import Iterable
-from inspect import signature
+from inspect import signature, isclass
 from ..checks import TypeChecker, RuleChecker
 from ..rules import IRule
 
@@ -46,14 +46,17 @@ class TypeCheckerKw(object):
     """
     Decorator that decorates methods that require key, value args to match a type specificed in a list
     """
-    def __init__(self, arg_index: Dict[str, int], types: Iterable[Iterable[type]], **kwargs):
+
+    def __init__(self, arg_info: Dict[str, Union[int, type, Iterable[type]]], types: Optional[Iterable[Union[type, Iterable[type]]]] = None, **kwargs):
         """
         Constructor
 
         Args:
-            arg_index (Dict[str, int]): Dictionary of Key and int. Each Key represents that name of 
-                an arg to type check. Each value corresponds to a value in ``types``.
-            types (Iterable[Iterable[type]]): List of type for args to match.
+            arg_info (Dict[str, Union[int, type, Iterable[type]]]): Dictionary of Key and int, type, or Iterable[type].
+                Each Key represents that name of an arg to match one or more types(s).
+                If value is int then value is an index that corresponds to an item in ``types``.
+            types (Iterable[Union[type, Iterable[type]]], optional): List of types for arg_info entries to match.
+                Default ``None``
 
         Keyword Arguments:
             raise_error: (bool, optional): If ``True`` then a ``TypeError`` will be raised if a
@@ -64,17 +67,17 @@ class TypeCheckerKw(object):
                 if type does not match, rather then just type check. If ``False`` then values willl only be
                 tested as type. Default ``True``
         """
-        self._arg_index = arg_index
-        self._types = types
+        self._arg_index = arg_info
+        if types is None:
+            self._types = []
+        else:
+            self._types = types
         if kwargs:
             self._kwargs = {**kwargs}
         else:
             self._kwargs = {}
 
     def _get_types(self, key: str) -> Iterable:
-        if not key in self._arg_index:
-            return []
-
         value = self._arg_index[key]
         if isinstance(value, int):
             t = self._types[value]
@@ -102,6 +105,7 @@ class TypeCheckerKw(object):
             is_valid = True
             arg_name_values = self._get_args_dict(func, args, kwargs)
 
+            tc = False
             for key in self._arg_index.keys():
                 types = self._get_types(key=key)
                 if len(types) == 0:
@@ -111,7 +115,7 @@ class TypeCheckerKw(object):
                 is_valid = tc.validate(**{key: value})
                 if is_valid is False:
                     break
-            if tc.raise_error is False:
+            if tc and tc.raise_error is False:
                 wrapper.is_types_kw_valid = is_valid
             return func(*args, **kwargs)
         # wrapper.is_types_valid = self.is_valid
@@ -204,14 +208,16 @@ class RuleCheckAllKw(object):
     
     If a function specific args do not match all matching rules in ``rules`` list then validation will fail.
     """
-    def __init__(self, arg_index: Dict[str, int], rules: Iterable[Iterable[IRule]], **kwargs):
+    def __init__(self, arg_info: Dict[str, Union[int, IRule, Iterable[IRule]]], rules: Optional[Iterable[Union[IRule, Iterable[IRule]]]] = None, **kwargs):
         """
         Constructor
 
         Args:
-            arg_index (Dict[str, int]): Dictionary of Key and int. Each Key represents that name of 
-                an arg to type check. Each value corresponds to a value in ``types``.
-            rules (Iterable[Iterable[type]]): List of rules for args to match.
+            arg_info (Dict[str, Union[int, IRule, Iterable[IRule]]]): Dictionary of Key and int, IRule, or Iterable[IRule].
+                Each Key represents that name of an arg to check with one or more rules.
+                If value is int then value is an index that corresponds to an item in ``rules``.
+            rules (Iterable[Union[IRule, Iterable[IRule]]], optional): List of rules for arg_info entries to match.
+                Default ``None``
 
          Keyword Arguments:
             raise_error: (bool, optional): If ``True`` then an Exception will be raised if a
@@ -222,30 +228,26 @@ class RuleCheckAllKw(object):
                 named ``is_rules_kw_all_valid`` indicating if validation status.
                 Default ``True``.
         """
-        self._arg_index = arg_index
-        self._rules = rules
+        self._arg_index = arg_info
+        if rules is None:
+            self._rules = []
+        else:
+            self._rules = rules
         if kwargs:
             self._kwargs = {**kwargs}
         else:
             self._kwargs = {}
 
     def _get_rules(self, key: str) -> Iterable:
-        if not key in self._arg_index:
-            return []
         value = self._arg_index[key]
         if isinstance(value, int):
             r = self._rules[value]
             if isinstance(r, Iterable):
                 return r
             return [r]
-        if issubclass(value, IRule):
+        if isclass(value) and issubclass(value, IRule):
             return (value,)
-        if isinstance(value, Iterable):
-            # iterable
-            return value
-        else:
-            # make iterable
-            return (value,)
+        return value
 
     def _get_args_dict(self, fn, args, kwargs):
         # https://stackoverflow.com/questions/218616/how-to-get-method-parameter-names

@@ -1,4 +1,5 @@
 # coding: utf-8
+from inspect import isclass
 from typing import Iterable, Iterator, List, Optional, Set, Union
 from ..rules import IRule
 
@@ -53,8 +54,6 @@ class TypeChecker:
                     result = True
                     break
             return result
-        if len(self._types) == 0:
-            return True
         result = True
         if not type(value) in self._types:
             # object such as PosixPath inherit from more than on class (Path, PurePosixPath)
@@ -187,7 +186,7 @@ class RuleChecker:
         result = True
         if self._len_all > 0:
             for rule in self._rules_all:
-                if not issubclass(rule, IRule):
+                if not isclass(rule) or not issubclass(rule, IRule):
                     raise TypeError('Rules must implement IRule')
                 rule_instance: IRule = rule(
                     key=key, name=field, value=value, raise_errors=self._raise_error, originator=self)
@@ -202,7 +201,7 @@ class RuleChecker:
         result = True
         if self._len_any > 0:
             for rule in self._rules_any:
-                if not issubclass(rule, IRule):
+                if not isclass(rule) or not issubclass(rule, IRule):
                     raise TypeError('Rules must implement IRule')
                 rule_instance: IRule = rule(
                     key=key, name=field, value=value, raise_errors=self._raise_error, originator=self)

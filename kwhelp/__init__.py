@@ -1,4 +1,5 @@
 # coding: utf-8
+from inspect import isclass
 from .helper import NO_THING
 from . helper.base import HelperBase
 from . rules import IRule
@@ -1158,7 +1159,7 @@ class KwargsHelper(HelperBase):
         result = True
         if len(rules) > 0:
             for rule in rules:
-                if not issubclass(rule, IRule):
+                if not isclass(rule) or not issubclass(rule, IRule):
                     raise TypeError('Rules must implement IRule')
                 rule_instance: IRule = rule(
                     key=key, name=field, value=value, raise_errors=self._rule_error, originator=self._obj)
@@ -1173,7 +1174,7 @@ class KwargsHelper(HelperBase):
         result = True
         if len(rules) > 0:
             for rule in rules:
-                if not issubclass(rule, IRule):
+                if not isclass(rule) or not issubclass(rule, IRule):
                     raise TypeError('Rules must implement IRule')
                 rule_instance: IRule = rule(
                     key=key, name=field, value=value, raise_errors=self._rule_error, originator=self._obj)
