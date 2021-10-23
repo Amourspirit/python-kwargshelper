@@ -1,0 +1,8 @@
+Decorator
+=========
+
+.. toctree::
+    :titlesonly:
+    :glob:
+
+    *
