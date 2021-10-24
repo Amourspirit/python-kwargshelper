@@ -34,14 +34,16 @@ A negative number will raise an error.
 .. code-block:: python
 
     >>> result = add_positives(2, 1.2, -1)
-    ValueError: Arg error: 'arg' must be a positive int value
+    kwhelp.error.RuleError: RuleError: Rule 'RuleIntPositive' Failed validation.
+    Expected at least one of the following rules to match: RuleIntPositive, RuleFloatPositive.
 
 Rules dictate that if a type is not ``int`` or ``float`` then and error will be raised.
 
 .. code-block:: python
 
     >>> result = add_positives(2, 1.2, "4")
-    TypeError: Argument Error: 'arg' is expecting type of 'int'. Got type of 'str'
+    kwhelp.error.RuleError: RuleError: Rule 'RuleIntPositive' Failed validation.
+    Expected at least one of the following rules to match: RuleIntPositive, RuleFloatPositive.
 
 Decorating with Key, Value
 --------------------------
@@ -77,7 +79,8 @@ Adding positive numbers works as expected.
 
     >>> result = speed_msg(speed=66, limit=60, hours=4.7)
     >>> print(result)
-    Please slow down limit is '60' and you are currenlty going '66'. Current driving hours is '4.7'
+    Please slow down limit is '60' and you are currenlty going '66'. Current driving hours is '4.7
+
 
 Because decorator rules dictate that only postiive numbers are allowed.
 A negative number will raise an error.
