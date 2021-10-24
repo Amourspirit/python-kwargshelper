@@ -3,22 +3,11 @@ from inspect import isclass
 from .helper import NO_THING
 from . helper.base import HelperBase
 from . rules import IRule
+from .error import CancelEventError, ReservedAttributeError
 from typing import Iterable, List, Optional, Callable
 from collections import UserList
 from typing import Any, Dict, List, Optional, Set, Callable, Union
-VERSION = __version__ = '2.0.0'
-
-
-# region Custom Errors
-
-
-class CancelEventError(Exception):
-    '''Cancel Event Error'''
-
-
-class ReservedAttributeError(ValueError):
-    '''Error when a reserved attribute is attempted to be set'''
-# endregion Custom Errors
+VERSION = __version__ = '2.1.0'
 
 # region class HelperArgs
 
