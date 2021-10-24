@@ -3,7 +3,7 @@ from inspect import isclass
 from typing import Iterable, Optional, Union
 from ..rules import IRule
 from ..helper import is_iterable
-from ..error import RuleError
+from ..exceptions import RuleError
 class TypeChecker:
     """Class that validates args match a give type"""
 
@@ -201,23 +201,40 @@ class RuleChecker:
 
     def _validate_rules_all(self, key: str, field: str, value: object) -> bool:
         # if all rules pass then validations is considered a success
+        valid_arg = self._is_valid_arg(key)
+        if valid_arg:
+            _key = key
+            _field = field
+        else:
+            _key = 'arg'
+            _field = 'arg'
+           
         result = True
         if self._len_all > 0:
             for rule in self._rules_all:
                 if not isclass(rule) or not issubclass(rule, IRule):
                     raise TypeError('Rules must implement IRule')
                 rule_instance: IRule = rule(
-                    key=key, name=field, value=value, raise_errors=self._raise_error, originator=self)
+                    key=_key, name=_field, value=value, raise_errors=self._raise_error, originator=self)
                 try:
                     result = result & rule_instance.validate()
                 except Exception as e:
-                    raise RuleError(err_rule=rule, rules_all=self._rules_all) from e
+                    arg_name = _key if valid_arg else None
+                    raise RuleError(
+                        err_rule=rule, rules_all=self._rules_all, arg_name=arg_name, errors=e) from e
                 if result is False:
                     break
         return result
 
     def _validate_rules_any(self, key: str, field: str, value: object) -> bool:
         # if any rule passes then validations is considered a success
+        valid_arg = self._is_valid_arg(key)
+        if valid_arg:
+            _key = key
+            _field = field
+        else:
+            _key = 'arg'
+            _field = 'arg'
         error_lst = []
         result = True
         failed_rules = []
@@ -226,7 +243,7 @@ class RuleChecker:
                 if not isclass(rule) or not issubclass(rule, IRule):
                     raise TypeError('Rules must implement IRule')
                 rule_instance: IRule = rule(
-                    key=key, name=field, value=value, raise_errors=self._raise_error, originator=self)
+                    key=_key, name=_field, value=value, raise_errors=self._raise_error, originator=self)
                 rule_valid = False
                 try:
                     rule_valid = rule_instance.validate()
@@ -239,11 +256,15 @@ class RuleChecker:
                     break
         if result is False and self._raise_error is True and len(error_lst) > 0:
             # raise the last error in error list
+            arg_name = _key if valid_arg else None
             raise RuleError(rules_any=self._rules_any,
-                            err_rule=failed_rules[0]) from error_lst[0]
+                            err_rule=failed_rules[0], arg_name=arg_name, errors=error_lst) from error_lst[0]
             
         return result
 
+    def _is_valid_arg(self, arg:str) -> bool:
+        return arg != '..arg'
+    
     # endregion internal validation methods
 
     def validate_all(self, *args, **kwargs) -> bool:
@@ -263,7 +284,7 @@ class RuleChecker:
         result = True
         for arg in args:
             result = result & self._validate_rules_all(
-                key="arg", field="arg", value=arg)
+                key="..arg", field="arg", value=arg)
             if result is False:
                 break
         if result is False:
@@ -291,7 +312,7 @@ class RuleChecker:
         result = True
         for arg in args:
             result = self._validate_rules_any(
-                key="arg", field="arg", value=arg)
+                key="..arg", field="arg", value=arg)
             if result is False:
                 break
         if result is False:

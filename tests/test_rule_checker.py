@@ -7,7 +7,7 @@ if __name__ == '__main__':
 from kwhelp.checks import RuleChecker
 from kwhelp.decorator import RuleCheckAny, RuleCheckAll, RuleCheckAllKw, RuleCheckAnyKw, TypeCheckerKw
 from kwhelp import rules
-from kwhelp.error import RuleError
+from kwhelp.exceptions import RuleError
 
 
 class TestRuleChecker(unittest.TestCase):

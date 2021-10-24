@@ -3,7 +3,7 @@ from inspect import isclass
 from .helper import NO_THING
 from . helper.base import HelperBase
 from . rules import IRule
-from .error import CancelEventError, ReservedAttributeError
+from .exceptions import CancelEventError, ReservedAttributeError
 from typing import Iterable, List, Optional, Callable
 from collections import UserList
 from typing import Any, Dict, List, Optional, Set, Callable, Union

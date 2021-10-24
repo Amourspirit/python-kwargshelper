@@ -1,7 +1,7 @@
 RuleCheckAny
 ============
 
-RuleCheckAny decorator reqires that all args of a function match one or more rules.
+RuleCheckAny decorator reqires that each args of a function match one or more rules.
 
 Decorating with ``*args``
 -------------------------
@@ -36,14 +36,18 @@ A negative number will raise an error.
     >>> result = add_positives(2, 1.2, -1)
     kwhelp.error.RuleError: RuleError: Rule 'RuleIntPositive' Failed validation.
     Expected at least one of the following rules to match: RuleIntPositive, RuleFloatPositive.
+    Inner Error Message: ValueError: Arg error: 'arg' must be a positive int value
 
-Rules dictate that if a type is not ``int`` or ``float`` then and error will be raised.
+
+Rules dictate that if a type is not ``int`` or ``float`` then an error will be raised.
 
 .. code-block:: python
 
     >>> result = add_positives(2, 1.2, "4")
     kwhelp.error.RuleError: RuleError: Rule 'RuleIntPositive' Failed validation.
     Expected at least one of the following rules to match: RuleIntPositive, RuleFloatPositive.
+    Inner Error Message: TypeError: Argument Error: 'arg' is expecting type of 'int'. Got type of 'str'
+
 
 Decorating with Key, Value
 --------------------------
@@ -88,18 +92,28 @@ A negative number will raise an error.
 .. code-block:: python
 
     >>> result = speed_msg(speed=-2, limit=60)
-    ValueError: Arg error: 'speed' must be a positive int value
+    kwhelp.error.RuleError: RuleError: Argument: 'speed' failed validation. Rule 'RuleIntPositive' Failed validation.
+    Expected at least one of the following rules to match: RuleIntPositive, RuleFloatPositive.
+    Inner Error Message: ValueError: Arg error: 'speed' must be a positive int value
+
+
 
 .. code-block:: python
 
     >>> result = speed_msg(speed=66, limit=60, hours=-0.2)
+    kwhelp.error.RuleError: RuleError: Argument: 'hours' failed validation. Rule 'RuleIntPositive' Failed validation.
+    Expected at least one of the following rules to match: RuleIntPositive, RuleFloatPositive.
+    Inner Error Message: TypeError: Argument Error: 'hours' is expecting type of 'int'. Got type of 'float'
 
-Rules dictate that if a type is not ``int`` or ``float`` then and error will be raised.
+
+Rules dictate that if a type is not ``int`` or ``float`` then an error will be raised.
 
 .. code-block:: python
 
     >>> result = speed_msg(speed=45, limit="Fast")
-    TypeError: Argument Error: 'limit' is expecting type of 'int'. Got type of 'str'
+    kwhelp.error.RuleError: RuleError: Argument: 'limit' failed validation. Rule 'RuleIntPositive' Failed validation.
+    Expected at least one of the following rules to match: RuleIntPositive, RuleFloatPositive.
+    Inner Error Message: TypeError: Argument Error: 'limit' is expecting type of 'int'. Got type of 'str'
 
 Included Rules
 --------------
