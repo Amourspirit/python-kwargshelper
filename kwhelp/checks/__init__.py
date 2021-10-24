@@ -3,6 +3,7 @@ from inspect import isclass
 from typing import Iterable, Optional, Union
 from ..rules import IRule
 from ..helper import is_iterable
+from ..error import RuleError
 class TypeChecker:
     """Class that validates args match a give type"""
 
@@ -207,7 +208,10 @@ class RuleChecker:
                     raise TypeError('Rules must implement IRule')
                 rule_instance: IRule = rule(
                     key=key, name=field, value=value, raise_errors=self._raise_error, originator=self)
-                result = result & rule_instance.validate()
+                try:
+                    result = result & rule_instance.validate()
+                except Exception as e:
+                    raise RuleError(err_rule=rule, rules_all=self._rules_all) from e
                 if result is False:
                     break
         return result
@@ -216,6 +220,7 @@ class RuleChecker:
         # if any rule passes then validations is considered a success
         error_lst = []
         result = True
+        failed_rules = []
         if self._len_any > 0:
             for rule in self._rules_any:
                 if not isclass(rule) or not issubclass(rule, IRule):
@@ -227,13 +232,16 @@ class RuleChecker:
                     rule_valid = rule_instance.validate()
                 except Exception as e:
                     error_lst.append(e)
+                    failed_rules.append(rule)
                     rule_valid = False
                 result = rule_valid
                 if rule_valid is True:
                     break
         if result is False and self._raise_error is True and len(error_lst) > 0:
             # raise the last error in error list
-            raise error_lst[0]
+            raise RuleError(rules_any=self._rules_any,
+                            err_rule=failed_rules[0]) from error_lst[0]
+            
         return result
 
     # endregion internal validation methods
