@@ -21,6 +21,13 @@ class TestRuleError(unittest.TestCase):
     def test_rule(self):
         with self.assertRaisesRegex(RuleError, "RuleError:\s.*'RuleInt'"):
             self.raise_err(err_rule=rules.RuleInt)
+
+    def test_rules_all_single(self):
+        rx = re.compile(
+            r"^RuleError: Expected the following rule to match: RuleFloat.")
+        with self.assertRaisesRegex(RuleError, rx):
+            self.raise_err(rules_all=[rules.RuleFloat])
+
     
     def test_rules_all(self):
         rx = re.compile(r"^RuleError:\s.*RuleInt", re.MULTILINE)
@@ -29,7 +36,7 @@ class TestRuleError(unittest.TestCase):
 
     def test_rules_all_multi(self):
         rx = re.compile(
-            r"^RuleError:\s.*all of.*match: RuleInt \| RuleFloat", re.MULTILINE)
+            r"^RuleError:\s.*all of.*match: RuleInt, RuleFloat", re.MULTILINE)
         with self.assertRaisesRegex(RuleError, rx):
             self.raise_err(rules_all=[rules.RuleInt, rules.RuleFloat])
 
@@ -40,9 +47,15 @@ class TestRuleError(unittest.TestCase):
     
     def test_rules_any_multi(self):
         rx = re.compile(
-            r"^RuleError:\s.*one of.*match: RuleInt \| RuleFloat", re.MULTILINE)
+            r"^RuleError:\s.*one of.*match: RuleInt, RuleFloat", re.MULTILINE)
         with self.assertRaisesRegex(RuleError, rx):
             self.raise_err(rules_any=[rules.RuleInt, rules.RuleFloat])
+
+    def test_rules_any_single(self):
+        rx = re.compile(
+            r"^RuleError: Expected the following rule to match: RuleFloat.")
+        with self.assertRaisesRegex(RuleError, rx):
+            self.raise_err(rules_any=[rules.RuleFloat])
 
 if __name__ == '__main__':
     unittest.main()

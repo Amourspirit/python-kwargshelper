@@ -24,10 +24,16 @@ class RuleError(Exception):
         if err_rule and isclass(err_rule) and issubclass(err_rule, IRule):
             msg = msg + f" Rule '{err_rule.__name__}' Failed validation."
         if len(self.rules_all) > 0:
-            msg = msg + "\nExpected all of the following rules to match: "
+            if len(self.rules_all) == 1:
+                msg = msg + " Expected the following rule to match: "
+            else:
+                msg = msg + "\nExpected all of the following rules to match: "
             msg = msg + self._get_rules_str(self.rules_all) + "."
         if len(self.rules_any) > 0:
-            msg = msg + "\nExpected at least one of the following rules to match: "
+            if len(self.rules_any) == 1:
+                msg = msg + " Expected the following rule to match: "
+            else:
+                msg = msg + "\nExpected at least one of the following rules to match: "
             msg = msg + self._get_rules_str(self.rules_any) + "."
         self.message = msg
         super().__init__(self.message)
@@ -49,7 +55,7 @@ class RuleError(Exception):
         msg = ""
         for i, rule in enumerate(rules):
             if i > 0:
-                msg = msg + ' | '
+                msg = msg + ', '
             msg = f"{msg}{rule.__name__}"
         return msg
 
