@@ -6,3 +6,4 @@ Usage
 
     KwargsHelper/index
     KwArg/index
+    Decorator/index

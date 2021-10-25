@@ -1,23 +1,13 @@
 # coding: utf-8
+from inspect import isclass
 from .helper import NO_THING
 from . helper.base import HelperBase
 from . rules import IRule
+from .exceptions import CancelEventError, ReservedAttributeError
 from typing import Iterable, List, Optional, Callable
 from collections import UserList
 from typing import Any, Dict, List, Optional, Set, Callable, Union
-VERSION = __version__ = '2.0.0'
-
-
-# region Custom Errors
-
-
-class CancelEventError(Exception):
-    '''Cancel Event Error'''
-
-
-class ReservedAttributeError(ValueError):
-    '''Error when a reserved attribute is attempted to be set'''
-# endregion Custom Errors
+VERSION = __version__ = '2.1.0'
 
 # region class HelperArgs
 
@@ -1024,7 +1014,7 @@ class KwargsHelper(HelperBase):
 
     # endregion internal assign methods
 
-    def _get_formated_types(self, types: Set[str]) -> str:
+    def _get_formated_types(self, types: Iterable[type]) -> str:
         result = ''
         for i, t in enumerate(types):
             if i > 0:
@@ -1158,7 +1148,7 @@ class KwargsHelper(HelperBase):
         result = True
         if len(rules) > 0:
             for rule in rules:
-                if not issubclass(rule, IRule):
+                if not isclass(rule) or not issubclass(rule, IRule):
                     raise TypeError('Rules must implement IRule')
                 rule_instance: IRule = rule(
                     key=key, name=field, value=value, raise_errors=self._rule_error, originator=self._obj)
@@ -1173,7 +1163,7 @@ class KwargsHelper(HelperBase):
         result = True
         if len(rules) > 0:
             for rule in rules:
-                if not issubclass(rule, IRule):
+                if not isclass(rule) or not issubclass(rule, IRule):
                     raise TypeError('Rules must implement IRule')
                 rule_instance: IRule = rule(
                     key=key, name=field, value=value, raise_errors=self._rule_error, originator=self._obj)

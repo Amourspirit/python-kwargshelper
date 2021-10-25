@@ -1,5 +1,5 @@
 CancelEventError Class
 ======================
 
-.. autoclass:: kwhelp.CancelEventError
+.. autoclass:: kwhelp.exceptions.CancelEventError
    :members:
