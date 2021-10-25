@@ -1,15 +1,13 @@
-RequiredCheck Usage
-===================
+DefaultArgs Usage
+=================
 
-:py:class:`~.decorator.RequiredCheck` decorator defines required args for ``**kwargs`` of a function.
+:py:class:`~.decorator.DefaultArgs` decorator that defines default values for ``**kwargs`` of a function.
 
 .. code-block:: python
 
-    from kwhelp.decorator import TypeCheckKw, RequiredCheck
+    from kwhelp.decorator import DefaultArgs
 
-    @RequiredCheck("speed", "limit", "name")
-    @TypeCheckKw(arg_info={"speed": 0, "limit": 0, "hours": 0, "name": 1},
-                    types=[(int, float), str])
+    @DefaultArgs(speed=45, limit=60, name="John")
     def speed_msg(**kwargs) -> str:
         name = kwargs.get('name')
         limit = kwargs.get('limit')
@@ -26,18 +24,12 @@ RequiredCheck Usage
 
 .. code-block:: python
 
-    >>> result = speed_msg(speed=45, limit=60, name="John")
+    >>> result = speed_msg()
     >>> print(result)
     Current speed is '45'. John may go faster as the limit is '60'.
 
 .. code-block:: python
 
-    >>> result = speed_msg(speed=45, limit=60)
+    >>> result = speed_msg(name="Sue", speed=47)
     >>> print(result)
-    ValueError: 'name' is a required arg.
-
-.. code-block:: python
-
-    >>> result = speed_msg(speed="Fast", limit=60, name="John")
-    >>> print(result)
-    TypeError: Arg 'speed' is expected to be of '<class 'int'> | <class 'float'>' but got 'str'
+    Current speed is '47'. Sue may go faster as the limit is '60'.
