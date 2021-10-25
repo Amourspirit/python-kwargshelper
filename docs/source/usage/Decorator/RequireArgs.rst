@@ -1,13 +1,13 @@
-RequiredCheck Usage
-===================
+RequireArgs Usage
+=================
 
-:py:class:`~.decorator.RequiredCheck` decorator defines required args for ``**kwargs`` of a function.
+:py:class:`~.decorator.RequireArgs` decorator defines required args for ``**kwargs`` of a function.
 
 .. code-block:: python
 
-    from kwhelp.decorator import TypeCheckKw, RequiredCheck
+    from kwhelp.decorator import TypeCheckKw, RequireArgs
 
-    @RequiredCheck("speed", "limit", "name")
+    @RequireArgs("speed", "limit", "name")
     @TypeCheckKw(arg_info={"speed": 0, "limit": 0, "hours": 0, "name": 1},
                     types=[(int, float), str])
     def speed_msg(**kwargs) -> str:

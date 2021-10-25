@@ -4,12 +4,12 @@ if __name__ == '__main__':
     import sys
     sys.path.append(os.path.realpath('.'))
 
-from kwhelp.decorator import RequiredCheck
+from kwhelp.decorator import RequireArgs
 
 class TestRequiredDecorators(unittest.TestCase):
     def test_required_gen(self):
 
-        @RequiredCheck("one", "two")
+        @RequireArgs("one", "two")
         def req_test(**kwargs) -> float:
             return (kwargs.get("one", None), kwargs.get("two", None))
         
@@ -26,7 +26,7 @@ class TestRequiredDecorators(unittest.TestCase):
 
     def test_required_with_args(self):
 
-        @RequiredCheck("one", "two")
+        @RequireArgs("one", "two")
         def req_test(first, second, **kwargs) -> float:
             return (first, second, kwargs.get("one", None), kwargs.get("two", None))
 

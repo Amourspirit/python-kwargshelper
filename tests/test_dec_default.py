@@ -4,7 +4,7 @@ if __name__ == '__main__':
     import sys
     sys.path.append(os.path.realpath('.'))
 
-from kwhelp.decorator import DefaultArgs, RequiredCheck
+from kwhelp.decorator import DefaultArgs, RequireArgs
 
 
 class TestRequiredDecorators(unittest.TestCase):
@@ -12,7 +12,7 @@ class TestRequiredDecorators(unittest.TestCase):
     def test_default_gen(self):
 
         @DefaultArgs(one=1, two=2)
-        @RequiredCheck("one", "two", "last")
+        @RequireArgs("one", "two", "last")
         def req_test(**kwargs) -> float:
             return (kwargs.get("one"), kwargs.get("two"), kwargs.get("last"))
 

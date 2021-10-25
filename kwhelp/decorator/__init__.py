@@ -332,12 +332,12 @@ class RuleCheckAnyKw(RuleCheckAllKw):
         # wrapper.is_types_valid = self.is_valid
         return wrapper
 
-class RequiredCheck(object):
+class RequireArgs(object):
     """
     Decorator that defines required args for ``**kwargs`` of a function.
 
     See Also:
-        :doc:`../../usage/Decorator/RequiredCheck`
+        :doc:`../../usage/Decorator/RequireArgs`
     """
     def __init__(self, *args: str):
         """
