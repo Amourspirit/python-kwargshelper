@@ -8,6 +8,9 @@ from ..helper import is_iterable
 class TypeCheckerAny(object):
     """
     Decorator that decorates methods that require args to match a type specificed in a list
+
+    See Also:
+        :doc:`../../usage/Decorator/TypeCheckerAny`
     """
     def __init__(self, types: Iterable[type], **kwargs):
         """
@@ -26,7 +29,8 @@ class TypeCheckerAny(object):
                 tested as type. Default ``True``
 
         Raises:
-            TypeError: if ``types`` arg is not a iterable object such as a list or tuple.
+            TypeError: If ``types`` arg is not a iterable object such as a list or tuple.
+            TypeError: If any arg is not of a type listed in ``types``.
         """
         if is_iterable(types) == False:
             raise TypeError(
@@ -51,6 +55,9 @@ class TypeCheckerAny(object):
 class TypeCheckerKw(object):
     """
     Decorator that decorates methods that require key, value args to match a type specificed in a list
+
+    See Also:
+        :doc:`../../usage/Decorator/TypeCheckerKw`
     """
 
     def __init__(self, arg_info: Dict[str, Union[int, type, Iterable[type]]], types: Optional[Iterable[Union[type, Iterable[type]]]] = None, **kwargs):
@@ -132,6 +139,9 @@ class RuleCheckAny(object):
     Decorator that decorates methods that require args to match a rule specificed in ``rules`` list.
     
     If a function arg does not match at least one rule in ``rules`` list then validation will fail.
+
+    See Also:
+        :doc:`../../usage/Decorator/RuleCheckAny`
     """
     def __init__(self, rules: Iterable[IRule], **kwargs):
         """
@@ -141,7 +151,7 @@ class RuleCheckAny(object):
             rules (Iterable[IRule]): List of rules to use for validation
 
         Keyword Arguments:
-            raise_error: (bool, optional): If ``True`` then an Exception will be raised if a
+            raise_error (bool, optional): If ``True`` then an Exception will be raised if a
                 validation fails. The kind of exception raised depends on the rule that is
                 invalid. Typically a ``TypeError`` or a ``ValueError`` is raised.
                 
@@ -178,6 +188,9 @@ class RuleCheckAll(object):
     Decorator that decorates methods that require args to match all rules specificed in ``rules`` list.
     
     If a function arg does not match all rules in ``rules`` list then validation will fail.
+    
+    See Also:
+        :doc:`../../usage/Decorator/RuleCheckAll`
     """
     def __init__(self, rules: Iterable[IRule], **kwargs):
         """
@@ -187,7 +200,7 @@ class RuleCheckAll(object):
             rules (Iterable[IRule]): List of rules to use for validation
 
         Keyword Arguments:
-            raise_error: (bool, optional): If ``True`` then an Exception will be raised if a
+            raise_error (bool, optional): If ``True`` then an Exception will be raised if a
                 validation fails. The kind of exception raised depends on the rule that is
                 invalid. Typically a ``TypeError`` or a ``ValueError`` is raised.
 
@@ -195,7 +208,7 @@ class RuleCheckAll(object):
                 named ``is_rules_all_valid`` indicating if validation status.
                 Default ``True``.
 
-         Raises:
+        Raises:
             TypeError: if ``rules`` arg is not a iterable object such as a list or tuple.
         """
         if is_iterable(rules) == False:
@@ -224,6 +237,9 @@ class RuleCheckAllKw(object):
     Decorator that decorates methods that require specific args to match rules specificed in ``rules`` list.
     
     If a function specific args do not match all matching rules in ``rules`` list then validation will fail.
+    
+    See Also:
+        :doc:`../../usage/Decorator/RuleCheckAllKw`
     """
     def __init__(self, arg_info: Dict[str, Union[int, IRule, Iterable[IRule]]], rules: Optional[Iterable[Union[IRule, Iterable[IRule]]]] = None, **kwargs):
         """
@@ -305,6 +321,9 @@ class RuleCheckAnyKw(RuleCheckAllKw):
     Decorator that decorates methods that require specific args to match rules specificed in ``rules`` list.
 
     If a function specific args do not match at least one matching rule in ``rules`` list then validation will fail.
+
+    See Also:
+        :doc:`../../usage/Decorator/RuleCheckAnyKw`
     """
     def __call__(self, func):
         @functools.wraps(func)

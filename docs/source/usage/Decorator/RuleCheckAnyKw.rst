@@ -1,10 +1,10 @@
-RuleCheckAllKw Usage
+RuleCheckAnyKw Usage
 ====================
 
-:py:class:`~.decorator.RuleCheckAllKw` decorator allows each arg of a function match all rules specified.
+:py:class:`~.decorator.RuleCheckAnyKw` decorator allows each arg of a function match one of the rules specified.
 Each arg can have seperate rules applied.
 
-:py:class:`~.decorator.RuleCheckAllKw` constructor args ``arg_info`` and ``rules``  work together.
+:py:class:`~.decorator.RuleCheckAnyKw` constructor args ``arg_info`` and ``rules``  work together.
 ``arg_info`` is a dictionary with a key of ``str`` that matches an arg name of the function that
 is being decorated.
 ``arg_info`` value is one of the following:
@@ -17,26 +17,18 @@ is being decorated.
 
 ``rules`` is a list of rules to match. Each element is an :py:class:`~.rules.IRule` or a list of :py:class:`~.rules.IRule`.
 
-Custom IRule
-------------
-
-Custom :py:class:`~.rules.IRule` class that limits value to a max ``int`` value of ``100``.
-
-.. include:: /source/inc/ex/RuleIntMax100.rst
-
 Example Usage
 -------------
 
-:py:class:`~.decorator.RuleCheckAllKw` decorated function.
+:py:class:`~.decorator.RuleCheckAnyKw` decorated function.
 
 .. code-block:: python
 
-    from kwhelp.decorator import RuleCheckAllKw
+    from kwhelp.decorator import RuleCheckAnyKw
     import kwhelp.rules as rules
 
-    @RuleCheckAllKw(arg_info={"speed": 0, "limit": 1, "hours": 1, "name": 2},
-                    rules=[rules.RuleIntPositive,
-                            (rules.RuleIntPositive, RuleIntMax100),
+    @RuleCheckAnyKw(arg_info={"speed": 0, "limit": 0, "hours": 0, "name": 1},
+                    rules=[(rules.RuleIntPositive, rules.RuleFloatPositive),
                             rules.RuleStrNotNullEmptyWs])
     def speed_msg(speed, limit, **kwargs) -> str:
         name = kwargs.get('name', 'You')
@@ -62,20 +54,13 @@ Example Usage
     >>> print(result)
     Current speed is '45'. John may go faster as the limit is '60'.
 
-.. code-block:: python
-
-    >>> result = speed_msg(speed=66, limit=60, hours=3, name="John")
-    >>> print(result)
-    Please slow down limit is '60' and current speed is '66'. Current driving hours is '3'.
-
-
-If any rule fails validation then a :py:class:`~.exceptions.RuleError` is raised.
+If all rules fail validation then a :py:class:`~.exceptions.RuleError` is raised.
 
 .. code-block:: python
 
     >>> result = speed_msg(speed=-2, limit=60)
-    kwhelp.exceptions.RuleError: RuleError: Argument: 'speed' failed validation. Rule 'RuleIntPositive' Failed validation.
-    Expected the following rule to match: RuleIntPositive.
+    RuleError: Argument: 'speed' failed validation. Rule 'RuleIntPositive' Failed validation.
+    Expected at least one of the following rules to match: RuleIntPositive, RuleFloatPositive.
     Inner Error Message: ValueError: Arg error: 'speed' must be a positive int value
 
 .. code-block:: python
@@ -94,9 +79,8 @@ If any rule fails validation then a :py:class:`~.exceptions.RuleError` is raised
     from kwhelp.decorator import RuleCheckAllKw
     import kwhelp.rules as rules
 
-    @RuleCheckAllKw(arg_info={"speed": rules.RuleIntPositive, "limit": 0,
-                        "hours": 0, "name": rules.RuleStrNotNullEmptyWs},
-                    rules=[(rules.RuleIntPositive, RuleIntMax100)])
+    @RuleCheckAnyKw(arg_info={"speed": 0, "limit": 0, "hours": 0, "name": rules.RuleStrNotNullEmptyWs},
+                    rules=[(rules.RuleIntPositive, rules.RuleFloatPositive)])
     def speed_msg(speed, limit, **kwargs) -> str:
         name = kwargs.get('name', 'You')
         if limit > speed:
@@ -108,6 +92,7 @@ If any rule fails validation then a :py:class:`~.exceptions.RuleError` is raised
         if 'hours' in kwargs:
             msg = msg + f" Current driving hours is '{kwargs['hours']}'."
         return msg
+
 
 Included Rules
 --------------

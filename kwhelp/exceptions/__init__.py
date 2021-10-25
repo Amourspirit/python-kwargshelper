@@ -50,7 +50,7 @@ class RuleError(Exception):
             msg = msg + self._get_rules_str(self.rules_all) + "."
         if len(self.rules_any) > 0:
             if len(self.rules_any) == 1:
-                msg = msg + " Expected the following rule to match: "
+                msg = msg + "\nExpected the following rule to match: "
             else:
                 msg = msg + "\nExpected at least one of the following rules to match: "
             msg = msg + self._get_rules_str(self.rules_any) + "."

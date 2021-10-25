@@ -1,7 +1,7 @@
-RuleCheckAny
-============
+RuleCheckAny Usage
+==================
 
-RuleCheckAny decorator reqires that each args of a function match one or more rules.
+:py:class:`~.decorator.RuleCheckAny` decorator reqires that each args of a function match one or more rules.
 
 Decorating with ``*args``
 -------------------------
@@ -52,7 +52,7 @@ Rules dictate that if a type is not ``int`` or ``float`` then an error will be r
 Decorating with Key, Value
 --------------------------
 
-This example requires that all args positive ``int`` or positive ``float``.
+This example requires that all args are positive ``int`` or positive ``float``.
 
 .. code-block:: python
 

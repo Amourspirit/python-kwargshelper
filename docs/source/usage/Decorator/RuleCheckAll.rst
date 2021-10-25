@@ -1,7 +1,7 @@
-RuleCheckAll
-============
+RuleCheckAll Usage
+==================
 
-RuleCheckAll decorator reqires that each args of a function match all rules specified.
+:py:class:`~.decorator.RuleCheckAll` decorator reqires that each args of a function match all rules specified.
 
 Decorating with ``*args``
 -------------------------
