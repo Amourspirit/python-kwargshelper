@@ -57,7 +57,9 @@ Raises an error because ``loop_count`` is default  is ``-1`` and
     >>>     my_class = MyClass(exporter='html', file_name='data.html', name='Best Doc')
     >>> except Exception as e:
     >>>    print(e)
-    Arg error: 'loop_count' must be a positive int value
+    RuleError: Argument: 'loop_count' failed validation. Rule 'RuleIntPositive' Failed validation.
+    Expected the following rule to match: RuleIntPositive.
+    Inner Error Message: ValueError: Arg error: 'loop_count' must be a positive int value
 
 .. seealso::
 

@@ -1,6 +1,6 @@
 # region Custom Errors
 from inspect import isclass
-from typing import Iterable, List, Union
+from typing import Iterable, List, Type, Union
 from ..helper import is_iterable
 from ..rules import IRule
 
@@ -20,10 +20,10 @@ class RuleError(Exception):
         Constructor
 
         Keyword Arguments:
-            err_rule (IRule, optional): Rule that caused exception.
-            rules_all (Iterable[IRule], optional): List of rules that were to all be matched.
+            err_rule (Type[IRule], optional): Rule that caused exception.
+            rules_all (Iterable[Type[IRule]], optional): List of rules that were to all be matched.
                 One of these rules is usually the reason this exception is being raised.
-            rules_any (Iterable[IRule], optional): List of rules that required one or more matches.
+            rules_any (Iterable[Type[IRule]], optional): List of rules that required one or more matches.
                 One of these rules is usually the reason this exception is being raised.
             arg_name (str, optional): Name of the argument for this exception.
             errors: (Union[Exception, Iterable[Exception]], optional): Exception or Exceptions
@@ -108,7 +108,7 @@ class RuleError(Exception):
         return self._arg_name
 
     @property
-    def err_rule(self) -> Union[IRule, None]:
+    def err_rule(self) -> Union[Type[IRule], None]:
         """Gets rule that caused exception."""
         return self._err_rule
 
@@ -118,12 +118,12 @@ class RuleError(Exception):
         return self._errors
 
     @property
-    def rules_all(self) -> List[IRule]:
+    def rules_all(self) -> List[Type[IRule]]:
         """Gets list of rules that were to all be matched."""
         return self._rules_all
 
     @property
-    def rules_any(self) -> List[IRule]:
+    def rules_any(self) -> List[Type[IRule]]:
         """Gets of rules that required one or more matches."""
         return self._rules_any
     # endregion Properties
