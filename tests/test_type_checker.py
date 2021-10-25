@@ -203,5 +203,28 @@ class TestTypeDecorators(unittest.TestCase):
         result = type_test(10, 12.3)
         assert result == 22.3
 
+    def test_speed_msg(self):
+
+        @TypeCheckerKw(arg_info={"speed": 0, "limit": 0, "hours": 0, "name": 1},
+                    types=[(int, float), str])
+        def speed_msg(speed, limit, **kwargs) -> str:
+            name = kwargs.get('name', 'You')
+            if limit > speed:
+                msg = f"Current speed is '{speed}'. {name} may go faster as the limit is '{limit}'."
+            elif speed == limit:
+                msg = f"Current speed is '{speed}'. {name} are at the limit."
+            else:
+                msg = f"Please slow down limit is '{limit}' and current speed is '{speed}'."
+            if 'hours' in kwargs:
+                msg = msg + f" Current driving hours is '{kwargs['hours']}'."
+            return msg
+    
+        result = speed_msg(speed=45, limit=60)
+        assert result == "Current speed is '45'. You may go faster as the limit is '60'."
+        result = speed_msg(speed=45, limit=60, name="John")
+        assert result == "Current speed is '45'. John may go faster as the limit is '60'."
+        with self.assertRaises(TypeError):
+            result = speed_msg(speed=-2, limit=60, name=17, hours=5)
+
 if __name__ == '__main__':
     unittest.main()
