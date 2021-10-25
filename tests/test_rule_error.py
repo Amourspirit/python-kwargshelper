@@ -6,7 +6,7 @@ if __name__ == '__main__':
     sys.path.append(os.path.realpath('.'))
 
 from kwhelp import rules
-from kwhelp.error import RuleError
+from kwhelp.exceptions import RuleError
 
 
 class TestRuleError(unittest.TestCase):
@@ -24,36 +24,36 @@ class TestRuleError(unittest.TestCase):
 
     def test_rules_all_single(self):
         rx = re.compile(
-            r"^RuleError: Expected the following rule to match: RuleFloat.")
+            r"^RuleError:(?:\n|\s)Expected the following rule to match: RuleFloat.", re.MULTILINE)
         with self.assertRaisesRegex(RuleError, rx):
             self.raise_err(rules_all=[rules.RuleFloat])
 
     
     def test_rules_all(self):
-        rx = re.compile(r"^RuleError:\s.*RuleInt", re.MULTILINE)
+        rx = re.compile(r"^RuleError:(?:\n|\s).*RuleInt", re.MULTILINE)
         with self.assertRaisesRegex(RuleError, rx):
             self.raise_err(rules_all=[rules.RuleInt])
 
     def test_rules_all_multi(self):
         rx = re.compile(
-            r"^RuleError:\s.*all of.*match: RuleInt, RuleFloat", re.MULTILINE)
+            r"^RuleError:(?:\n|\s).*all of.*match: RuleInt, RuleFloat", re.MULTILINE)
         with self.assertRaisesRegex(RuleError, rx):
             self.raise_err(rules_all=[rules.RuleInt, rules.RuleFloat])
 
     def test_rules_any(self):
-        rx = re.compile(r"^RuleError:\s.*RuleInt", re.MULTILINE)
+        rx = re.compile(r"^RuleError:(?:\n|\s).*RuleInt", re.MULTILINE)
         with self.assertRaisesRegex(RuleError, rx):
             self.raise_err(rules_any=[rules.RuleInt])
     
     def test_rules_any_multi(self):
         rx = re.compile(
-            r"^RuleError:\s.*one of.*match: RuleInt, RuleFloat", re.MULTILINE)
+            r"^RuleError:(?:\n|\s).*one of.*match: RuleInt, RuleFloat", re.MULTILINE)
         with self.assertRaisesRegex(RuleError, rx):
             self.raise_err(rules_any=[rules.RuleInt, rules.RuleFloat])
 
     def test_rules_any_single(self):
         rx = re.compile(
-            r"^RuleError: Expected the following rule to match: RuleFloat.")
+            r"^RuleError:(?:\n|\s)Expected the following rule to match: RuleFloat.", re.MULTILINE)
         with self.assertRaisesRegex(RuleError, rx):
             self.raise_err(rules_any=[rules.RuleFloat])
 

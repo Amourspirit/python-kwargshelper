@@ -28,32 +28,15 @@ class RuleError(Exception):
             arg_name (str, optional): The name of  the argument for this exception.
             errors: (Union[IRule, Iterable[IRule]], optional): Rule or Rules was being validated.
         """
-        key = 'err_rule'
-        if key in kwargs:
-            self.err_rule = kwargs[key]
-        else:
-            self.err_rule = None
-        key = 'rules_all'
-        if key in kwargs:
-            self.rules_all = self._get_rules(rules=kwargs[key])
-        else:
+        self.err_rule = kwargs.get('err_rule', None)
+        self.rules_all = kwargs.get('rules_all', None)
+        self.rules_any = kwargs.get('rules_any', None)
+        self.arg_name = kwargs.get('arg_name', None)
+        self.errors = kwargs.get('errors', None)
+        if self.rules_all is None:
             self.rules_all = []
-        key = 'rules_any'
-        if key in kwargs:
-            self.rules_any = self._get_rules(rules=kwargs[key])
-        else:
+        if self.rules_any is None:
             self.rules_any = []
-        key = 'arg_name'
-        if key in kwargs:
-            self.arg_name = kwargs[key]
-        else:
-            self.arg_name = None
-        key = 'errors'
-        if key in kwargs:
-            self.errors = kwargs[key]
-        else:
-            self.errors = None
-
         msg = "RuleError:"
         if self.arg_name:
             msg = msg + f" Argument: '{self.arg_name}' failed validation."
