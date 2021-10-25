@@ -13,7 +13,7 @@ This example requires that all args positive ``int`` or positive ``float``.
     from kwhelp.decorator import RuleCheckAny
     import kwhelp.rules as rules
 
-    @RuleCheckAny(rules=[rules.RuleIntPositive, rules.RuleFloatPositive])
+    @RuleCheckAny(rules.RuleIntPositive, rules.RuleFloatPositive)
     def add_positives(*args) -> float:
         result = 0.0
         for arg in args:

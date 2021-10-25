@@ -351,7 +351,7 @@ class RequiredCheck(object):
             arg_keys = arg_name_values.keys()
             for key in self._args:
                 if not key in arg_keys:
-                    raise ValueError(f"{key} is a required arg.")
+                    raise ValueError(f"'{key}' is a required arg.")
             return func(*args, **kwargs)
         # wrapper.is_types_valid = self.is_valid
         return wrapper

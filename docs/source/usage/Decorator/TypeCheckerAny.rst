@@ -13,7 +13,7 @@ This example requires that all args positive ``int`` or positive ``float``.
     from kwhelp.decorator import RuleCheckAny
     import kwhelp.rules as rules
 
-    @TypeCheckerAny(types=[int, float])
+    @TypeCheckerAny(int, float)
     def add_numbers(*args) -> float:
         result = 0.0
         for arg in args:
@@ -45,7 +45,7 @@ This example requires that all args are ``int`` or ``float``.
     from kwhelp.decorator import RuleCheckAny
     import kwhelp.rules as rules
 
-    @TypeCheckerAny(types=[int, float])
+    @TypeCheckerAny(int, float)
     def speed_msg(speed, limit, **kwargs) -> str:
         if limit > speed:
             msg = f"Current speed is '{speed}'. You may go faster as the limit is '{limit}'."

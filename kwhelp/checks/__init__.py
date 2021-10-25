@@ -12,7 +12,7 @@ class TypeChecker:
         Constructor
 
         Other Arguments:
-            *args (type): One or more types used for Validation purposes.
+            args (type): One or more types used for Validation purposes.
 
         Keyword Arguments:
             raise_error: (bool, optional): If ``True`` then an error will be raised if a :py:meth:`~.TypeChecker.validate` fails:

@@ -3,7 +3,7 @@
     from kwhelp.decorator import RuleCheckAny
     import kwhelp.rules as rules
 
-    @RuleCheckAny(rules=[rules.RuleIntPositive, rules.RuleFloatPositive])
+    @RuleCheckAny(rules.RuleIntPositive, rules.RuleFloatPositive)
     def speed_msg(speed, limit, **kwargs) -> str:
         if limit > speed:
             msg = f"Current speed is '{speed}'. You may go faster as the limit is '{limit}'."

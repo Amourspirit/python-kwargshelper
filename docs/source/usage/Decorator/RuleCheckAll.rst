@@ -13,7 +13,7 @@ This example requires that all args positive ``int``
     from kwhelp.decorator import RuleCheckAll
     import kwhelp.rules as rules
 
-    @RuleCheckAll(rules=[rules.RuleIntPositive])
+    @RuleCheckAll(rules.RuleIntPositive)
     def add_positives(*args) -> float:
         result = 0
         for arg in args:
@@ -57,7 +57,7 @@ This example requires that all args positive ``int``.
     from kwhelp.decorator import RuleCheckAll
     import kwhelp.rules as rules
 
-    @RuleCheckAll(rules=[rules.RuleIntPositive])
+    @RuleCheckAll(rules.RuleIntPositive)
     def speed_msg(speed, limit, **kwargs) -> str:
         if limit > speed:
             msg = f"Current speed is '{speed}'. You may go faster as the limit is '{limit}'."
