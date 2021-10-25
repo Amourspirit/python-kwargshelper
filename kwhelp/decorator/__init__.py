@@ -350,3 +350,30 @@ class RuleCheckAnyKw(RuleCheckAllKw):
             return func(*args, **kwargs)
         # wrapper.is_types_valid = self.is_valid
         return wrapper
+
+class RequiredCheck:
+    
+    def __init__(self, *args: str):
+        self._args = []
+        for arg in args:
+            if isinstance(arg, str):
+                self._args.append(arg)
+    
+    def __call__(self, func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            arg_name_values = self._get_args_dict(func, args, kwargs)
+            arg_keys = arg_name_values.keys()
+            for key in self._args:
+                if not key in arg_keys:
+                    raise ValueError(f"{key} is a required arg.")
+            return func(*args, **kwargs)
+        # wrapper.is_types_valid = self.is_valid
+        return wrapper
+
+    def _get_args_dict(self, fn, args, kwargs):
+        # https://stackoverflow.com/questions/218616/how-to-get-method-parameter-names
+        # args_names = fn.__code__.co_varnames[:fn.__code__.co_argcount]
+        sig = signature(fn)
+        args_names = sig.parameters.keys()
+        return {**dict(zip(args_names, args)), **kwargs}
