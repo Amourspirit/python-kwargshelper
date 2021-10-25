@@ -5,7 +5,7 @@ from ..checks import TypeChecker, RuleChecker
 from ..rules import IRule
 from ..helper import is_iterable
 
-class TypeCheckerAny(object):
+class TypeCheckAny(object):
     """
     Decorator that decorates methods that require args to match a type specificed in a list
 
@@ -49,7 +49,7 @@ class TypeCheckerAny(object):
             return func(*args, **kwargs)
         # wrapper.is_types_valid = self.is_valid
         return wrapper
-class TypeCheckerKw(object):
+class TypeCheckKw(object):
     """
     Decorator that decorates methods that require key, value args to match a type specificed in a list
 

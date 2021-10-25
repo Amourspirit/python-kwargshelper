@@ -5,7 +5,7 @@ if __name__ == '__main__':
     sys.path.append(os.path.realpath('.'))
 
 from kwhelp.checks import RuleChecker
-from kwhelp.decorator import RuleCheckAny, RuleCheckAll, RuleCheckAllKw, RuleCheckAnyKw, TypeCheckerKw
+from kwhelp.decorator import RuleCheckAny, RuleCheckAll, RuleCheckAllKw, RuleCheckAnyKw, TypeCheckKw
 from kwhelp import rules
 from kwhelp.exceptions import RuleError
 
@@ -254,7 +254,7 @@ class TestRuleDecorators(unittest.TestCase):
             rule_test(start="hello", middle="m", end=-3.4)
 
     def test_rules_any_all_type_kw(self):
-        @TypeCheckerKw(arg_info={"start": str, "middle": 0, "end": 0},
+        @TypeCheckKw(arg_info={"start": str, "middle": 0, "end": 0},
                        types=[(int, float)])
         @RuleCheckAllKw(arg_info={"start": 0},
                         rules=[(rules.RuleStrNotNullEmptyWs,)])
