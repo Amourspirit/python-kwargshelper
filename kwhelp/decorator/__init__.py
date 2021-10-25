@@ -5,7 +5,7 @@ from ..checks import TypeChecker, RuleChecker
 from ..rules import IRule
 from ..helper import is_iterable
 
-class TypeCheckAny(object):
+class TypeCheck(object):
     """
     Decorator that decorates methods that require args to match a type specificed in a list
 

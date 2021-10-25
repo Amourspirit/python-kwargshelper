@@ -7,7 +7,7 @@ if __name__ == '__main__':
 
 from kwhelp.checks import TypeChecker
 from pathlib import Path
-from kwhelp.decorator import TypeCheckAny, TypeCheckKw
+from kwhelp.decorator import TypeCheck, TypeCheckKw
 
 class TestTypeChecker(unittest.TestCase):
 
@@ -59,7 +59,7 @@ class TestTypeDecorators(unittest.TestCase):
 
     def test_type_checker_dec(self):
 
-        @TypeCheckAny(float, int)
+        @TypeCheck(float, int)
         def type_test(one, two) -> float:
             return float(one) + float(two)
 
@@ -71,7 +71,7 @@ class TestTypeDecorators(unittest.TestCase):
 
     def test_type_checker_args_dec(self):
 
-        @TypeCheckAny(float, int, raise_error=True)
+        @TypeCheck(float, int, raise_error=True)
         def type_test(*args) -> float:
             sum = 0.0
             for arg in args:
@@ -87,7 +87,7 @@ class TestTypeDecorators(unittest.TestCase):
     
     def test_type_checker_args_dec_no_err(self):
 
-        @TypeCheckAny(float, int, raise_error=False)
+        @TypeCheck(float, int, raise_error=False)
         def type_test(*args) -> float:
             sum = 0.0
             for arg in args:
