@@ -43,21 +43,27 @@ Assign ``int`` greater then 100.
 .. code-block:: python
 
     >>> myclass = MyClass(speed = 126)
-    ValueError: Arg error: 'speed' must be equal or less than 100
-
+    RuleError: Argument: 'speed' failed validation. Rule 'RuleIntMax100' Failed validation.
+    Expected all of the following rules to match: RuleIntPositive, RuleIntMax100.
+    Inner Error Message: ValueError: Arg error: 'speed' must be equal or less than 100
+    
 Assign ``int`` negative.
 
 .. code-block:: python
 
     >>> myclass = MyClass(speed = -3)
-    ValueError: Arg error: 'speed' must be a positive int value
+    RuleError: Argument: 'speed' failed validation. Rule 'RuleIntPositive' Failed validation.
+    Expected all of the following rules to match: RuleIntPositive, RuleIntMax100.
+    Inner Error Message: ValueError: Arg error: 'speed' must be a positive int value
 
 Assign ``float``.
 
 .. code-block:: python
 
     >>> myclass = MyClass(speed = 22.4)
-    TypeError: Argument Error: 'speed' is expecting type of 'int'. Got type of 'float'
+    RuleError: Argument: 'speed' failed validation. Rule 'RuleIntPositive' Failed validation.
+    Expected all of the following rules to match: RuleIntPositive, RuleIntMax100.
+    Inner Error Message: TypeError: Argument Error: 'speed' is expecting type of 'int'. Got type of 'float'
 
 Any rules
 ---------
@@ -109,14 +115,18 @@ Assign ``int`` negative.
 .. code-block:: python
 
     >>> myclass = MyClass(speed = -123)
-    TypeError: Argument Error: 'speed' is expecting type of 'float'. Got type of 'int'
+    RuleError: Argument: 'speed' failed validation. Rule 'RuleFloatPositive' Failed validation.
+    Expected at least one of the following rules to match: RuleFloatPositive, RuleIntZero.
+    Inner Error Message: TypeError: Argument Error: 'speed' is expecting type of 'float'. Got type of 'int'
 
 Assign ``str``.
 
 .. code-block:: python
 
     >>> myclass = MyClass(speed="a")
-    TypeError: Argument Error: 'speed' is expecting type of 'float'. Got type of 'str'
+    RuleError: Argument: 'speed' failed validation. Rule 'RuleFloatPositive' Failed validation.
+    Expected at least one of the following rules to match: RuleFloatPositive, RuleIntZero.
+    Inner Error Message: TypeError: Argument Error: 'speed' is expecting type of 'float'. Got type of 'str'
 
 Included Rules
 --------------

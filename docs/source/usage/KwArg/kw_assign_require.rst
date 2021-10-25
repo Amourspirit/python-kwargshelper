@@ -28,5 +28,5 @@ Method will raise an error as ``msg`` must be of type ``str`` as defined by ``ty
 
 .. code-block:: python
 
-    >>> result = result= my_method(first=10)
+    >>> result = my_method(first=10)
     ValueError: KwArg arg 'second' is required

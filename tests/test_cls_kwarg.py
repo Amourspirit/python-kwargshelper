@@ -2,6 +2,7 @@
 if __name__ == '__main__':
     import path_imports
 import unittest
+from kwhelp.exceptions import RuleError
 import kwhelp.rules as rules
 from kwhelp import KwArg, ReservedAttributeError, HelperArgs
 
@@ -79,12 +80,12 @@ class TestKwArg(unittest.TestCase):
         self.assertEqual(kw.num, 1)
         
         kw = KwArg(num=-1)
-        with self.assertRaises(ValueError):
+        with self.assertRaises(RuleError):
             kw.kw_assign(key='num', types=[int], rules_all=[
                 rules.RuleIntPositive], require=True)
 
         kw = KwArg(num=-1)
-        with self.assertRaises(ValueError):
+        with self.assertRaises(RuleError):
             kw.kw_assign(key='num', types=[int], rules_any=[
                 rules.RuleIntPositive, rules.RuleFloatPositive], require=True)
 
