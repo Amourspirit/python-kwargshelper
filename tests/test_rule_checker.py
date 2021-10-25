@@ -5,7 +5,7 @@ if __name__ == '__main__':
     sys.path.append(os.path.realpath('.'))
 
 from kwhelp.checks import RuleChecker
-from kwhelp.decorator import RuleCheckAny, RuleCheckAll, RuleCheckAllKw, RuleCheckAnyKw, TypeCheckerKw
+from kwhelp.decorator import RuleCheckAny, RuleCheckAll, RuleCheckAllKw, RuleCheckAnyKw, TypeCheckKw
 from kwhelp import rules
 from kwhelp.exceptions import RuleError
 
@@ -80,7 +80,7 @@ class TestRuleDecorators(unittest.TestCase):
 
     def test_rule_check_any_dec(self):
 
-        @RuleCheckAny(rules=[rules.RuleIntPositive, rules.RuleFloatPositive])
+        @RuleCheckAny(rules.RuleIntPositive, rules.RuleFloatPositive)
         def rule_test(one, two) -> float:
             return float(one) + float(two)
 
@@ -92,14 +92,8 @@ class TestRuleDecorators(unittest.TestCase):
         with self.assertRaises(RuleError):
             result = rule_test(3, -2.3)
 
-    def test_rule_check_any_dec_rules_err(self):
-        with self.assertRaises(TypeError):
-            @RuleCheckAny(rules=rules.RuleFloatPositive)
-            def rule_test(one, two) -> float:
-                return float(one) + float(two)
-
     def test_rule_check_any_dec_kwargs_err(self):
-        @RuleCheckAny(rules=[rules.RuleIntPositive, rules.RuleFloatPositive], raise_error=True)
+        @RuleCheckAny(rules.RuleIntPositive, rules.RuleFloatPositive, raise_error=True)
         def rule_test(one, two) -> float:
             return float(one) + float(two)
 
@@ -107,7 +101,7 @@ class TestRuleDecorators(unittest.TestCase):
         assert result == 22.3
         
     def test_rule_check_any_dec_kwargs(self):
-        @RuleCheckAny(rules=[rules.RuleIntPositive, rules.RuleFloatPositive], raise_error=False)
+        @RuleCheckAny(rules.RuleIntPositive, rules.RuleFloatPositive, raise_error=False)
         def rule_test(one, two) -> float:
             return float(one) + float(two)
 
@@ -119,7 +113,7 @@ class TestRuleDecorators(unittest.TestCase):
         assert rule_test.is_rules_any_valid == False
 
     def test_rule_str(self):
-        @RuleCheckAll(rules=[rules.RuleStrNotNullEmptyWs])
+        @RuleCheckAll(rules.RuleStrNotNullEmptyWs)
         def rule_test(start, middle, end) -> str:
             return f"{start} {middle} {end}"
 
@@ -132,14 +126,8 @@ class TestRuleDecorators(unittest.TestCase):
         with self.assertRaises(RuleError):
             rule_test(start="1", middle=2, end=".")
 
-    def test_rule_check_all_dec_rules_err(self):
-        with self.assertRaises(TypeError):
-            @RuleCheckAll(rules=rules.RuleFloatPositive)
-            def rule_test(one, two) -> float:
-                return float(one) + float(two)
-
     def test_rule_str_no_err(self):
-        @RuleCheckAll(rules=[rules.RuleStrNotNullEmptyWs], raise_error=False)
+        @RuleCheckAll(rules.RuleStrNotNullEmptyWs, raise_error=False)
         def rule_test(start, middle, end) -> str:
             return f"{start} {middle} {end}"
 
@@ -266,7 +254,7 @@ class TestRuleDecorators(unittest.TestCase):
             rule_test(start="hello", middle="m", end=-3.4)
 
     def test_rules_any_all_type_kw(self):
-        @TypeCheckerKw(arg_info={"start": str, "middle": 0, "end": 0},
+        @TypeCheckKw(arg_info={"start": str, "middle": 0, "end": 0},
                        types=[(int, float)])
         @RuleCheckAllKw(arg_info={"start": 0},
                         rules=[(rules.RuleStrNotNullEmptyWs,)])

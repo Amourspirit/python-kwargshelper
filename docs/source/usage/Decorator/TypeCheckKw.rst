@@ -1,10 +1,10 @@
-TypeCheckerKw Usage
-===================
+TypeCheckKw Usage
+=================
 
-:py:class:`~.decorator.TypeCheckerKw` decorator allows each arg of a function match one of the rules specified.
+:py:class:`~.decorator.TypeCheckKw` decorator allows each arg of a function match one of the rules specified.
 Each arg can have seperate rules applied.
 
-:py:class:`~.decorator.TypeCheckerKw` constructor args ``arg_info`` and ``rules``  work together.
+:py:class:`~.decorator.TypeCheckKw` constructor args ``arg_info`` and ``rules``  work together.
 ``arg_info`` is a dictionary with a key of ``str`` that matches an arg name of the function that
 is being decorated.
 ``arg_info`` value is one of the following:
@@ -19,13 +19,13 @@ is being decorated.
 Example Usage
 -------------
 
-:py:class:`~.decorator.TypeCheckerKw` decorated function.
+:py:class:`~.decorator.TypeCheckKw` decorated function.
 
 .. code-block:: python
 
-    from kwhelp.decorator import TypeCheckerKw
+    from kwhelp.decorator import TypeCheckKw
 
-    @TypeCheckerKw(arg_info={"speed": 0, "limit": 0, "hours": 0, "name": 1},
+    @TypeCheckKw(arg_info={"speed": 0, "limit": 0, "hours": 0, "name": 1},
                     types=[(int, float), str])
     def speed_msg(speed, limit, **kwargs) -> str:
         name = kwargs.get('name', 'You')
@@ -64,9 +64,9 @@ If types fail validation then a ``TypeError`` is raised.
 
 .. code-block:: python
 
-    from kwhelp.decorator import TypeCheckerKw
+    from kwhelp.decorator import TypeCheckKw
 
-    @TypeCheckerKw(arg_info={"speed": 0, "limit": 0, "hours": 0, "name": str},
+    @TypeCheckKw(arg_info={"speed": 0, "limit": 0, "hours": 0, "name": str},
                     types=[(int, float)])
     def speed_msg(speed, limit, **kwargs) -> str:
         name = kwargs.get('name', 'You')

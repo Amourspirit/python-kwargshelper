@@ -5,19 +5,19 @@ from ..checks import TypeChecker, RuleChecker
 from ..rules import IRule
 from ..helper import is_iterable
 
-class TypeCheckerAny(object):
+class TypeCheck(object):
     """
     Decorator that decorates methods that require args to match a type specificed in a list
 
     See Also:
-        :doc:`../../usage/Decorator/TypeCheckerAny`
+        :doc:`../../usage/Decorator/TypeCheck`
     """
-    def __init__(self, types: Iterable[type], **kwargs):
+    def __init__(self, *args, **kwargs):
         """
         Constructor
 
-        Args:
-            types (Iterable[type]): List of type for args to match.
+        Other Arguments:
+            args (type): One or more types for wrapped function args to match.
 
         Keyword Arguments:
             raise_error: (bool, optional): If ``True`` then a ``TypeError`` will be raised if a
@@ -32,10 +32,7 @@ class TypeCheckerAny(object):
             TypeError: If ``types`` arg is not a iterable object such as a list or tuple.
             TypeError: If any arg is not of a type listed in ``types``.
         """
-        if is_iterable(types) == False:
-            raise TypeError(
-                "types arg must be an iterable object such as list or tuple.")
-        self._types = types
+        self._types = [arg for arg in args]
         if kwargs:
             # keyword args are passed to TypeChecker
             self._kwargs = {**kwargs}
@@ -45,19 +42,19 @@ class TypeCheckerAny(object):
     def __call__(self, func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            tc = TypeChecker(types=self._types, **self._kwargs)
+            tc = TypeChecker(*self._types, **self._kwargs)
             is_valid = tc.validate(*args, **kwargs)
             if tc.raise_error is False:
                 wrapper.is_types_valid = is_valid
             return func(*args, **kwargs)
         # wrapper.is_types_valid = self.is_valid
         return wrapper
-class TypeCheckerKw(object):
+class TypeCheckKw(object):
     """
     Decorator that decorates methods that require key, value args to match a type specificed in a list
 
     See Also:
-        :doc:`../../usage/Decorator/TypeCheckerKw`
+        :doc:`../../usage/Decorator/TypeCheckKw`
     """
 
     def __init__(self, arg_info: Dict[str, Union[int, type, Iterable[type]]], types: Optional[Iterable[Union[type, Iterable[type]]]] = None, **kwargs):
@@ -124,7 +121,7 @@ class TypeCheckerKw(object):
                     if len(types) == 0:
                         continue
                     value = arg_name_values[key]
-                    tc = TypeChecker(types=types, **self._kwargs)
+                    tc = TypeChecker(*types, **self._kwargs)
                     is_valid = tc.validate(**{key: value})
                     if is_valid is False:
                         break
@@ -144,12 +141,12 @@ class RuleCheckAny(object):
     See Also:
         :doc:`../../usage/Decorator/RuleCheckAny`
     """
-    def __init__(self, rules: Iterable[IRule], **kwargs):
+    def __init__(self, *args: IRule, **kwargs):
         """
         Constructor
 
-        Args:
-            rules (Iterable[IRule]): List of rules to use for validation
+        Other Arguments:
+            args (IRule): One or more rules to use for validation
 
         Keyword Arguments:
             raise_error (bool, optional): If ``True`` then an Exception will be raised if a
@@ -159,14 +156,8 @@ class RuleCheckAny(object):
                 If ``False`` then an attribute will be set on decorated function
                 named ``is_rules_any_valid`` indicating if validation status.
                 Default ``True``.
-
-        Raises:
-            TypeError: if ``rules`` arg is not a iterable object such as a list or tuple.
         """
-        if is_iterable(rules) == False:
-            raise TypeError(
-                "rules arg must be an iterable object such as list or tuple.")
-        self._rules = rules
+        self._rules = [arg for arg in args]
         if kwargs:
             self._kwargs = {**kwargs}
         else:
@@ -193,12 +184,12 @@ class RuleCheckAll(object):
     See Also:
         :doc:`../../usage/Decorator/RuleCheckAll`
     """
-    def __init__(self, rules: Iterable[IRule], **kwargs):
+    def __init__(self, *args: IRule, **kwargs):
         """
         Constructor
 
-        Args:
-            rules (Iterable[IRule]): List of rules to use for validation
+        Other Arguments:
+            args (IRule): One or more rules to use for validation
 
         Keyword Arguments:
             raise_error (bool, optional): If ``True`` then an Exception will be raised if a
@@ -208,14 +199,8 @@ class RuleCheckAll(object):
                 If ``False`` then an attribute will be set on decorated function
                 named ``is_rules_all_valid`` indicating if validation status.
                 Default ``True``.
-
-        Raises:
-            TypeError: if ``rules`` arg is not a iterable object such as a list or tuple.
         """
-        if is_iterable(rules) == False:
-            raise TypeError(
-                "rules arg must be an iterable object such as list or tuple.")
-        self._rules = rules
+        self._rules = [arg for arg in args]
         if kwargs:
             self._kwargs = {**kwargs}
         else:
@@ -350,3 +335,30 @@ class RuleCheckAnyKw(RuleCheckAllKw):
             return func(*args, **kwargs)
         # wrapper.is_types_valid = self.is_valid
         return wrapper
+
+class RequiredCheck(object):
+    
+    def __init__(self, *args: str):
+        self._args = []
+        for arg in args:
+            if isinstance(arg, str):
+                self._args.append(arg)
+    
+    def __call__(self, func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            arg_name_values = self._get_args_dict(func, args, kwargs)
+            arg_keys = arg_name_values.keys()
+            for key in self._args:
+                if not key in arg_keys:
+                    raise ValueError(f"'{key}' is a required arg.")
+            return func(*args, **kwargs)
+        # wrapper.is_types_valid = self.is_valid
+        return wrapper
+
+    def _get_args_dict(self, fn, args, kwargs):
+        # https://stackoverflow.com/questions/218616/how-to-get-method-parameter-names
+        # args_names = fn.__code__.co_varnames[:fn.__code__.co_argcount]
+        sig = signature(fn)
+        args_names = sig.parameters.keys()
+        return {**dict(zip(args_names, args)), **kwargs}

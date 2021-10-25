@@ -7,12 +7,12 @@ if __name__ == '__main__':
 
 from kwhelp.checks import TypeChecker
 from pathlib import Path
-from kwhelp.decorator import TypeCheckerAny, TypeCheckerKw
+from kwhelp.decorator import TypeCheck, TypeCheckKw
 
 class TestTypeChecker(unittest.TestCase):
 
     def test_main(self):
-        tc = TypeChecker(types=[int, float])
+        tc = TypeChecker(int, float)
         assert len(tc.types) == 2
         assert tc.validate(one=2, two=2.0) == True
         with self.assertRaises(TypeError):
@@ -23,18 +23,14 @@ class TestTypeChecker(unittest.TestCase):
             tc.validate(4.6, 5, 5.8, '')
             
     def test_types_none(self):
-        tc = TypeChecker(types=None)
+        tc = TypeChecker()
         # no checking takes place with types is None
         assert tc.validate(one=2, two=2.0) == True
         assert tc.validate(1, 3, 4.6, 5, 5.8) == True
         assert tc.validate(1, "a", int, self) == True
 
-    def test_types_err(self):
-        with self.assertRaises(TypeError):
-            tc = TypeChecker(types=str)
-
     def test_no_err(self):
-        tc = TypeChecker(types=[int, float], raise_error=False)
+        tc = TypeChecker(int, float, raise_error=False)
         assert tc.validate(one=2, two=2.0) == True
         assert tc.validate(one=2, two="2") == False
         assert tc.validate(4.6, 5, 5.8, '') == False
@@ -44,7 +40,7 @@ class TestTypeChecker(unittest.TestCase):
            tc.validate(4.6, 5, 5.8, '')
 
     def test_path(self):
-        tc = TypeChecker(types=[str, Path], type_instance_check=True)
+        tc = TypeChecker(str, Path, type_instance_check=True)
         assert tc.type_instance_check == True
         str_path = "/home/user"
         assert tc.validate(str_path=str_path, p=Path(str_path)) == True
@@ -63,7 +59,7 @@ class TestTypeDecorators(unittest.TestCase):
 
     def test_type_checker_dec(self):
 
-        @TypeCheckerAny(types=[float, int])
+        @TypeCheck(float, int)
         def type_test(one, two) -> float:
             return float(one) + float(two)
 
@@ -73,16 +69,9 @@ class TestTypeDecorators(unittest.TestCase):
         with self.assertRaises(TypeError):
             result = type_test(3, "")
 
-    def test_type_checker_dec_type_err(self):
-        with self.assertRaises(TypeError):
-            @TypeCheckerAny(types=int)
-            def type_test(one) -> float:
-                return one
-
-
     def test_type_checker_args_dec(self):
 
-        @TypeCheckerAny(types=[float, int], raise_error=True)
+        @TypeCheck(float, int, raise_error=True)
         def type_test(*args) -> float:
             sum = 0.0
             for arg in args:
@@ -98,7 +87,7 @@ class TestTypeDecorators(unittest.TestCase):
     
     def test_type_checker_args_dec_no_err(self):
 
-        @TypeCheckerAny(types=[float, int], raise_error=False)
+        @TypeCheck(float, int, raise_error=False)
         def type_test(*args) -> float:
             sum = 0.0
             for arg in args:
@@ -114,7 +103,7 @@ class TestTypeDecorators(unittest.TestCase):
         assert type_test.is_types_valid == False
     
     def test_kw_type_checker_dec(self):
-        @TypeCheckerKw(arg_info={"one":0, "two": 0},types=[(int,float)])
+        @TypeCheckKw(arg_info={"one":0, "two": 0},types=[(int,float)])
         def type_test(one, two) -> float:
             return float(one) + float(two)
     
@@ -127,7 +116,7 @@ class TestTypeDecorators(unittest.TestCase):
             type_test(two=19, one="one")
     
     def test_kw_type_checker_dec_types_type(self):
-        @TypeCheckerKw(arg_info={"one":0, "two": 1},types=[int, float])
+        @TypeCheckKw(arg_info={"one":0, "two": 1},types=[int, float])
         def type_test(one, two) -> float:
             return float(one) + float(two)
     
@@ -140,7 +129,7 @@ class TestTypeDecorators(unittest.TestCase):
             type_test(two=19.2, one=1.2)
     
     def test_kw_type_checker_dec_no_type(self):
-        @TypeCheckerKw(arg_info={"one":int, "two": [float]})
+        @TypeCheckKw(arg_info={"one":int, "two": [float]})
         def type_test(one, two) -> float:
             return float(one) + float(two)
     
@@ -154,7 +143,7 @@ class TestTypeDecorators(unittest.TestCase):
     
     
     def test_kw_type_checker_dec_arg_index_three_list(self):
-        @TypeCheckerKw(arg_info={"one":0, "two": 0, "three": [int]},types=[(int,float)])
+        @TypeCheckKw(arg_info={"one":0, "two": 0, "three": [int]},types=[(int,float)])
         def type_test(one, two, three) -> float:
             return float(one) + float(two) + float(three)
     
@@ -167,7 +156,7 @@ class TestTypeDecorators(unittest.TestCase):
             type_test(two=19, one=2.2, three="2")
     
     def test_kw_type_checker_dec_arg_index_type(self):
-        @TypeCheckerKw(arg_info={"one": 0, "two": 0, "three": int}, types=[(int, float)])
+        @TypeCheckKw(arg_info={"one": 0, "two": 0, "three": int}, types=[(int, float)])
         def type_test(one, two, three) -> float:
             return float(one) + float(two) + float(three)
 
@@ -181,7 +170,7 @@ class TestTypeDecorators(unittest.TestCase):
 
 
     def test_kw_type_checker_dec_no_error(self):
-        @TypeCheckerKw(arg_info={"one": 0, "two": 0}, types=[(int, float)], raise_error=False)
+        @TypeCheckKw(arg_info={"one": 0, "two": 0}, types=[(int, float)], raise_error=False)
         def type_test(one, two) -> float:
             return float(one) + float(two)
 
@@ -196,7 +185,7 @@ class TestTypeDecorators(unittest.TestCase):
         assert type_test.is_types_kw_valid == True
 
     def test_kw_type_checker_dec_empty_type(self):
-        @TypeCheckerKw(arg_info={"one": 0}, types=[[]])
+        @TypeCheckKw(arg_info={"one": 0}, types=[[]])
         def type_test(one, two) -> float:
             return float(one) + float(two)
 
@@ -205,7 +194,7 @@ class TestTypeDecorators(unittest.TestCase):
 
     def test_speed_msg(self):
 
-        @TypeCheckerKw(arg_info={"speed": 0, "limit": 0, "hours": 0, "name": 1},
+        @TypeCheckKw(arg_info={"speed": 0, "limit": 0, "hours": 0, "name": 1},
                     types=[(int, float), str])
         def speed_msg(speed, limit, **kwargs) -> str:
             name = kwargs.get('name', 'You')
