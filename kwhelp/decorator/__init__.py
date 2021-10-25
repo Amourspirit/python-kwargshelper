@@ -10,7 +10,7 @@ class TypeCheck(object):
     Decorator that decorates methods that require args to match a type specificed in a list
 
     See Also:
-        :doc:`../../usage/Decorator/TypeCheckerAny`
+        :doc:`../../usage/Decorator/TypeCheck`
     """
     def __init__(self, *args, **kwargs):
         """
@@ -54,7 +54,7 @@ class TypeCheckKw(object):
     Decorator that decorates methods that require key, value args to match a type specificed in a list
 
     See Also:
-        :doc:`../../usage/Decorator/TypeCheckerKw`
+        :doc:`../../usage/Decorator/TypeCheckKw`
     """
 
     def __init__(self, arg_info: Dict[str, Union[int, type, Iterable[type]]], types: Optional[Iterable[Union[type, Iterable[type]]]] = None, **kwargs):

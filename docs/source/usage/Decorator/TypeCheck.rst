@@ -1,7 +1,7 @@
-TypeCheckerAny Usage
-====================
+TypeCheck Usage
+===============
 
-:py:class:`~.decorator.TypeCheckerAny` decorator reqires that each args of a function match a ``type``.
+:py:class:`~.decorator.TypeCheck` decorator reqires that each args of a function match a ``type``.
 
 Decorating with ``*args``
 -------------------------
@@ -13,7 +13,7 @@ This example requires that all args positive ``int`` or positive ``float``.
     from kwhelp.decorator import RuleCheckAny
     import kwhelp.rules as rules
 
-    @TypeCheckerAny(int, float)
+    @TypeCheck(int, float)
     def add_numbers(*args) -> float:
         result = 0.0
         for arg in args:
@@ -45,7 +45,7 @@ This example requires that all args are ``int`` or ``float``.
     from kwhelp.decorator import RuleCheckAny
     import kwhelp.rules as rules
 
-    @TypeCheckerAny(int, float)
+    @TypeCheck(int, float)
     def speed_msg(speed, limit, **kwargs) -> str:
         if limit > speed:
             msg = f"Current speed is '{speed}'. You may go faster as the limit is '{limit}'."

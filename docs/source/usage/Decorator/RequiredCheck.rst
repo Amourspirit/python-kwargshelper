@@ -5,10 +5,10 @@ RequiredCheck Usage
 
 .. code-block:: python
 
-    from kwhelp.decorator import TypeCheckerKw, RequiredCheck
+    from kwhelp.decorator import TypeCheckKw, RequiredCheck
 
     @RequiredCheck("speed", "limit", "name")
-    @TypeCheckerKw(arg_info={"speed": 0, "limit": 0, "hours": 0, "name": 1},
+    @TypeCheckKw(arg_info={"speed": 0, "limit": 0, "hours": 0, "name": 1},
                     types=[(int, float), str])
     def speed_msg(**kwargs) -> str:
         name = kwargs.get('name')
