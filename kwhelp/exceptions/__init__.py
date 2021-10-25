@@ -1,6 +1,6 @@
 # region Custom Errors
 from inspect import isclass
-from typing import Iterable, List, Optional
+from typing import Iterable, List, Union
 from ..helper import is_iterable
 from ..rules import IRule
 
@@ -23,42 +23,44 @@ class RuleError(Exception):
             err_rule (IRule, optional): Rule that caused exception.
             rules_all (Iterable[IRule], optional): List of rules that were to all be matched.
                 One of these rules is usually the reason this exception is being raised.
-            rules_any (Iterable[IRule], optional): List of rules that required on or matches.
+            rules_any (Iterable[IRule], optional): List of rules that required one or more matches.
                 One of these rules is usually the reason this exception is being raised.
-            arg_name (str, optional): The name of  the argument for this exception.
-            errors: (Union[IRule, Iterable[IRule]], optional): Rule or Rules was being validated.
+            arg_name (str, optional): Name of the argument for this exception.
+            errors: (Union[Exception, Iterable[Exception]], optional): Exception or Exceptions
+                that cause this error.
         """
-        self.err_rule = kwargs.get('err_rule', None)
-        self.rules_all = kwargs.get('rules_all', None)
-        self.rules_any = kwargs.get('rules_any', None)
-        self.arg_name = kwargs.get('arg_name', None)
-        self.errors = kwargs.get('errors', None)
-        if self.rules_all is None:
-            self.rules_all = []
-        if self.rules_any is None:
-            self.rules_any = []
+        self._err_rule = kwargs.get('err_rule', None)
+        _rules = kwargs.get('rules_all', False)
+        self._rules_all = self._get_rules(_rules)
+        _rules = kwargs.get('rules_any', False)
+        self._rules_any = self._get_rules(_rules)
+        _rules = None
+        self._arg_name = kwargs.get('arg_name', None)
+        self._errors = kwargs.get('errors', None)
+
         msg = "RuleError:"
-        if self.arg_name:
-            msg = msg + f" Argument: '{self.arg_name}' failed validation."
-        if self.err_rule and isclass(self.err_rule) and issubclass(self.err_rule, IRule):
+        if self._arg_name:
+            msg = msg + f" Argument: '{self._arg_name}' failed validation."
+        if self.err_rule and self._is_rule(self.err_rule):
             msg = msg + f" Rule '{self.err_rule.__name__}' Failed validation."
-        if len(self.rules_all) > 0:
-            if len(self.rules_all) == 1:
+        if len(self._rules_all) > 0:
+            if len(self._rules_all) == 1:
                 msg = msg + "\nExpected the following rule to match: "
             else:
                 msg = msg + "\nExpected all of the following rules to match: "
-            msg = msg + self._get_rules_str(self.rules_all) + "."
-        if len(self.rules_any) > 0:
-            if len(self.rules_any) == 1:
+            msg = msg + self._get_rules_str(self._rules_all) + "."
+        if len(self._rules_any) > 0:
+            if len(self._rules_any) == 1:
                 msg = msg + "\nExpected the following rule to match: "
             else:
                 msg = msg + "\nExpected at least one of the following rules to match: "
-            msg = msg + self._get_rules_str(self.rules_any) + "."
+            msg = msg + self._get_rules_str(self._rules_any) + "."
         if self._is_errors() is True:
             msg = msg + "\nInner Error Message: " + self._get_inner_error_msg()
         self.message = msg
         super().__init__(self.message)
 
+    # region private methods
     def _is_rule(self, rule) -> bool:
         if isclass(rule) and issubclass(rule, IRule):
             return True
@@ -81,24 +83,48 @@ class RuleError(Exception):
         return msg
 
     def _is_errors(self) -> bool:
-        if self.errors:
-            if is_iterable(self.errors):
-                if len(self.errors) == 0:
-                    return False
-                return isinstance(self.errors[0], Exception)
-            return isinstance(self.errors, Exception)
+        if self._errors:
+            if is_iterable(self._errors):
+                return isinstance(self._errors[0], Exception)
+            return isinstance(self._errors, Exception)
         return False
 
     def _get_first_error(self):
-        if is_iterable(self.errors):
-            return self.errors[0]
-        return self.errors
+        if is_iterable(self._errors):
+            return self._errors[0]
+        return self._errors
     
     def _get_inner_error_msg(self) -> str:
         err = self._get_first_error()
         msg = err.__class__.__name__ + ": "
         msg = msg + str(err)
         return msg
+    # endregion private methods
 
+    # region Properties
+    @property
+    def arg_name(self) -> Union[str, None]:
+        """Gets Name of the argument for this exception"""
+        return self._arg_name
 
+    @property
+    def err_rule(self) -> Union[IRule, None]:
+        """Gets rule that caused exception."""
+        return self._err_rule
+
+    @property
+    def errors(self) -> Union[Exception, Iterable[Exception], None]:
+        """Gets Exception or Exceptions that cause this error"""
+        return self._errors
+
+    @property
+    def rules_all(self) -> List[IRule]:
+        """Gets list of rules that were to all be matched."""
+        return self._rules_all
+
+    @property
+    def rules_any(self) -> List[IRule]:
+        """Gets of rules that required one or more matches."""
+        return self._rules_any
+    # endregion Properties
 # endregion Custom Errors

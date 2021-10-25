@@ -56,6 +56,24 @@ class TestRuleError(unittest.TestCase):
             r"^RuleError:(?:\n|\s)Expected the following rule to match: RuleFloat.", re.MULTILINE)
         with self.assertRaisesRegex(RuleError, rx):
             self.raise_err(rules_any=[rules.RuleFloat])
+    
+    def test_any_all(self):
+        err = RuleError(rules_any=[rules.RuleFloat, self], rules_all=[rules.RuleInt, self])
+        self.assertTrue(len(err.rules_all), 1)
+        self.assertTrue(len(err.rules_any), 1)
+        self.assertIs(err.rules_any[0], rules.RuleFloat)
+        self.assertIs(err.rules_all[0], rules.RuleInt)
+
+    def test_errors(self):
+        err = RuleError(errors=[])
+        self.assertListEqual(err.errors, [])
+
+    def test_arg_name(self):
+        err = RuleError(arg_name="test")
+        self.assertEqual(err.arg_name, "test")
+    
+        err = RuleError()
+        self.assertIsNone(err.arg_name)
 
 if __name__ == '__main__':
     unittest.main()
