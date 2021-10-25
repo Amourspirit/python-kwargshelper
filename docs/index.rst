@@ -14,6 +14,7 @@ TOC
 
    source/usage/index
    source/example/index
+   source/general/decorator
    source/general/rules
 
 .. toctree::
