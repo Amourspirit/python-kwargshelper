@@ -16,7 +16,7 @@ class TypeCheck(object):
         """
         Constructor
 
-        Other Arguments:
+        Other Parameters:
             args (type): One or more types for wrapped function args to match.
 
         Keyword Arguments:
@@ -131,7 +131,6 @@ class TypeCheckKw(object):
         # wrapper.is_types_valid = self.is_valid
         return wrapper
 
-
 class RuleCheckAny(object):
     """
     Decorator that decorates methods that require args to match a rule specificed in ``rules`` list.
@@ -145,7 +144,7 @@ class RuleCheckAny(object):
         """
         Constructor
 
-        Other Arguments:
+        Other Parameters:
             args (IRule): One or more rules to use for validation
 
         Keyword Arguments:
@@ -174,7 +173,6 @@ class RuleCheckAny(object):
         # wrapper.is_types_valid = self.is_valid
         return wrapper
 
-
 class RuleCheckAll(object):
     """
     Decorator that decorates methods that require args to match all rules specificed in ``rules`` list.
@@ -188,7 +186,7 @@ class RuleCheckAll(object):
         """
         Constructor
 
-        Other Arguments:
+        Other Parameters:
             args (IRule): One or more rules to use for validation
 
         Keyword Arguments:
@@ -216,7 +214,6 @@ class RuleCheckAll(object):
             return func(*args, **kwargs)
         # wrapper.is_types_valid = self.is_valid
         return wrapper
-
 
 class RuleCheckAllKw(object):
     """
@@ -301,7 +298,6 @@ class RuleCheckAllKw(object):
         # wrapper.is_types_valid = self.is_valid
         return wrapper
 
-
 class RuleCheckAnyKw(RuleCheckAllKw):
     """
     Decorator that decorates methods that require specific args to match rules specificed in ``rules`` list.
@@ -337,8 +333,19 @@ class RuleCheckAnyKw(RuleCheckAllKw):
         return wrapper
 
 class RequiredCheck(object):
-    
+    """
+    Decorator that defines required args for ``**kwargs`` of a function.
+
+    See Also:
+        :doc:`../../usage/Decorator/RequiredCheck`
+    """
     def __init__(self, *args: str):
+        """
+        Constructor
+
+        Other Parameters:
+            args (type): One or more names of wrapped function args to require.
+        """
         self._args = []
         for arg in args:
             if isinstance(arg, str):
@@ -362,3 +369,29 @@ class RequiredCheck(object):
         sig = signature(fn)
         args_names = sig.parameters.keys()
         return {**dict(zip(args_names, args)), **kwargs}
+
+class DefaultArgs(object):
+    """
+    Decorator that defines default values for ``**kwargs`` of a function.
+
+    See Also:
+        :doc:`../../usage/Decorator/DefaultArgs`
+    """
+    def __init__(self, **kwargs: Dict[str, object]):
+        """
+        Constructor
+
+        Keyword Arguments:
+            kwargs (Dict[str, object]): One or more Key, Value pairs to assign to wrapped function args as defaults.
+        """
+        self._kwargs = kwargs
+
+    def __call__(self, func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            for key, value in self._kwargs.items():
+                if not key in kwargs:
+                    kwargs[key] = value
+            return func(*args, **kwargs)
+        return wrapper
+
