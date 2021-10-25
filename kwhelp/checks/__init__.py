@@ -7,12 +7,12 @@ from ..exceptions import RuleError
 class TypeChecker:
     """Class that validates args match a give type"""
 
-    def __init__(self, types: Iterable[type], **kwargs):
+    def __init__(self, *args: type, **kwargs): 
         """
         Constructor
 
-        Args:
-            types (Iterator[type]): Types used for Validation purposes.
+        Other Arguments:
+            *args (type): One or more types used for Validation purposes.
 
         Keyword Arguments:
             raise_error: (bool, optional): If ``True`` then an error will be raised if a :py:meth:`~.TypeChecker.validate` fails:
@@ -21,16 +21,8 @@ class TypeChecker:
                 are tested also for isinstance if type does not match, rather then just type check if type is a match.
                 If ``False`` then values willl only be tested as type.
                 Default ``True``
-
-        Raises:
-            TypeError: if ``types`` arg is not a iterable object such as a list or tuple.
         """
-        self._types = types
-
-        if self._types is None:
-            self._types = []
-        if is_iterable(self._types) == False:
-            raise TypeError("types arg must be an iterable object such as list or tuple.")
+        self._types = [arg for arg in args]
 
         key = 'raise_error'
         if key in kwargs:

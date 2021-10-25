@@ -45,7 +45,7 @@ class TypeCheckerAny(object):
     def __call__(self, func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            tc = TypeChecker(types=self._types, **self._kwargs)
+            tc = TypeChecker(*self._types, **self._kwargs)
             is_valid = tc.validate(*args, **kwargs)
             if tc.raise_error is False:
                 wrapper.is_types_valid = is_valid
@@ -124,7 +124,7 @@ class TypeCheckerKw(object):
                     if len(types) == 0:
                         continue
                     value = arg_name_values[key]
-                    tc = TypeChecker(types=types, **self._kwargs)
+                    tc = TypeChecker(*types, **self._kwargs)
                     is_valid = tc.validate(**{key: value})
                     if is_valid is False:
                         break
