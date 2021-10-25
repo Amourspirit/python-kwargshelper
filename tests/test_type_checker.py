@@ -59,7 +59,7 @@ class TestTypeDecorators(unittest.TestCase):
 
     def test_type_checker_dec(self):
 
-        @TypeCheckerAny(types=[float, int])
+        @TypeCheckerAny(float, int)
         def type_test(one, two) -> float:
             return float(one) + float(two)
 
@@ -69,16 +69,9 @@ class TestTypeDecorators(unittest.TestCase):
         with self.assertRaises(TypeError):
             result = type_test(3, "")
 
-    def test_type_checker_dec_type_err(self):
-        with self.assertRaises(TypeError):
-            @TypeCheckerAny(types=int)
-            def type_test(one) -> float:
-                return one
-
-
     def test_type_checker_args_dec(self):
 
-        @TypeCheckerAny(types=[float, int], raise_error=True)
+        @TypeCheckerAny(float, int, raise_error=True)
         def type_test(*args) -> float:
             sum = 0.0
             for arg in args:
@@ -94,7 +87,7 @@ class TestTypeDecorators(unittest.TestCase):
     
     def test_type_checker_args_dec_no_err(self):
 
-        @TypeCheckerAny(types=[float, int], raise_error=False)
+        @TypeCheckerAny(float, int, raise_error=False)
         def type_test(*args) -> float:
             sum = 0.0
             for arg in args:

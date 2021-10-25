@@ -12,12 +12,12 @@ class TypeCheckerAny(object):
     See Also:
         :doc:`../../usage/Decorator/TypeCheckerAny`
     """
-    def __init__(self, types: Iterable[type], **kwargs):
+    def __init__(self, *args, **kwargs):
         """
         Constructor
 
-        Args:
-            types (Iterable[type]): List of type for args to match.
+        Other Arguments:
+            args (type): One or more types for wrapped function args to match.
 
         Keyword Arguments:
             raise_error: (bool, optional): If ``True`` then a ``TypeError`` will be raised if a
@@ -32,10 +32,7 @@ class TypeCheckerAny(object):
             TypeError: If ``types`` arg is not a iterable object such as a list or tuple.
             TypeError: If any arg is not of a type listed in ``types``.
         """
-        if is_iterable(types) == False:
-            raise TypeError(
-                "types arg must be an iterable object such as list or tuple.")
-        self._types = types
+        self._types = [arg for arg in args]
         if kwargs:
             # keyword args are passed to TypeChecker
             self._kwargs = {**kwargs}
@@ -144,12 +141,12 @@ class RuleCheckAny(object):
     See Also:
         :doc:`../../usage/Decorator/RuleCheckAny`
     """
-    def __init__(self, rules: Iterable[IRule], **kwargs):
+    def __init__(self, *args: IRule, **kwargs):
         """
         Constructor
 
-        Args:
-            rules (Iterable[IRule]): List of rules to use for validation
+        Other Arguments:
+            args (IRule): One or more rules to use for validation
 
         Keyword Arguments:
             raise_error (bool, optional): If ``True`` then an Exception will be raised if a
@@ -159,14 +156,8 @@ class RuleCheckAny(object):
                 If ``False`` then an attribute will be set on decorated function
                 named ``is_rules_any_valid`` indicating if validation status.
                 Default ``True``.
-
-        Raises:
-            TypeError: if ``rules`` arg is not a iterable object such as a list or tuple.
         """
-        if is_iterable(rules) == False:
-            raise TypeError(
-                "rules arg must be an iterable object such as list or tuple.")
-        self._rules = rules
+        self._rules = [arg for arg in args]
         if kwargs:
             self._kwargs = {**kwargs}
         else:
@@ -193,12 +184,12 @@ class RuleCheckAll(object):
     See Also:
         :doc:`../../usage/Decorator/RuleCheckAll`
     """
-    def __init__(self, rules: Iterable[IRule], **kwargs):
+    def __init__(self, *args: IRule, **kwargs):
         """
         Constructor
 
-        Args:
-            rules (Iterable[IRule]): List of rules to use for validation
+        Other Arguments:
+            args (IRule): One or more rules to use for validation
 
         Keyword Arguments:
             raise_error (bool, optional): If ``True`` then an Exception will be raised if a
@@ -208,14 +199,8 @@ class RuleCheckAll(object):
                 If ``False`` then an attribute will be set on decorated function
                 named ``is_rules_all_valid`` indicating if validation status.
                 Default ``True``.
-
-        Raises:
-            TypeError: if ``rules`` arg is not a iterable object such as a list or tuple.
         """
-        if is_iterable(rules) == False:
-            raise TypeError(
-                "rules arg must be an iterable object such as list or tuple.")
-        self._rules = rules
+        self._rules = [arg for arg in args]
         if kwargs:
             self._kwargs = {**kwargs}
         else:
@@ -351,7 +336,7 @@ class RuleCheckAnyKw(RuleCheckAllKw):
         # wrapper.is_types_valid = self.is_valid
         return wrapper
 
-class RequiredCheck:
+class RequiredCheck(object):
     
     def __init__(self, *args: str):
         self._args = []
