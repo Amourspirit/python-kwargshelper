@@ -1,6 +1,6 @@
 import functools
 from typing import Dict, Iterable, Optional, Union
-from inspect import signature, isclass, ismethod, getargspec, isfunction
+from inspect import signature, isclass, ismethod, getargspec, isfunction, Parameter, Signature
 from ..checks import TypeChecker, RuleChecker
 from ..rules import IRule
 from ..helper import is_iterable
@@ -372,7 +372,6 @@ class RequireArgs(object):
                 if not key in arg_keys:
                     raise ValueError(f"'{key}' is a required arg.")
             return func(*args, **kwargs)
-        # wrapper.is_types_valid = self.is_valid
         return wrapper
 
 class DefaultArgs(object):
@@ -400,3 +399,54 @@ class DefaultArgs(object):
             return func(*args, **kwargs)
         return wrapper
 
+class CallTracker(object):
+    def __call__(self, func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            wrapper.has_been_called = True
+            return func(*args, **kwargs)
+        wrapper.has_been_called = False
+        return wrapper
+
+def calltracker(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        wrapper.has_been_called = True
+        return func(*args, **kwargs)
+    wrapper.has_been_called = False
+    return wrapper
+
+
+def autofill(*argnames, **defaults):
+    """
+    Class decorator that replaces the ``__init__`` function with one that
+    sets instance attributes with the specified argument names and
+    default values. The original ``__init__`` is called with no arguments
+    after the instance attributes have been assigned.
+
+    Example:
+        .. code-block:: python
+
+            >>> @autofill('a', 'b', c=3)
+            ... class Foo: pass
+            >>> sorted(Foo(1, 2).__dict__.items())
+            [('a', 1), ('b', 2), ('c', 3)]
+    """
+    # https://codereview.stackexchange.com/questions/142073/class-decorator-in-python-to-set-variables-for-the-constructor
+    def init_switcher(cls):
+        kind = Parameter.POSITIONAL_OR_KEYWORD
+        signature = Signature(
+            [Parameter(a, kind) for a in argnames]
+            + [Parameter(k, kind, default=v) for k, v in defaults.items()])
+        original_init = cls.__init__
+
+        def init(self, *args, **kwargs):
+            bound = signature.bind(*args, **kwargs)
+            bound.apply_defaults()
+            for k, v in bound.arguments.items():
+                setattr(self, k, v)
+            original_init(self)
+
+        cls.__init__ = init
+        return cls
+    return init_switcher
