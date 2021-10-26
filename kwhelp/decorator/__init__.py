@@ -1,9 +1,32 @@
 import functools
 from typing import Dict, Iterable, Optional, Union
-from inspect import signature, isclass
+from inspect import signature, isclass, ismethod, getargspec, isfunction
 from ..checks import TypeChecker, RuleChecker
 from ..rules import IRule
 from ..helper import is_iterable
+from abc import ABC
+class DecBase(ABC):
+    def _args_without_self(self, method):
+        # https://stackoverflow.com/questions/27777939/list-arguments-of-function-method-and-skip-self-in-python-3
+        args, varargs, varkw, defaults = getargspec(method)
+        if ismethod(method):
+            args = args[1:]    # Skip 'self'
+        return args
+
+
+def _args_without_self(method, args):
+    sig = signature(method)
+    args_names = [k for k in sig.parameters.keys()]
+    if isfunction(method) and '.' in method.__qualname__ and args_names[0] == 'self':
+        return args[1:], args_names[1:]    # Skip 'self'
+    return args, args_names
+
+
+def _get_args_dict(method, args, kwargs):
+        # https://stackoverflow.com/questions/218616/how-to-get-method-parameter-names
+        # args_names = fn.__code__.co_varnames[:fn.__code__.co_argcount]
+    _args, _names = _args_without_self(method, args)
+    return {**dict(zip(_names, _args)), **kwargs}
 
 class TypeCheck(object):
     """
@@ -101,18 +124,11 @@ class TypeCheckKw(object):
             return (value,)
 
 
-    def _get_args_dict(self, fn, args, kwargs):
-        # https://stackoverflow.com/questions/218616/how-to-get-method-parameter-names
-        # args_names = fn.__code__.co_varnames[:fn.__code__.co_argcount]
-        sig = signature(fn)
-        args_names = sig.parameters.keys()
-        return {**dict(zip(args_names, args)), **kwargs}
-
     def __call__(self, func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             is_valid = True
-            arg_name_values = self._get_args_dict(func, args, kwargs)
+            arg_name_values = _get_args_dict(func, args, kwargs)
             arg_keys = arg_name_values.keys()
             tc = False
             for key in self._arg_index.keys():
@@ -131,7 +147,8 @@ class TypeCheckKw(object):
         # wrapper.is_types_valid = self.is_valid
         return wrapper
 
-class RuleCheckAny(object):
+
+class RuleCheckAny(DecBase):
     """
     Decorator that decorates methods that require args to match a rule specificed in ``rules`` list.
     
@@ -166,7 +183,8 @@ class RuleCheckAny(object):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             rc = RuleChecker(rules_any=self._rules, **self._kwargs)
-            is_valid = rc.validate_any(*args, **kwargs)
+            _args = _args_without_self(func, args)[0]
+            is_valid = rc.validate_any(*_args, **kwargs)
             if rc.raise_error is False:
                 wrapper.is_rules_any_valid = is_valid
             return func(*args, **kwargs)
@@ -208,7 +226,8 @@ class RuleCheckAll(object):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             rc = RuleChecker(rules_all=self._rules, **self._kwargs)
-            is_valid = rc.validate_all(*args, **kwargs)
+            _args = _args_without_self(func, args)[0]
+            is_valid = rc.validate_all(*_args, **kwargs)
             if rc.raise_error is False:
                 wrapper.is_rules_all_valid = is_valid
             return func(*args, **kwargs)
@@ -265,19 +284,12 @@ class RuleCheckAllKw(object):
             return (value,)
         return value
 
-    def _get_args_dict(self, fn, args, kwargs):
-        # https://stackoverflow.com/questions/218616/how-to-get-method-parameter-names
-        # args_names = fn.__code__.co_varnames[:fn.__code__.co_argcount]
-        sig = signature(fn)
-        args_names = sig.parameters.keys()
-        return {**dict(zip(args_names, args)), **kwargs}
-
     def __call__(self, func):
         
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             is_valid = True
-            arg_name_values = self._get_args_dict(func, args, kwargs)
+            arg_name_values = _get_args_dict(func, args, kwargs)
             arg_keys = arg_name_values.keys()
             add_attrib = None
             for key in self._arg_index.keys():
@@ -311,7 +323,7 @@ class RuleCheckAnyKw(RuleCheckAllKw):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             is_valid = True
-            arg_name_values = self._get_args_dict(func, args, kwargs)
+            arg_name_values = _get_args_dict(func, args, kwargs)
             arg_keys = arg_name_values.keys()
             add_attrib = None
             for key in self._arg_index.keys():
@@ -354,7 +366,7 @@ class RequireArgs(object):
     def __call__(self, func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            arg_name_values = self._get_args_dict(func, args, kwargs)
+            arg_name_values = _get_args_dict(func, args, kwargs)
             arg_keys = arg_name_values.keys()
             for key in self._args:
                 if not key in arg_keys:
@@ -362,13 +374,6 @@ class RequireArgs(object):
             return func(*args, **kwargs)
         # wrapper.is_types_valid = self.is_valid
         return wrapper
-
-    def _get_args_dict(self, fn, args, kwargs):
-        # https://stackoverflow.com/questions/218616/how-to-get-method-parameter-names
-        # args_names = fn.__code__.co_varnames[:fn.__code__.co_argcount]
-        sig = signature(fn)
-        args_names = sig.parameters.keys()
-        return {**dict(zip(args_names, args)), **kwargs}
 
 class DefaultArgs(object):
     """
