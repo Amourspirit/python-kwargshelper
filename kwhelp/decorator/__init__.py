@@ -1,27 +1,23 @@
 import functools
 from typing import Dict, Iterable, Optional, Union
-from inspect import signature, isclass, ismethod, getargspec, isfunction, Parameter, Signature, getmro, getmodule
+from inspect import signature, isclass, Parameter, Signature
 from ..checks import TypeChecker, RuleChecker
 from ..rules import IRule
-from ..helper import is_iterable, NO_THING
-from abc import ABC
+from ..helper import is_iterable
 from enum import IntEnum
 # import wrapt
 
 
 class DecFuncType(IntEnum):
+    """Represents options for type of Function or Method"""
     FUNCTION = 1
+    """Normal Unbound function"""
     METHOD_STATIC = 2
+    """Class Static Method (@staticmethod)"""
     METHOD = 3
+    """Class Method"""
     METHOD_CLASS = 4
-
-class DecBase(ABC):
-    def _args_without_self(self, method):
-        # https://stackoverflow.com/questions/27777939/list-arguments-of-function-method-and-skip-self-in-python-3
-        args, varargs, varkw, defaults = getargspec(method)
-        if ismethod(method):
-            args = args[1:]    # Skip 'self'
-        return args
+    """Class Method (@classmethod)"""
 
 class _DecBase:
     def __init__(self, **kwargs):
@@ -53,38 +49,6 @@ class _DecBase:
         else:
             _args = args
         return {**dict(zip(_names, _args)), **kwargs}
-
-def _args_without_self(method, args):
-    sig = signature(method)
-    args_names = [k for k in sig.parameters.keys()]
-    if isfunction(method) and '.' in method.__qualname__ and args_names[0] == 'self':
-        return args[1:], args_names[1:]    # Skip 'self'
-    return args, args_names
-
-
-def _get_args_dict(method, args, kwargs):
-    # https://stackoverflow.com/questions/218616/how-to-get-method-parameter-names
-    # args_names = fn.__code__.co_varnames[:fn.__code__.co_argcount]
-    _args, _names = _args_without_self(method, args)
-    return {**dict(zip(_names, _args)), **kwargs}
-
-
-def _get_class_that_defined_method(meth):
-    if ismethod(meth):
-        for cls in getmro(meth.__self__.__class__):
-            if cls.__dict__.get(meth.__name__) is meth:
-                return cls
-        meth = meth.__func__  # fallback to __qualname__ parsing
-    if isfunction(meth):
-        class_name = meth.__qualname__.split(
-            '.<locals>', 1)[0].rsplit('.', 1)[0]
-        try:
-            cls = getattr(getmodule(meth), class_name)
-        except AttributeError:
-            cls = meth.__globals__.get(class_name)
-        if isinstance(cls, type):
-            return cls
-    return None  # not required since None would have been implicitly returned anyway
 
 
 class TypeCheck(_DecBase):
