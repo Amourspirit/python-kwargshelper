@@ -1,10 +1,20 @@
 import functools
 from typing import Dict, Iterable, Optional, Union
-from inspect import signature, isclass, ismethod, getargspec, isfunction, Parameter, Signature
+from inspect import signature, isclass, ismethod, getargspec, isfunction, Parameter, Signature, getmro, getmodule
 from ..checks import TypeChecker, RuleChecker
 from ..rules import IRule
-from ..helper import is_iterable
+from ..helper import is_iterable, NO_THING
 from abc import ABC
+from enum import IntEnum
+# import wrapt
+
+
+class DecFuncType(IntEnum):
+    FUNCTION = 1
+    METHOD_STATIC = 2
+    METHOD = 3
+    METHOD_CLASS = 4
+
 class DecBase(ABC):
     def _args_without_self(self, method):
         # https://stackoverflow.com/questions/27777939/list-arguments-of-function-method-and-skip-self-in-python-3
@@ -13,6 +23,36 @@ class DecBase(ABC):
             args = args[1:]    # Skip 'self'
         return args
 
+class _DecBase:
+    def __init__(self, **kwargs):
+        self._ftype: DecFuncType = kwargs.get("ftype", None)
+        if self._ftype is not None:
+            if not isinstance(self._ftype, DecFuncType):
+                try:
+                    self._ftype = DecFuncType(self._ftype)
+                except:
+                    raise TypeError(
+                        f"{self.__class__.__name__} requires arg 'ftype' to be a 'DecFuncType")
+        else:
+            self._ftype = DecFuncType.FUNCTION
+
+    def _drop_arg_first(self) -> bool:
+        return self._ftype.value > DecFuncType.METHOD_STATIC.value
+
+    def _get_args(self, args):
+        if self._drop_arg_first():
+            return args[1:]
+        return args
+
+    def _get_args_dict(self, method, args, kwargs):
+        sig = signature(method)
+        _names = [k for k in sig.parameters.keys()]
+        if self._drop_arg_first():
+            _names = _names[1:]
+            _args = args[1:]
+        else:
+            _args = args
+        return {**dict(zip(_names, _args)), **kwargs}
 
 def _args_without_self(method, args):
     sig = signature(method)
@@ -23,18 +63,38 @@ def _args_without_self(method, args):
 
 
 def _get_args_dict(method, args, kwargs):
-        # https://stackoverflow.com/questions/218616/how-to-get-method-parameter-names
-        # args_names = fn.__code__.co_varnames[:fn.__code__.co_argcount]
+    # https://stackoverflow.com/questions/218616/how-to-get-method-parameter-names
+    # args_names = fn.__code__.co_varnames[:fn.__code__.co_argcount]
     _args, _names = _args_without_self(method, args)
     return {**dict(zip(_names, _args)), **kwargs}
 
-class TypeCheck(object):
+
+def _get_class_that_defined_method(meth):
+    if ismethod(meth):
+        for cls in getmro(meth.__self__.__class__):
+            if cls.__dict__.get(meth.__name__) is meth:
+                return cls
+        meth = meth.__func__  # fallback to __qualname__ parsing
+    if isfunction(meth):
+        class_name = meth.__qualname__.split(
+            '.<locals>', 1)[0].rsplit('.', 1)[0]
+        try:
+            cls = getattr(getmodule(meth), class_name)
+        except AttributeError:
+            cls = meth.__globals__.get(class_name)
+        if isinstance(cls, type):
+            return cls
+    return None  # not required since None would have been implicitly returned anyway
+
+
+class TypeCheck(_DecBase):
     """
     Decorator that decorates methods that require args to match a type specificed in a list
 
     See Also:
         :doc:`../../usage/Decorator/TypeCheck`
     """
+
     def __init__(self, *args, **kwargs):
         """
         Constructor
@@ -49,30 +109,44 @@ class TypeCheck(object):
                 Default ``True``.
             type_instance_check (bool, optional): If ``True`` then args are tested also for ``isinstance()``
                 if type does not match, rather then just type check. If ``False`` then values willl only be
-                tested as type. Default ``True``
+                tested as type.
+                Default ``True``
+            ftype (DecFuncType, optional): Type of function that decorator is applied on.
+                Default ``DecFuncType.FUNCTION``
 
         Raises:
             TypeError: If ``types`` arg is not a iterable object such as a list or tuple.
             TypeError: If any arg is not of a type listed in ``types``.
         """
+        super().__init__(**kwargs)
+        self._tc = None
         self._types = [arg for arg in args]
         if kwargs:
             # keyword args are passed to TypeChecker
             self._kwargs = {**kwargs}
         else:
             self._kwargs = {}
+        
 
-    def __call__(self, func):
+    def __call__(self, func: callable):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            tc = TypeChecker(*self._types, **self._kwargs)
-            is_valid = tc.validate(*args, **kwargs)
-            if tc.raise_error is False:
+            _args = self._get_args(args)
+            is_valid = self._typechecker.validate(*_args, **kwargs)
+            if self._typechecker.raise_error is False:
                 wrapper.is_types_valid = is_valid
             return func(*args, **kwargs)
         # wrapper.is_types_valid = self.is_valid
         return wrapper
-class TypeCheckKw(object):
+
+    @property
+    def _typechecker(self) -> TypeChecker:
+        if self._tc is None:
+            self._tc = TypeChecker(*self._types, **self._kwargs)
+        return self._tc
+
+
+class TypeCheckKw(_DecBase):
     """
     Decorator that decorates methods that require key, value args to match a type specificed in a list
 
@@ -99,7 +173,10 @@ class TypeCheckKw(object):
             type_instance_check (bool, optional): If ``True`` then args are tested also for ``isinstance()``
                 if type does not match, rather then just type check. If ``False`` then values willl only be
                 tested as type. Default ``True``
+            ftype (DecFuncType, optional): Type of function that decorator is applied on.
+                Default ``DecFuncType.FUNCTION``
         """
+        super().__init__(**kwargs)
         self._arg_index = arg_info
         if types is None:
             self._types = []
@@ -123,12 +200,11 @@ class TypeCheckKw(object):
             # make iterable
             return (value,)
 
-
     def __call__(self, func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             is_valid = True
-            arg_name_values = _get_args_dict(func, args, kwargs)
+            arg_name_values = self._get_args_dict(func, args, kwargs)
             arg_keys = arg_name_values.keys()
             tc = False
             for key in self._arg_index.keys():
@@ -148,15 +224,16 @@ class TypeCheckKw(object):
         return wrapper
 
 
-class RuleCheckAny(DecBase):
+class RuleCheckAny(_DecBase):
     """
     Decorator that decorates methods that require args to match a rule specificed in ``rules`` list.
-    
+
     If a function arg does not match at least one rule in ``rules`` list then validation will fail.
 
     See Also:
         :doc:`../../usage/Decorator/RuleCheckAny`
     """
+
     def __init__(self, *args: IRule, **kwargs):
         """
         Constructor
@@ -168,11 +245,15 @@ class RuleCheckAny(DecBase):
             raise_error (bool, optional): If ``True`` then an Exception will be raised if a
                 validation fails. The kind of exception raised depends on the rule that is
                 invalid. Typically a ``TypeError`` or a ``ValueError`` is raised.
-                
+
                 If ``False`` then an attribute will be set on decorated function
                 named ``is_rules_any_valid`` indicating if validation status.
                 Default ``True``.
+            ftype (DecFuncType, optional): Type of function that decorator is applied on.
+                Default ``DecFuncType.FUNCTION``
         """
+        super().__init__(**kwargs)
+        self._rc = None
         self._rules = [arg for arg in args]
         if kwargs:
             self._kwargs = {**kwargs}
@@ -182,24 +263,31 @@ class RuleCheckAny(DecBase):
     def __call__(self, func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            rc = RuleChecker(rules_any=self._rules, **self._kwargs)
-            _args = _args_without_self(func, args)[0]
-            is_valid = rc.validate_any(*_args, **kwargs)
-            if rc.raise_error is False:
+            _args = self._get_args(args)
+            is_valid = self._rulechecker.validate_any(*_args, **kwargs)
+            if self._rulechecker.raise_error is False:
                 wrapper.is_rules_any_valid = is_valid
             return func(*args, **kwargs)
         # wrapper.is_types_valid = self.is_valid
         return wrapper
 
-class RuleCheckAll(object):
+    @property
+    def _rulechecker(self) -> RuleChecker:
+        if self._rc is None:
+            self._rc = RuleChecker(rules_any=self._rules, **self._kwargs)
+        return self._rc
+
+
+class RuleCheckAll(_DecBase):
     """
     Decorator that decorates methods that require args to match all rules specificed in ``rules`` list.
-    
+
     If a function arg does not match all rules in ``rules`` list then validation will fail.
-    
+
     See Also:
         :doc:`../../usage/Decorator/RuleCheckAll`
     """
+
     def __init__(self, *args: IRule, **kwargs):
         """
         Constructor
@@ -215,7 +303,11 @@ class RuleCheckAll(object):
                 If ``False`` then an attribute will be set on decorated function
                 named ``is_rules_all_valid`` indicating if validation status.
                 Default ``True``.
+            ftype (DecFuncType, optional): Type of function that decorator is applied on.
+                Default ``DecFuncType.FUNCTION``
         """
+        super().__init__(**kwargs)
+        self._rc = None
         self._rules = [arg for arg in args]
         if kwargs:
             self._kwargs = {**kwargs}
@@ -225,24 +317,31 @@ class RuleCheckAll(object):
     def __call__(self, func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            rc = RuleChecker(rules_all=self._rules, **self._kwargs)
-            _args = _args_without_self(func, args)[0]
-            is_valid = rc.validate_all(*_args, **kwargs)
-            if rc.raise_error is False:
+            _args = self._get_args(args)
+            is_valid = self._rulechecker.validate_all(*_args, **kwargs)
+            if self._rulechecker.raise_error is False:
                 wrapper.is_rules_all_valid = is_valid
             return func(*args, **kwargs)
         # wrapper.is_types_valid = self.is_valid
         return wrapper
 
-class RuleCheckAllKw(object):
+    @property
+    def _rulechecker(self) -> RuleChecker:
+        if self._rc is None:
+            self._rc = RuleChecker(rules_all=self._rules, **self._kwargs)
+        return self._rc
+
+
+class RuleCheckAllKw(_DecBase):
     """
     Decorator that decorates methods that require specific args to match rules specificed in ``rules`` list.
-    
+
     If a function specific args do not match all matching rules in ``rules`` list then validation will fail.
-    
+
     See Also:
         :doc:`../../usage/Decorator/RuleCheckAllKw`
     """
+
     def __init__(self, arg_info: Dict[str, Union[int, IRule, Iterable[IRule]]], rules: Optional[Iterable[Union[IRule, Iterable[IRule]]]] = None, **kwargs):
         """
         Constructor
@@ -262,7 +361,10 @@ class RuleCheckAllKw(object):
                 If ``False`` then an attribute will be set on decorated function
                 named ``is_rules_kw_all_valid`` indicating if validation status.
                 Default ``True``.
+            ftype (DecFuncType, optional): Type of function that decorator is applied on.
+                Default ``DecFuncType.FUNCTION``
         """
+        super().__init__(**kwargs)
         self._arg_index = arg_info
         if rules is None:
             self._rules = []
@@ -285,11 +387,11 @@ class RuleCheckAllKw(object):
         return value
 
     def __call__(self, func):
-        
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             is_valid = True
-            arg_name_values = _get_args_dict(func, args, kwargs)
+            arg_name_values = self._get_args_dict(func, args, kwargs)
             arg_keys = arg_name_values.keys()
             add_attrib = None
             for key in self._arg_index.keys():
@@ -310,6 +412,7 @@ class RuleCheckAllKw(object):
         # wrapper.is_types_valid = self.is_valid
         return wrapper
 
+
 class RuleCheckAnyKw(RuleCheckAllKw):
     """
     Decorator that decorates methods that require specific args to match rules specificed in ``rules`` list.
@@ -319,11 +422,12 @@ class RuleCheckAnyKw(RuleCheckAllKw):
     See Also:
         :doc:`../../usage/Decorator/RuleCheckAnyKw`
     """
+
     def __call__(self, func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             is_valid = True
-            arg_name_values = _get_args_dict(func, args, kwargs)
+            arg_name_values = self._get_args_dict(func, args, kwargs)
             arg_keys = arg_name_values.keys()
             add_attrib = None
             for key in self._arg_index.keys():
@@ -344,35 +448,43 @@ class RuleCheckAnyKw(RuleCheckAllKw):
         # wrapper.is_types_valid = self.is_valid
         return wrapper
 
-class RequireArgs(object):
+
+class RequireArgs(_DecBase):
     """
     Decorator that defines required args for ``**kwargs`` of a function.
 
     See Also:
         :doc:`../../usage/Decorator/RequireArgs`
     """
-    def __init__(self, *args: str):
+
+    def __init__(self, *args: str, **kwargs):
         """
         Constructor
 
         Other Parameters:
             args (type): One or more names of wrapped function args to require.
+
+        Keyword Arguments:
+            ftype (DecFuncType, optional): Type of function that decorator is applied on.
+                Default ``DecFuncType.FUNCTION``
         """
+        super().__init__(**kwargs)
         self._args = []
         for arg in args:
             if isinstance(arg, str):
                 self._args.append(arg)
-    
+
     def __call__(self, func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            arg_name_values = _get_args_dict(func, args, kwargs)
+            arg_name_values = self._get_args_dict(func, args, kwargs)
             arg_keys = arg_name_values.keys()
             for key in self._args:
                 if not key in arg_keys:
                     raise ValueError(f"'{key}' is a required arg.")
             return func(*args, **kwargs)
         return wrapper
+
 
 class DefaultArgs(object):
     """
@@ -381,6 +493,7 @@ class DefaultArgs(object):
     See Also:
         :doc:`../../usage/Decorator/DefaultArgs`
     """
+
     def __init__(self, **kwargs: Dict[str, object]):
         """
         Constructor
@@ -399,14 +512,6 @@ class DefaultArgs(object):
             return func(*args, **kwargs)
         return wrapper
 
-class CallTracker(object):
-    def __call__(self, func):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            wrapper.has_been_called = True
-            return func(*args, **kwargs)
-        wrapper.has_been_called = False
-        return wrapper
 
 def calltracker(func):
     @functools.wraps(func)
@@ -415,6 +520,7 @@ def calltracker(func):
         return func(*args, **kwargs)
     wrapper.has_been_called = False
     return wrapper
+
 
 
 def autofill(*argnames, **defaults):

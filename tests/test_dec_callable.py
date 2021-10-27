@@ -3,7 +3,7 @@ if __name__ == '__main__':
     import os
     import sys
     sys.path.append(os.path.realpath('.'))
-from kwhelp.decorator import DefaultArgs, RequireArgs, CallTracker, calltracker
+from kwhelp.decorator import DefaultArgs, RequireArgs, CallTracker, calltracker, call_decorator
 
 
 class TestRequiredDecorators(unittest.TestCase):
@@ -12,7 +12,6 @@ class TestRequiredDecorators(unittest.TestCase):
 
         @DefaultArgs(one=1, two=2)
         @RequireArgs("one", "two", "last")
-        @CallTracker
         def req_test(**kwargs) -> float:
             return (kwargs.get("one"), kwargs.get("two"), kwargs.get("last"))
         assert req_test.has_been_called == False
@@ -27,6 +26,17 @@ class TestRequiredDecorators(unittest.TestCase):
         assert result[1] == "b"
         assert result[2] == ""
 
+    def test_call_decorator(self):
+        class Internal:
+            @call_decorator
+            @DefaultArgs(one=1, two=2)
+            @RequireArgs("one", "two", "last")
+            def req_test(self, **kwargs) -> float:
+                return (kwargs.get("one"), kwargs.get("two"), kwargs.get("last"))
+        internal = Internal()
+        assert internal.req_test.has_been_called == False
+        result = internal.req_test(last="stop")
+        assert internal.req_test.has_been_called == True
 
     def test_default_with_args(self):
 
