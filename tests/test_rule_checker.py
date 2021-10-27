@@ -5,7 +5,7 @@ if __name__ == '__main__':
     sys.path.append(os.path.realpath('.'))
 
 from kwhelp.checks import RuleChecker
-from kwhelp.decorator import DecFuncType, RuleCheckAny, RuleCheckAll, RuleCheckAllKw, RuleCheckAnyKw, TypeCheckKw
+from kwhelp.decorator import DecFuncEnum, RuleCheckAny, RuleCheckAll, RuleCheckAllKw, RuleCheckAnyKw, TypeCheckKw
 from kwhelp import rules
 from kwhelp.exceptions import RuleError
 
@@ -283,7 +283,7 @@ class TestRuleDecorators(unittest.TestCase):
 class TestRuleDecoratorsClass(unittest.TestCase):
     def test_rule_check_any_dec(self):
         class Internal:
-            @RuleCheckAny(rules.RuleIntPositive, rules.RuleFloatPositive, ftype=DecFuncType.METHOD)
+            @RuleCheckAny(rules.RuleIntPositive, rules.RuleFloatPositive, ftype=DecFuncEnum.METHOD)
             def rule_test(self, one, two) -> float:
                 return float(one) + float(two)
         instance = Internal()
@@ -297,7 +297,7 @@ class TestRuleDecoratorsClass(unittest.TestCase):
     
     def test_rule_check_any_dec_init(self):
         class Internal:
-            @RuleCheckAny(rules.RuleIntPositive, rules.RuleFloatPositive, ftype=DecFuncType.METHOD)
+            @RuleCheckAny(rules.RuleIntPositive, rules.RuleFloatPositive, ftype=DecFuncEnum.METHOD)
             def __init__(self, one, two):
                 self.one = one
                 self.two = two
@@ -316,7 +316,7 @@ class TestRuleDecoratorsClass(unittest.TestCase):
 
     def test_rule_check_any_dec_kwargs_err(self):
         class Internal:
-            @RuleCheckAny(rules.RuleIntPositive, rules.RuleFloatPositive, raise_error=True, ftype=DecFuncType.METHOD)
+            @RuleCheckAny(rules.RuleIntPositive, rules.RuleFloatPositive, raise_error=True, ftype=DecFuncEnum.METHOD)
             def rule_test(self, one, two) -> float:
                 return float(one) + float(two)
         instance = Internal()
@@ -325,7 +325,7 @@ class TestRuleDecoratorsClass(unittest.TestCase):
     
     def test_rule_check_any_dec_kwargs(self):
         class Internal:
-            @RuleCheckAny(rules.RuleIntPositive, rules.RuleFloatPositive, raise_error=False, ftype=DecFuncType.METHOD)
+            @RuleCheckAny(rules.RuleIntPositive, rules.RuleFloatPositive, raise_error=False, ftype=DecFuncEnum.METHOD)
             def rule_test(self, one, two) -> float:
                 return float(one) + float(two)
         instance = Internal()
@@ -338,7 +338,7 @@ class TestRuleDecoratorsClass(unittest.TestCase):
     
     def test_rule_str(self):
         class Internal:
-            @RuleCheckAll(rules.RuleStrNotNullEmptyWs, ftype=DecFuncType.METHOD)
+            @RuleCheckAll(rules.RuleStrNotNullEmptyWs, ftype=DecFuncEnum.METHOD)
             def rule_test(self, start, middle, end) -> str:
                 return f"{start} {middle} {end}"
         instance = Internal()
@@ -355,7 +355,7 @@ class TestRuleDecoratorsClass(unittest.TestCase):
         class Internal:
             @RuleCheckAllKw(arg_info={"start": 0, "middle": 0, "end": 1},
                             rules=[(rules.RuleStrNotNullEmptyWs,), (rules.RuleIntZero,)],
-                            ftype=DecFuncType.METHOD)
+                            ftype=DecFuncEnum.METHOD)
             def rule_test(self, start, middle, end) -> str:
                 return f"{start} {middle} {end}"
 
@@ -378,7 +378,7 @@ class TestRuleDecoratorsClass(unittest.TestCase):
         class Internal:
             @RuleCheckAllKw(arg_info={"start": 0, "middle": 0, "end": 1},
                             rules=[(rules.RuleStrNotNullEmptyWs,), []],
-                            ftype=DecFuncType.METHOD)
+                            ftype=DecFuncEnum.METHOD)
             def rule_test(self, start, middle, end) -> str:
                 return f"{start} {middle} {end}"
         instance = Internal()
@@ -406,7 +406,7 @@ class TestRuleDecoratorsClass(unittest.TestCase):
             @RuleCheckAnyKw(arg_info={"start": 0, "middle": 1, "end": 2},
                             rules=[(rules.RuleInt,), (rules.RuleIntPositive, rules.RuleFloatPositive),
                                    (rules.RuleIntNegativeOrZero, rules.RuleFloatNegativeOrZero)],
-                            ftype=DecFuncType.METHOD)
+                            ftype=DecFuncEnum.METHOD)
             def rule_test(self, start, middle, end) -> tuple:
                 return (start, middle, end)
 
@@ -426,7 +426,7 @@ class TestRuleDecoratorsClass(unittest.TestCase):
             @RuleCheckAnyKw(arg_info={"start": 0, "middle": 1, "end": 2},
                             rules=[rules.RuleInt, (rules.RuleIntPositive, rules.RuleFloatPositive),
                                    (rules.RuleIntNegativeOrZero, rules.RuleFloatNegativeOrZero)],
-                            ftype=DecFuncType.METHOD)
+                            ftype=DecFuncEnum.METHOD)
             def rule_test(self, start, middle, end) -> tuple:
                 return (start, middle, end)
             
@@ -446,7 +446,7 @@ class TestRuleDecoratorsClass(unittest.TestCase):
             @RuleCheckAnyKw(arg_info={"start": rules.RuleInt, "middle": 0, "end": 1},
                             rules=[(rules.RuleIntPositive, rules.RuleFloatPositive),
                                    (rules.RuleIntNegativeOrZero, rules.RuleFloatNegativeOrZero)],
-                            ftype=DecFuncType.METHOD)
+                            ftype=DecFuncEnum.METHOD)
             def rule_test(self, start, middle, end) -> tuple:
                 return (start, middle, end)
 
@@ -465,7 +465,7 @@ class TestRuleDecoratorsClass(unittest.TestCase):
         class Internal:
             @RuleCheckAnyKw(arg_info={"start": 0, "middle": 0, "end": 1},
                             rules=[(rules.RuleStrNotNullEmptyWs,), []],
-                            ftype=DecFuncType.METHOD)
+                            ftype=DecFuncEnum.METHOD)
             def rule_test(self, start, middle, end) -> str:
                 return f"{start} {middle} {end}"
 
@@ -477,11 +477,11 @@ class TestRuleDecoratorsClass(unittest.TestCase):
         class Internal:
             @RuleCheckAllKw(arg_info={"start": 0},
                             rules=[(rules.RuleStrNotNullEmptyWs,)],
-                            ftype=DecFuncType.METHOD)
+                            ftype=DecFuncEnum.METHOD)
             @RuleCheckAnyKw(arg_info={"middle": 0, "end": 1},
                             rules=[(rules.RuleIntPositive, rules.RuleFloatPositive),
                                    (rules.RuleIntNegativeOrZero, rules.RuleFloatNegativeOrZero)],
-                            ftype=DecFuncType.METHOD)
+                            ftype=DecFuncEnum.METHOD)
             def rule_test(self, start, middle, end) -> tuple:
                 return (start, middle, end)
 
@@ -497,14 +497,14 @@ class TestRuleDecoratorsClass(unittest.TestCase):
         class Internal:
             @TypeCheckKw(arg_info={"start": str, "middle": 0, "end": 0},
                          types=[(int, float)],
-                         ftype=DecFuncType.METHOD)
+                         ftype=DecFuncEnum.METHOD)
             @RuleCheckAllKw(arg_info={"start": 0},
                             rules=[(rules.RuleStrNotNullEmptyWs,)],
-                            ftype=DecFuncType.METHOD)
+                            ftype=DecFuncEnum.METHOD)
             @RuleCheckAnyKw(arg_info={"middle": 0, "end": 1},
                             rules=[(rules.RuleIntPositive, rules.RuleFloatPositive),
                                    (rules.RuleIntNegativeOrZero, rules.RuleFloatNegativeOrZero)],
-                            ftype=DecFuncType.METHOD)
+                            ftype=DecFuncEnum.METHOD)
             def rule_test(self, start, middle, end) -> tuple:
                 return (start, middle, end)
 
@@ -517,7 +517,7 @@ class TestRuleDecoratorsClass(unittest.TestCase):
             @RuleCheckAnyKw(arg_info={"start": rules.RuleStrNotNullEmptyWs,
                                     "middle": (rules.RuleStrNotNullEmptyWs,),
                                       "end": (rules.RuleIntZero,)},
-                            raise_error=False, ftype=DecFuncType.METHOD)
+                            raise_error=False, ftype=DecFuncEnum.METHOD)
             def rule_test(self, start, middle, end) -> str:
                 return f"{start} {middle} {end}"
         

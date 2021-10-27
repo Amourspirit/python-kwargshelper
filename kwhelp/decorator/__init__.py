@@ -8,7 +8,7 @@ from enum import IntEnum
 # import wrapt
 
 
-class DecFuncType(IntEnum):
+class DecFuncEnum(IntEnum):
     """Represents options for type of Function or Method"""
     FUNCTION = 1
     """Normal Unbound function"""
@@ -21,19 +21,19 @@ class DecFuncType(IntEnum):
 
 class _DecBase:
     def __init__(self, **kwargs):
-        self._ftype: DecFuncType = kwargs.get("ftype", None)
+        self._ftype: DecFuncEnum = kwargs.get("ftype", None)
         if self._ftype is not None:
-            if not isinstance(self._ftype, DecFuncType):
+            if not isinstance(self._ftype, DecFuncEnum):
                 try:
-                    self._ftype = DecFuncType(self._ftype)
+                    self._ftype = DecFuncEnum(self._ftype)
                 except:
                     raise TypeError(
                         f"{self.__class__.__name__} requires arg 'ftype' to be a 'DecFuncType")
         else:
-            self._ftype = DecFuncType.FUNCTION
+            self._ftype = DecFuncEnum.FUNCTION
 
     def _drop_arg_first(self) -> bool:
-        return self._ftype.value > DecFuncType.METHOD_STATIC.value
+        return self._ftype.value > DecFuncEnum.METHOD_STATIC.value
 
     def _get_args(self, args):
         if self._drop_arg_first():
