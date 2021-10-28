@@ -3,13 +3,13 @@ if __name__ == '__main__':
     import os
     import sys
     sys.path.append(os.path.realpath('.'))
-from kwhelp.decorator import DefaultArgs, RequireArgs, CallTracker, calltracker, call_decorator
+from kwhelp.decorator import DefaultArgs, RequireArgs, calltracker, callcounter
 
 
 class TestRequiredDecorators(unittest.TestCase):
 
     def test_default_gen(self):
-
+        @calltracker
         @DefaultArgs(one=1, two=2)
         @RequireArgs("one", "two", "last")
         def req_test(**kwargs) -> float:
@@ -26,9 +26,9 @@ class TestRequiredDecorators(unittest.TestCase):
         assert result[1] == "b"
         assert result[2] == ""
 
-    def test_call_decorator(self):
+    def test_calltracker(self):
         class Internal:
-            @call_decorator
+            @calltracker
             @DefaultArgs(one=1, two=2)
             @RequireArgs("one", "two", "last")
             def req_test(self, **kwargs) -> float:
@@ -37,6 +37,20 @@ class TestRequiredDecorators(unittest.TestCase):
         assert internal.req_test.has_been_called == False
         result = internal.req_test(last="stop")
         assert internal.req_test.has_been_called == True
+
+    def test_callcounter(self):
+        class Internal:
+            @callcounter
+            @DefaultArgs(one=1, two=2)
+            @RequireArgs("one", "two", "last")
+            def req_test(self, **kwargs) -> float:
+                return (kwargs.get("one"), kwargs.get("two"), kwargs.get("last"))
+        internal = Internal()
+        assert internal.req_test.call_count == 0
+        result = internal.req_test(last="stop")
+        assert internal.req_test.call_count == 1
+        result = internal.req_test(last="End")
+        assert internal.req_test.call_count == 2
 
     def test_default_with_args(self):
 

@@ -1,5 +1,5 @@
-DecFuncEnum Enum
-================
+DecFuncEnum
+===========
 
 .. autoclass:: kwhelp.decorator.DecFuncEnum
    :members:

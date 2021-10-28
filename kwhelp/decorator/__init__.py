@@ -19,6 +19,9 @@ class DecFuncEnum(IntEnum):
     METHOD_CLASS = 4
     """Class Method (@classmethod)"""
 
+    def __str__(self):
+        return self._name_
+
 class _DecBase:
     def __init__(self, **kwargs):
         self._ftype: DecFuncEnum = kwargs.get("ftype", None)
@@ -478,6 +481,28 @@ class DefaultArgs(object):
 
 
 def calltracker(func):
+    """
+    Decorator method that adds ``has_been_called`` attribute to decorated method.
+    ``has_been_called`` is ``False`` if method has not been called.
+    ``has_been_called`` is ``True`` if method has been called.
+
+    Note:
+        This decorator needs to be the topmost decorator applied to a method
+
+    Example:
+        .. code-block:: python
+
+            >>> @calltracker
+            >>> def foo(msg):
+            >>>     print(msg)
+
+            >>> print(foo.has_been_called)
+            False
+            >>> foo("Hello World")
+            Hello World
+            >>> print(foo.has_been_called)
+            True
+    """
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         wrapper.has_been_called = True
@@ -486,8 +511,71 @@ def calltracker(func):
     return wrapper
 
 
+def callcounter(func):
+    """
+    Decorator method that adds ``call_count`` attribute to decorated method.
+    ``call_count`` is ``0`` if method has not been called.
+    ``call_count`` increases by 1 each time method is been called.
 
-def autofill(*argnames, **defaults):
+    Note:
+        This decorator needs to be the topmost decorator applied to a method
+
+    Example:
+        .. code-block:: python
+
+            >>> @callcounter
+            >>> def foo(msg):
+            >>>     print(msg)
+
+            >>> print("Call Count:", foo.call_count)
+            0
+            >>> foo("Hello")
+            Hello
+            >>> print("Call Count:", foo.call_count)
+            1
+            >>> foo("World")
+            World
+            >>> print("Call Count:", foo.call_count)
+            2
+    """
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        wrapper.call_count += 1
+        return func(*args, **kwargs)
+    wrapper.call_count = 0
+    return wrapper
+
+
+def singleton(orig_cls):
+    """
+    Makes a class a singleton class
+
+    Example:
+        .. code-block:: python
+
+            @singleton
+            class Logger:
+                def log(self, msg):
+                    print(msg)
+
+            logger1 = Logger()
+            logger2 = Logger()
+            assert logger1 is logger2
+    """
+    orig_new = orig_cls.__new__
+    instance = None
+
+    @functools.wraps(orig_cls.__new__)
+    def __new__(cls, *args, **kwargs):
+        nonlocal instance
+        if instance is None:
+            instance = orig_new(cls, *args, **kwargs)
+        return instance
+    orig_cls.__new__ = __new__
+    return orig_cls
+
+
+class AutoFill:
     """
     Class decorator that replaces the ``__init__`` function with one that
     sets instance attributes with the specified argument names and
@@ -497,13 +585,26 @@ def autofill(*argnames, **defaults):
     Example:
         .. code-block:: python
 
-            >>> @autofill('a', 'b', c=3)
+            >>> @AutoFill('a', 'b', c=3)
             ... class Foo: pass
             >>> sorted(Foo(1, 2).__dict__.items())
             [('a', 1), ('b', 2), ('c', 3)]
     """
     # https://codereview.stackexchange.com/questions/142073/class-decorator-in-python-to-set-variables-for-the-constructor
-    def init_switcher(cls):
+
+    def __init__(self,  *args, **kwargs):
+        self._args = args
+        self._kwargs = kwargs
+
+    def __call__(self, cls):
+        class Wrapped(cls):
+            """Wrapped Class"""
+        self._init(Wrapped)
+        return Wrapped
+
+    def _init(self, cls):
+        argnames = self._args
+        defaults = self._kwargs
         kind = Parameter.POSITIONAL_OR_KEYWORD
         signature = Signature(
             [Parameter(a, kind) for a in argnames]
@@ -518,5 +619,37 @@ def autofill(*argnames, **defaults):
             original_init(self)
 
         cls.__init__ = init
-        return cls
-    return init_switcher
+
+class AutoFillKw:
+    """
+    Class decorator that replaces the ``__init__`` function with one that
+    sets instance attributes with the specified key, value of ``kwargs``.
+    The original ``__init__`` is called with any ``*args``
+    after the instance attributes have been assigned.
+
+    Example:
+        .. code-block:: python
+
+            >>> @AutoFillKw
+            ... class Foo: pass
+            >>> sorted(Foo(a=1, b=2, End="!").__dict__.items())
+            [('End', '!'), ('a', 1), ('b', 2)]
+    """
+    def __init__(self, cls):
+        self._cls = cls
+
+    def __call__(self, *args, **kwargs):
+        kind = Parameter.KEYWORD_ONLY
+        signature = Signature(
+            [Parameter(k, kind, default=v) for k, v in kwargs.items()])
+        original_init = self._cls.__init__
+
+        def init(self, *arguments, **kw):
+            bound = signature.bind(**kw)
+            bound.apply_defaults()
+            for k, v in bound.arguments.items():
+                setattr(self, k, v)
+            original_init(self, *arguments)
+
+        self._cls.__init__ = init
+        return self._cls(*args, **kwargs)
