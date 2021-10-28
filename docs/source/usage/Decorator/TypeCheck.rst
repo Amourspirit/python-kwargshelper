@@ -10,7 +10,7 @@ This example requires that all args positive ``int`` or positive ``float``.
 
 .. code-block:: python
 
-    from kwhelp.decorator import RuleCheckAny
+    from kwhelp.decorator import TypeCheck
     import kwhelp.rules as rules
 
     @TypeCheck(int, float)
@@ -42,7 +42,7 @@ This example requires that all args are ``int`` or ``float``.
 
 .. code-block:: python
 
-    from kwhelp.decorator import RuleCheckAny
+    from kwhelp.decorator import TypeCheck
     import kwhelp.rules as rules
 
     @TypeCheck(int, float)
