@@ -1,10 +1,12 @@
 import functools
-from typing import Dict, Iterable, Optional, Union
-from inspect import signature, isclass, Parameter, Signature
+import re
+from typing import Dict, Iterable, Iterator, Optional, Union
+from inspect import _ParameterKind, signature, isclass, Parameter, Signature
 from ..checks import TypeChecker, RuleChecker
 from ..rules import IRule
 from ..helper import is_iterable
 from enum import IntEnum
+from abc import ABC
 # import wrapt
 
 
@@ -22,7 +24,7 @@ class DecFuncEnum(IntEnum):
     def __str__(self):
         return self._name_
 
-class _DecBase:
+class _DecBase(ABC):
     def __init__(self, **kwargs):
         self._ftype: DecFuncEnum = kwargs.get("ftype", None)
         if self._ftype is not None:
@@ -53,6 +55,13 @@ class _DecBase:
             _args = args
         return {**dict(zip(_names, _args)), **kwargs}
 
+    def _get_formated_types(self, types: Iterator[type]) -> str:
+        result = ''
+        for i, t in enumerate(types):
+            if i > 0:
+                result = result + ' | '
+            result = f"{result}{t}"
+        return result
 
 class TypeCheck(_DecBase):
     """
@@ -113,7 +122,103 @@ class TypeCheck(_DecBase):
         return self._tc
 
 
-class ReturnTypeCheck(_DecBase):
+class AcceptedTypes(_DecBase):
+    """
+    Decorator that decorates methods that requires args to match a type specificed in a list
+
+    See Also:
+        :doc:`../../usage/Decorator/TypeCheck`
+    """
+    _rx_star = re.compile("^\*(\d*)$")
+    
+    def __init__(self, *args: Union[type, Iterator[type]], **kwargs):
+        """
+        Constructor
+
+        Other Parameters:
+            args (Union[type, Iterator[type]]): One or more types or Iterator[type] for validation.
+
+        Keyword Arguments:
+            type_instance_check (bool, optional): If ``True`` then args are tested also for ``isinstance()``
+                if type does not match, rather then just type check. If ``False`` then values willl only be
+                tested as type.
+                Default ``True``
+            ftype (DecFuncType, optional): Type of function that decorator is applied on.
+                Default ``DecFuncType.FUNCTION``
+        """
+        super().__init__(**kwargs)
+        self._tc = None
+        self._types = []
+        for arg in args:
+            if is_iterable(arg):
+                self._types.append(arg)
+            else:
+                self._types.append(tuple([arg]))
+        if kwargs:
+            # keyword args are passed to TypeChecker
+            self._kwargs = {**kwargs}
+        else:
+            self._kwargs = {}
+        
+
+    def _get_args_dict(self, method, args, kwargs):
+        sig = signature(method)
+        _names = []
+        _has_args = False
+        i = 0
+        for k, v in sig.parameters.items():
+            if v.kind == _ParameterKind.VAR_KEYWORD: # kwargs
+                continue
+            if v.kind == _ParameterKind.VAR_POSITIONAL: # args
+                _has_args = True
+                break
+            _names.append(k)
+            i += 1
+        if _has_args is True and i < len(args) - 1:
+            dif = len(args) - i
+            for j in range(i, dif+i):
+                _names.append("*" + str(j))
+        if self._drop_arg_first():
+            _names = _names[1:]
+            _args = args[1:]
+        else:
+            _args = args
+        return {**dict(zip(_names, _args)), **kwargs}
+    
+    def __call__(self, func: callable):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            arg_name_values = self._get_args_dict(func, args, kwargs)
+            arg_keys = arg_name_values.keys()
+            if len(arg_keys) is not len(self._types):
+                raise ValueError(
+                    'Invalid number of arguments for {0}()'.format(func.__name__))
+            arg_type = zip(arg_keys, self._types)
+            for arg_info in arg_type:
+                key = arg_info[0]
+                _key = None
+                value = arg_name_values[key]
+                tc = TypeChecker(*arg_info[1], **self._kwargs)
+                if AcceptedTypes._rx_star.match(key):
+                    _key = None
+                    is_valid = tc.validate(value)
+                else:
+                    _key = key
+                    is_valid = tc.validate(**{key: value})
+                if not is_valid:
+                    raise TypeError(self._get_err_msg(name=_key, value=value, types=arg_info[1]))
+            return func(*args, **kwargs)
+        return wrapper
+
+    def _get_err_msg(self, name:Union[str, None], value: object, types: Iterator[type]):
+        str_types = self._get_formated_types(types=types)
+        if name:
+            msg = f"Arg with '{value}' of is expected to be of '{str_types}' but got '{type(value).__name__}'"
+        else:
+            msg = f"Arg '{name}' is expected to be of '{str_types}' but got '{type(value).__name__}'"
+        return msg
+
+class ReturnType(_DecBase):
     """
     Decorator that decorates methods that require return value to match a type specificed.
 
