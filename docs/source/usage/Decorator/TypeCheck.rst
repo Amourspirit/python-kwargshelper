@@ -11,7 +11,6 @@ This example requires that all args positive ``int`` or positive ``float``.
 .. code-block:: python
 
     from kwhelp.decorator import TypeCheck
-    import kwhelp.rules as rules
 
     @TypeCheck(int, float)
     def add_numbers(*args) -> float:
@@ -43,7 +42,6 @@ This example requires that all args are ``int`` or ``float``.
 .. code-block:: python
 
     from kwhelp.decorator import TypeCheck
-    import kwhelp.rules as rules
 
     @TypeCheck(int, float)
     def speed_msg(speed, limit, **kwargs) -> str:

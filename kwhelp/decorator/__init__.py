@@ -56,7 +56,7 @@ class _DecBase:
 
 class TypeCheck(_DecBase):
     """
-    Decorator that decorates methods that require args to match a type specificed in a list
+    Decorator that decorates methods that requires args to match a type specificed in a list
 
     See Also:
         :doc:`../../usage/Decorator/TypeCheck`
@@ -112,6 +112,61 @@ class TypeCheck(_DecBase):
             self._tc = TypeChecker(*self._types, **self._kwargs)
         return self._tc
 
+
+class ReturnTypeCheck(_DecBase):
+    """
+    Decorator that decorates methods that require return value to match a type specificed.
+
+    See Also:
+        :doc:`../../usage/Decorator/ReturnTypeCheck`
+    """
+    def __init__(self, return_type: type, **kwargs):
+        """
+        Constructor
+
+        Args:
+            return_type (type): Type that is used to validate return type.
+        Keyword Arguments:
+            type_instance_check (bool, optional): If ``True`` then args are tested also for ``isinstance()``
+                if type does not match, rather then just type check. If ``False`` then values willl only be
+                tested as type.
+                Default ``True``
+        """
+        super().__init__(**kwargs)
+        self._tc = None
+        self._type = return_type
+        if kwargs:
+            # keyword args are passed to TypeChecker
+            self._kwargs = {**kwargs}
+        else:
+            self._kwargs = {}
+
+    def __call__(self, func: callable):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            return_value = func(*args, **kwargs)
+            is_valid = False
+            try:
+                is_valid = self._typechecker.validate(return_value)
+            except TypeError:
+                # catch type error and raise a new one so a more fitting message is raised.
+                raise TypeError(self._get_err_msg(return_value))
+            # validate will raise Typeerror if raise_error is True,
+            # otherwise will rasise error here
+            if is_valid is False:
+                raise TypeError(self._get_err_msg(return_value))
+            return return_value
+        return wrapper
+
+    def _get_err_msg(self, value: object):
+        msg = f"Return Value is expected to be of '{self._type.__name__}' but got '{type(value).__name__}'"
+        return msg
+
+    @property
+    def _typechecker(self) -> TypeChecker:
+        if self._tc is None:
+            self._tc = TypeChecker(self._type, **self._kwargs)
+        return self._tc
 
 class TypeCheckKw(_DecBase):
     """

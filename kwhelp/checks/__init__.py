@@ -83,7 +83,7 @@ class TypeChecker:
             ``False``.
 
         Raises:
-            TypeError: if 
+            TypeError: if ``raise_error`` is ``True`` and validation fails.
         """
         if len(self._types) == 0:
             return True
