@@ -124,10 +124,10 @@ class TypeCheck(_DecBase):
 
 class AcceptedTypes(_DecBase):
     """
-    Decorator that decorates methods that requires args to match a type specificed in a list
+    Decorator that decorates methods that requires args to match types specificed in a list
 
     See Also:
-        :doc:`../../usage/Decorator/TypeCheck`
+        :doc:`../../usage/Decorator/AcceptedTypes`
     """
     _rx_star = re.compile("^\*(\d*)$")
     
@@ -223,7 +223,7 @@ class ReturnType(_DecBase):
     Decorator that decorates methods that require return value to match a type specificed.
 
     See Also:
-        :doc:`../../usage/Decorator/ReturnTypeCheck`
+        :doc:`../../usage/Decorator/ReturnType`
     """
     def __init__(self, return_type: type, **kwargs):
         """

@@ -1,17 +1,16 @@
+ReturnType Usage
+================
 
-ReturnTypeCheck Usage
-=====================
+:py:class:`~.decorator.ReturnType` decorator reqires that return matches ``type``.
 
-:py:class:`~.decorator.ReturnTypeCheck` decorator reqires that return matches ``type``.
-
-The following example requres return type of ``str`` by applying :py:class:`~.decorator.ReturnTypeCheck`
+The following example requres return type of ``str`` by applying :py:class:`~.decorator.ReturnType`
 decorator with parameter of ``str``.
 
 .. code-block:: python
 
-    from kwhelp.decorator import ReturnTypeCheck
+    from kwhelp.decorator import ReturnType
 
-    @ReturnTypeCheck(str)
+    @ReturnType(str)
     def foo(*args):
         result = None
         for i, arg in enumerate(args):
