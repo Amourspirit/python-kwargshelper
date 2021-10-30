@@ -357,12 +357,13 @@ class ReturnType(_DecBase):
     See Also:
         :doc:`../../usage/Decorator/ReturnType`
     """
-    def __init__(self, return_type: type, **kwargs):
+
+    def __init__(self, *args: type, **kwargs):
         """
         Constructor
 
         Args:
-            return_type (type): Type that is used to validate return type.
+            args (type): One ore more types that is used to validate return type.
         Keyword Arguments:
             type_instance_check (bool, optional): If ``True`` then args are tested also for ``isinstance()``
                 if type does not match, rather then just type check. If ``False`` then values willl only be
@@ -371,7 +372,7 @@ class ReturnType(_DecBase):
         """
         super().__init__(**kwargs)
         self._tc = None
-        self._type = return_type
+        self._types = [*args]
         if kwargs:
             # keyword args are passed to TypeChecker
             self._kwargs = {**kwargs}
@@ -391,13 +392,14 @@ class ReturnType(_DecBase):
         return wrapper
 
     def _get_err_msg(self, value: object):
-        msg = f"Return Value is expected to be of '{self._type.__name__}' but got '{type(value).__name__}'"
+        str_types = self._get_formated_types(self._types)
+        msg = f"Return Value is expected to be of '{str_types}' but got '{type(value).__name__}'"
         return msg
 
     @property
     def _typechecker(self) -> TypeChecker:
         if self._tc is None:
-            self._tc = TypeChecker(self._type, **self._kwargs)
+            self._tc = TypeChecker(*self._types, **self._kwargs)
             # ensure errors are raised if not valid
             self._tc.raise_error = True
         return self._tc
@@ -724,7 +726,6 @@ class RuleCheckAnyKw(RuleCheckAllKw):
         # wrapper.is_types_valid = self.is_valid
         return wrapper
 
-
 class RequireArgs(_DecBase):
     """
     Decorator that defines required args for ``**kwargs`` of a function.
@@ -760,7 +761,6 @@ class RequireArgs(_DecBase):
                     raise ValueError(f"'{func.__name__}', '{key}' is a required arg.")
             return func(*args, **kwargs)
         return wrapper
-
 
 class DefaultArgs(object):
     """
@@ -882,7 +882,6 @@ def singleton(orig_cls):
         return instance
     orig_cls.__new__ = __new__
     return orig_cls
-
 
 class AutoFill:
     """
