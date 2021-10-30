@@ -163,6 +163,7 @@ class RuleChecker:
             TypeError: If ``rule_all`` is not an iterable object
             TypeError: If ``rule_any`` is not an iterable object
         """
+        self._current_arg: Union[str, None] = None
         if rules_all is None:
             self._rules_all = []
             self._len_all = 0
@@ -198,7 +199,10 @@ class RuleChecker:
             _key = key
             _field = field
         else:
-            _key = 'arg'
+            if self.current_arg:
+                _key = self.current_arg
+            else:
+                _key = 'arg'
             _field = 'arg'
            
         result = True
@@ -211,7 +215,10 @@ class RuleChecker:
                 try:
                     result = result & rule_instance.validate()
                 except Exception as e:
-                    arg_name = _key if valid_arg else None
+                    if self.current_arg:
+                        arg_name = self.current_arg
+                    else:
+                        arg_name = _key if valid_arg else None
                     raise RuleError(
                         err_rule=rule, rules_all=self._rules_all, arg_name=arg_name, errors=e) from e
                 if result is False:
@@ -225,7 +232,10 @@ class RuleChecker:
             _key = key
             _field = field
         else:
-            _key = 'arg'
+            if self.current_arg:
+                _key = self.current_arg
+            else:
+                _key = 'arg'
             _field = 'arg'
         error_lst = []
         result = True
@@ -346,4 +356,22 @@ class RuleChecker:
     @raise_error.setter
     def raise_error(self, value: bool) -> bool:
         self._raise_error = bool(value)
+    
+    @property
+    def current_arg(self) -> Union[str, None]:
+        """
+        Current arg name that is being processed.
+        This value is used when some errors are being raised.
+
+        :getter: Gets current arg name.
+        :setter: Sets current arg name.
+        """
+        return self._current_arg
+
+    @current_arg.setter
+    def current_arg(self, value: Union[str, None]):
+        if value is None:
+            self._current_arg = value
+        else:
+            self._current_arg = str(value)
     # endregion Properties

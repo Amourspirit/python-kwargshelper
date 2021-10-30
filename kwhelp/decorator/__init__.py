@@ -5,6 +5,7 @@ from inspect import _ParameterKind, signature, isclass, Parameter, Signature
 from ..checks import TypeChecker, RuleChecker
 from ..rules import IRule
 from ..helper import is_iterable
+from ..exceptions import RuleError
 from enum import IntEnum
 from abc import ABC
 # import wrapt
@@ -20,6 +21,8 @@ class DecFuncEnum(IntEnum):
     """Class Method"""
     METHOD_CLASS = 4
     """Class Method (@classmethod)"""
+    PROPERTY_CLASS = 5
+    """Class Property (@property)"""
 
     def __str__(self):
         return self._name_
@@ -63,6 +66,27 @@ class _DecBase(ABC):
             result = f"{result}{t}"
         return result
 
+    def _get_ordinal(self, num: int) -> str:
+        """
+        Returns the ordinal number of a given integer, as a string.
+
+        Args:
+            num (int): integer to get ordinal value of.
+
+        Returns:
+            str: num as ordinal str. eg. 1 -> 1st, 2 -> 2nd, 3 -> 3rd, etc.
+        """
+        if 10 <= num % 100 < 20:
+            return '{0}th'.format(num)
+        else:
+            ord = {1: 'st', 2: 'nd', 3: 'rd'}.get(num % 10, 'th')
+            return '{0}{1}'.format(num, ord)
+
+
+class _RuleBase(_DecBase):
+    def _get_err(self, fn: callable, e: RuleError):
+        err = RuleError.from_rule_error(e, fn_name=fn.__name__)
+        return err
 class TypeCheck(_DecBase):
     """
     Decorator that decorates methods that requires args to match a type specificed in a list
@@ -194,30 +218,138 @@ class AcceptedTypes(_DecBase):
                 raise ValueError(
                     'Invalid number of arguments for {0}()'.format(func.__name__))
             arg_type = zip(arg_keys, self._types)
+            i = 0
             for arg_info in arg_type:
                 key = arg_info[0]
-                _key = None
                 value = arg_name_values[key]
                 tc = TypeChecker(*arg_info[1], **self._kwargs)
+                # ensure errors are raised if not valid
+                tc.raise_error = True
                 if AcceptedTypes._rx_star.match(key):
-                    _key = None
-                    is_valid = tc.validate(value)
+                    try:
+                        tc.validate(value)
+                    except TypeError:
+                        raise TypeError(self._get_err_msg(name=None, value=value,
+                                                          types=arg_info[1], arg_index=i,
+                                                          fn=func))
                 else:
-                    _key = key
-                    is_valid = tc.validate(**{key: value})
-                if not is_valid:
-                    raise TypeError(self._get_err_msg(name=_key, value=value, types=arg_info[1]))
+                    try:
+                        tc.validate(**{key: value})
+                    except TypeError:
+                        raise TypeError(self._get_err_msg(name=key, value=value,
+                                                          types=arg_info[1], arg_index=i,
+                                                          fn=func))
+                i += 1
             return func(*args, **kwargs)
         return wrapper
 
-    def _get_err_msg(self, name:Union[str, None], value: object, types: Iterator[type]):
+    def _get_err_msg(self, name:Union[str, None], value: object, types: Iterator[type], arg_index: int, fn: callable):
         str_types = self._get_formated_types(types=types)
+        str_ord = self._get_ordinal(arg_index + 1)
+        if self._ftype == DecFuncEnum.PROPERTY_CLASS:
+            msg = f"'{fn.__name__}' property error. Arg '{name}' expected type of '{str_types}' but got '{type(value).__name__}'"
+            return msg
         if name:
-            msg = f"Arg with '{value}' of is expected to be of '{str_types}' but got '{type(value).__name__}'"
+            msg = f"Arg '{name}' in {str_ord} position is expected to be of '{str_types}' but got '{type(value).__name__}'"
         else:
-            msg = f"Arg '{name}' is expected to be of '{str_types}' but got '{type(value).__name__}'"
+            msg = f"Arg in {str_ord} position of is expected to be of '{str_types}' but got '{type(value).__name__}'"
         return msg
 
+
+class ReturnRuleAll(_RuleBase):
+    """
+    Decorator that decorates methods that require return value to match all rules specificed.
+
+    See Also:
+        :doc:`../../usage/Decorator/ReturnRuleAll`
+    """
+
+    def __init__(self, *args: IRule, **kwargs):
+        """
+        Constructor
+
+        Args:
+            args (IRule): One or more rules to use for validation
+        Keyword Arguments:
+            ftype (DecFuncType, optional): Type of function that decorator is applied on.
+                Default ``DecFuncType.FUNCTION``
+                Default ``True``
+        """
+        super().__init__(**kwargs)
+        self._rc = None
+        self._rules = [arg for arg in args]
+        if kwargs:
+            self._kwargs = {**kwargs}
+        else:
+            self._kwargs = {}
+
+    def __call__(self, func: callable):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            return_value = func(*args, **kwargs)
+            rc = self._rulechecker
+            try:
+                rc.validate_all(**{"return": return_value})
+            except RuleError as e:
+                err = self._get_err(fn=func, e=e)
+                raise err
+            return return_value
+        return wrapper
+
+    @property
+    def _rulechecker(self) -> RuleChecker:
+        if self._rc is None:
+            self._rc = RuleChecker(rules_all=self._rules, **self._kwargs)
+            self._rc.raise_error = True
+        return self._rc
+
+
+class ReturnRuleAny(_RuleBase):
+    """
+    Decorator that decorates methods that require return value to match any of the rules specificed.
+
+    See Also:
+        :doc:`../../usage/Decorator/ReturnRuleAny`
+    """
+
+    def __init__(self, *args: IRule, **kwargs):
+        """
+        Constructor
+
+        Args:
+            args (IRule): One or more rules to use for validation
+        Keyword Arguments:
+            ftype (DecFuncType, optional): Type of function that decorator is applied on.
+                Default ``DecFuncType.FUNCTION``
+        """
+        super().__init__(**kwargs)
+        self._rc = None
+        self._rules = [arg for arg in args]
+        if kwargs:
+            self._kwargs = {**kwargs}
+        else:
+            self._kwargs = {}
+
+    def __call__(self, func: callable):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            return_value = func(*args, **kwargs)
+            rc = self._rulechecker
+            # rc.current_arg = "return"
+            try:
+                rc.validate_any(**{"return": return_value})
+            except RuleError as e:
+                err = self._get_err(fn=func, e=e)
+                raise err
+            return return_value
+        return wrapper
+
+    @property
+    def _rulechecker(self) -> RuleChecker:
+        if self._rc is None:
+            self._rc = RuleChecker(rules_any=self._rules, **self._kwargs)
+            self._rc.raise_error = True
+        return self._rc
 class ReturnType(_DecBase):
     """
     Decorator that decorates methods that require return value to match a type specificed.
@@ -250,15 +382,10 @@ class ReturnType(_DecBase):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             return_value = func(*args, **kwargs)
-            is_valid = False
             try:
-                is_valid = self._typechecker.validate(return_value)
+                self._typechecker.validate(return_value)
             except TypeError:
                 # catch type error and raise a new one so a more fitting message is raised.
-                raise TypeError(self._get_err_msg(return_value))
-            # validate will raise Typeerror if raise_error is True,
-            # otherwise will rasise error here
-            if is_valid is False:
                 raise TypeError(self._get_err_msg(return_value))
             return return_value
         return wrapper
@@ -271,6 +398,8 @@ class ReturnType(_DecBase):
     def _typechecker(self) -> TypeChecker:
         if self._tc is None:
             self._tc = TypeChecker(self._type, **self._kwargs)
+            # ensure errors are raised if not valid
+            self._tc.raise_error = True
         return self._tc
 
 class TypeCheckKw(_DecBase):
@@ -351,7 +480,7 @@ class TypeCheckKw(_DecBase):
         return wrapper
 
 
-class RuleCheckAny(_DecBase):
+class RuleCheckAny(_RuleBase):
     """
     Decorator that decorates methods that require args to match a rule specificed in ``rules`` list.
 
@@ -391,7 +520,12 @@ class RuleCheckAny(_DecBase):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             _args = self._get_args(args)
-            is_valid = self._rulechecker.validate_any(*_args, **kwargs)
+            is_valid = False
+            try:
+                is_valid = self._rulechecker.validate_any(*_args, **kwargs)
+            except RuleError as err:
+                err_rule = self._get_err(fn=func,e=err)
+                raise err_rule
             if self._rulechecker.raise_error is False:
                 wrapper.is_rules_any_valid = is_valid
             return func(*args, **kwargs)
@@ -405,7 +539,7 @@ class RuleCheckAny(_DecBase):
         return self._rc
 
 
-class RuleCheckAll(_DecBase):
+class RuleCheckAll(_RuleBase):
     """
     Decorator that decorates methods that require args to match all rules specificed in ``rules`` list.
 
@@ -445,7 +579,12 @@ class RuleCheckAll(_DecBase):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             _args = self._get_args(args)
-            is_valid = self._rulechecker.validate_all(*_args, **kwargs)
+            is_valid = False
+            try:
+                is_valid = self._rulechecker.validate_all(*_args, **kwargs)
+            except RuleError as err:
+                err_rule = self._get_err(fn=func,e=err)
+                raise err_rule
             if self._rulechecker.raise_error is False:
                 wrapper.is_rules_all_valid = is_valid
             return func(*args, **kwargs)
@@ -459,7 +598,7 @@ class RuleCheckAll(_DecBase):
         return self._rc
 
 
-class RuleCheckAllKw(_DecBase):
+class RuleCheckAllKw(_RuleBase):
     """
     Decorator that decorates methods that require specific args to match rules specificed in ``rules`` list.
 
@@ -530,7 +669,12 @@ class RuleCheckAllKw(_DecBase):
                     rc = RuleChecker(rules_all=rules, **self._kwargs)
                     if add_attrib is None:
                         add_attrib = not rc.raise_error
-                    is_valid = rc.validate_all(**{key: value})
+                    is_valid = False
+                    try:
+                        is_valid = rc.validate_all(**{key: value})
+                    except RuleError as err:
+                        err_rule = self._get_err(fn=func, e=err)
+                        raise err_rule
                     if is_valid is False:
                         break
             if add_attrib:
@@ -566,7 +710,12 @@ class RuleCheckAnyKw(RuleCheckAllKw):
                     rc = RuleChecker(rules_any=rules, **self._kwargs)
                     if add_attrib is None:
                         add_attrib = not rc.raise_error
-                    is_valid = rc.validate_any(**{key: value})
+                    is_valid = False
+                    try:
+                        is_valid = rc.validate_any(**{key: value})
+                    except RuleError as err:
+                        err_rule = self._get_err(fn=func, e=err)
+                        raise err_rule
                     if is_valid is False:
                         break
             if add_attrib:
@@ -608,7 +757,7 @@ class RequireArgs(_DecBase):
             arg_keys = arg_name_values.keys()
             for key in self._args:
                 if not key in arg_keys:
-                    raise ValueError(f"'{key}' is a required arg.")
+                    raise ValueError(f"'{func.__name__}', '{key}' is a required arg.")
             return func(*args, **kwargs)
         return wrapper
 
