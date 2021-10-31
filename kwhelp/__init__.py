@@ -1,23 +1,13 @@
 # coding: utf-8
+from inspect import isclass
 from .helper import NO_THING
 from . helper.base import HelperBase
 from . rules import IRule
+from .exceptions import CancelEventError, ReservedAttributeError, RuleError
 from typing import Iterable, List, Optional, Callable
 from collections import UserList
 from typing import Any, Dict, List, Optional, Set, Callable, Union
-VERSION = __version__ = '2.0.0'
-
-
-# region Custom Errors
-
-
-class CancelEventError(Exception):
-    '''Cancel Event Error'''
-
-
-class ReservedAttributeError(ValueError):
-    '''Error when a reserved attribute is attempted to be set'''
-# endregion Custom Errors
+VERSION = __version__ = '2.1.0'
 
 # region class HelperArgs
 
@@ -810,6 +800,10 @@ class KwargsHelper(HelperBase):
         Returns:
             bool: ``True`` of all key, value pairs are added; Otherwise, ``False``.
 
+        Raises:
+            RuleError: If :py:attr:`~KwargsHelper.rule_error` is ``True`` and Validation of rules fails.
+            TypeError: If validation of ``types`` fails.
+
         Note:
             Call back events are supported via :py:meth:`~.KwargsHelper.add_handler_before_assign_auto`
             and :py:meth:`~.KwargsHelper.add_handler_after_assign_auto` methods.
@@ -882,6 +876,11 @@ class KwargsHelper(HelperBase):
 
         Returns:
             bool: ``True`` if attribute assignment is successful; Otherwise, ``False``
+
+        Raises:
+            RuleError: If :py:attr:`~KwargsHelper.rule_error` is ``True`` and Validation of
+                ``rules_all`` or ``rules_any`` fails.
+            TypeError: If validation of ``types`` fails.
 
         See Also:
             * :doc:`../usage/KwargsHelper/assign_field`
@@ -1024,7 +1023,7 @@ class KwargsHelper(HelperBase):
 
     # endregion internal assign methods
 
-    def _get_formated_types(self, types: Set[str]) -> str:
+    def _get_formated_types(self, types: Iterable[type]) -> str:
         result = ''
         for i, t in enumerate(types):
             if i > 0:
@@ -1158,11 +1157,15 @@ class KwargsHelper(HelperBase):
         result = True
         if len(rules) > 0:
             for rule in rules:
-                if not issubclass(rule, IRule):
+                if not isclass(rule) or not issubclass(rule, IRule):
                     raise TypeError('Rules must implement IRule')
                 rule_instance: IRule = rule(
                     key=key, name=field, value=value, raise_errors=self._rule_error, originator=self._obj)
-                result = result & rule_instance.validate()
+                try:
+                    result = result & rule_instance.validate()
+                except Exception as e:
+                    raise RuleError(
+                        err_rule=rule, rules_all=rules, arg_name=key, errors=e) from e
                 if result is False:
                     break
         return result
@@ -1170,10 +1173,11 @@ class KwargsHelper(HelperBase):
     def _validate_rules_any(self, rules: Iterable[IRule], key: str, field: str, value: object) -> bool:
         # if any rule passes then validations is considered a success
         error_lst = []
+        failed_rules = []
         result = True
         if len(rules) > 0:
             for rule in rules:
-                if not issubclass(rule, IRule):
+                if not isclass(rule) or not issubclass(rule, IRule):
                     raise TypeError('Rules must implement IRule')
                 rule_instance: IRule = rule(
                     key=key, name=field, value=value, raise_errors=self._rule_error, originator=self._obj)
@@ -1182,13 +1186,15 @@ class KwargsHelper(HelperBase):
                     rule_valid = rule_instance.validate()
                 except Exception as e:
                     error_lst.append(e)
+                    failed_rules.append(rule)
                     rule_valid = False
                 result = rule_valid
                 if rule_valid is True:
                     break
         if result is False and self._rule_error is True and len(error_lst) > 0:
             # raise the first error in error list
-            raise error_lst[0]
+            raise RuleError(rules_any=rules,
+                            err_rule=failed_rules[0], arg_name=key, errors=error_lst) from error_lst[0]
         return result
 
     # endregion internal validation methods
@@ -1523,6 +1529,9 @@ class KwArg:
                 See also: :doc:`../usage/KwArg/kw_assign_rules`
 
         Raises:
+            RuleError: If ``kwargs_helper.rule_error`` is ``True`` and Validation of
+                ``rules_all`` or ``rules_any`` fails.
+            TypeError: If validation of ``types`` fails.
             ReservedAttributeError: if ``key`` is a reserved keyword
             ReservedAttributeError: if ``field`` is a reserved keyword
 

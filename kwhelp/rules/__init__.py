@@ -608,7 +608,7 @@ class RuleStrNotNullEmptyWs(RuleStrNotNullOrEmpty):
         if len(value) == 0:
             if self.raise_errors:
                 raise ValueError(
-                    f"Arg error: {self.key} must not be empty or whitespace str")
+                    f"Arg error: '{self.key}' must not be empty or whitespace str")
             return False
         return True
 # endregion String

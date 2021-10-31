@@ -1,0 +1,8 @@
+checks
+======
+
+.. toctree::
+    :titlesonly:
+    :glob:
+
+    *

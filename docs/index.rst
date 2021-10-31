@@ -9,12 +9,13 @@ TOC
 ---
 
 .. toctree::
-   :caption: General
    :maxdepth: 2
 
    source/usage/index
-   source/example/index
+   source/general/decorator
    source/general/rules
+   source/example/index
+   source/release
 
 .. toctree::
    :caption: Modules:
@@ -22,7 +23,6 @@ TOC
    :maxdepth: 6
 
    source/kwhelp/index
-   
 
 .. toctree::
    :maxdepth: 2

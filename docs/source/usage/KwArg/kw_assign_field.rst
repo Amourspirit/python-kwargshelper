@@ -9,6 +9,8 @@ This avoids a :py:class:`.ReservedAttributeError` because ``is_key_existing`` is
 
 .. code-block:: python
 
+    from kwhelp import KwArg
+
     def is_key(**kwargs) -> str:
         keys = ('one','two', 'four', 'eight')
         kw = KwArg(**kwargs)

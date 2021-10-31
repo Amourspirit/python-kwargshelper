@@ -59,6 +59,32 @@ Callback function for before update that includes a Cancel Option.
 
 Many other options avaliable for more complex usage.
 
+Decorator Classes
++++++++++++++++++
+
+Decorators that can applied to function that validate arguments.
+
+Decorators for Type checking and Rule testing is built in.
+
+The following example ensures all function args are a positive ``int`` or a positive ``float``.
+
+.. code-block:: python
+
+    from kwhelp.decorator import RuleCheckAny
+    import kwhelp.rules as rules
+
+    @RuleCheckAny(rules.RuleIntPositive, rules.RuleFloatPositive)
+    def speed_msg(speed, limit, **kwargs) -> str:
+        if limit > speed:
+            msg = f"Current speed is '{speed}'. You may go faster as the limit is '{limit}'."
+        elif speed == limit:
+            msg = f"Current speed is '{speed}'. You are at the limit."
+        else:
+            msg = f"Please slow down limit is '{limit}' and you are currenlty going '{speed}'."
+        if 'hours' in kwargs:
+            msg = msg + f" Current driving hours is '{kwargs['hours']}'"
+        return msg
+
 .. |codecov| image:: https://codecov.io/gh/Amourspirit/python-kwargshelper/branch/master/graph/badge.svg?token=mJ2HdGwSGy
     :target: https://codecov.io/gh/Amourspirit/python-kwargshelper
     :alt: codecov
