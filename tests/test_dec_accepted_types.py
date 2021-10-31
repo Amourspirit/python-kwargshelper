@@ -11,7 +11,7 @@ class TestAcceptedTypesDecorators(unittest.TestCase):
     def test_accepted_gen(self):
 
         @AcceptedTypes((int, str), (int, str))
-        def req_test(**kwargs) -> float:
+        def req_test(**kwargs):
             return (kwargs.get("one"), kwargs.get("two"))
 
         result = req_test(one=1, two=2)
@@ -27,6 +27,26 @@ class TestAcceptedTypesDecorators(unittest.TestCase):
         with self.assertRaises(TypeError):
             result = req_test(one=4.5, two=2)
     
+    def test_accepted_optional_args(self):
+
+        @AcceptedTypes((int, str), (int, str), int)
+        def req_test(first, second=2, third=3):
+            return (first, second, third)
+
+        result = req_test(first="one")
+        assert result[0] == "one"
+        assert result[1] == 2
+        assert result[2] == 3
+        result = req_test(11, 12)
+        assert result[0] == 11
+        assert result[1] == 12
+        assert result[2] == 3
+        result = req_test(first="one",third="three", non=0)
+        assert result[0] == "one"
+        assert result[1] == 2
+        assert result[2] == "three"
+ 
+
     def test_accept_args_and_kwargs(self):
         @AcceptedTypes(str, str, (int, str), (int, str))
         def req_test(*args, **kwargs):

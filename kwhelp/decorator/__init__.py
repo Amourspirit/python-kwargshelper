@@ -1,4 +1,5 @@
 import functools
+import inspect
 import re
 from typing import Dict, Iterable, Iterator, Optional, Union
 from inspect import _ParameterKind, signature, isclass, Parameter, Signature
@@ -6,6 +7,7 @@ from ..checks import TypeChecker, RuleChecker
 from ..rules import IRule
 from ..helper import is_iterable
 from ..exceptions import RuleError
+from ..helper import NO_THING
 from enum import IntEnum
 from abc import ABC
 # import wrapt
@@ -181,19 +183,89 @@ class AcceptedTypes(_DecBase):
             self._kwargs = {**kwargs}
         else:
             self._kwargs = {}
-        
+    def _get_arg_names(self, func):
+        #arg name will only contain argument names and not *args or **kwargs
+        argnames = func.__code__.co_varnames[:func.__code__.co_argcount]
+        return argnames
+
+    def __get_args_dict(self, method, args, kwargs):
+        argnames = self._get_arg_names(method)
+        d = {**dict(zip(argnames, args[:len(argnames)]))}
+        d.update(kwargs)
+        return d
 
     def _get_args_dict(self, method, args, kwargs):
+        # Positional argument cannot appear after keyword arguments
+        # no *args after **kwargs def foo(**kwargs, *args) not valid
+        # def foo(name, age, *args) not valid
+        #
+        # When only args are passed in (no **kwargs present) with named args then
+        # the last named args with defaults are like additional args
+        sig = signature(method)
+        name_defaults = {}
+        name_values = []
+        i = -1
+        args_first = False
+        for k, v in sig.parameters.items():
+            i += 1
+            if v.kind == _ParameterKind.VAR_POSITIONAL:  # args
+                if i == 0:
+                    args_first = True
+                continue
+            if v.kind == _ParameterKind.VAR_KEYWORD:  # kwargs
+                continue
+            if not v.default is inspect._empty:
+                name_defaults[k] = v.default
+                name_values.append((k, v.default))
+            else:
+                name_defaults[k] = NO_THING
+                name_values.append((k, NO_THING))
+        offset = 0
+        if args_first is True and len(name_values) > 0:
+            reversed_list = list(reversed(name_values))
+            for k, v in reversed_list:
+                if not v is NO_THING:
+                    offset += 1
+                else:
+                    break
+        
+        # argnames = name_defaults.keys()
+        argnames = []
+        for i in range(len(name_values) - offset):
+            el = name_values[i]
+            argnames.append(el[0])
+        if len(args) > 0:
+            if args_first is True:
+                d = {
+                    **dict(zip(argnames, args[-len(argnames):]))}
+            else:
+                d = {**dict(zip(argnames, args[:len(argnames)]))}
+            # update 
+            name_defaults.update(d)
+        if len(kwargs) > 0:
+            name_defaults.update(kwargs)
+        del_list = []
+        for k, v in name_defaults.items():
+            if v is NO_THING:
+                del_list.append(k)
+        for el in del_list:
+            del name_defaults[el]
+        return name_defaults
+
+    def _get_args_dict_old(self, method, args, kwargs):
         sig = signature(method)
         _names = []
         _has_args = False
         i = 0
+        _kw = {**kwargs}
         for k, v in sig.parameters.items():
             if v.kind == _ParameterKind.VAR_KEYWORD: # kwargs
                 continue
             if v.kind == _ParameterKind.VAR_POSITIONAL: # args
                 _has_args = True
                 break
+            if not v.default is inspect._empty and not k in _kw:
+                _kw[k] = v.default
             _names.append(k)
             i += 1
         if _has_args is True and i < len(args) - 1:
@@ -205,7 +277,7 @@ class AcceptedTypes(_DecBase):
             _args = args[1:]
         else:
             _args = args
-        return {**dict(zip(_names, _args)), **kwargs}
+        return {**dict(zip(_names, _args)), **_kw}
     
     def __call__(self, func: callable):
         @functools.wraps(func)
@@ -965,3 +1037,46 @@ class AutoFillKw:
 
         self._cls.__init__ = init
         return self._cls(*args, **kwargs)
+
+
+def function_details(func):
+    """
+    Decorator to print function call
+
+    Example:
+        .. code-block:: python
+
+            @function_details
+            def GFG(a, b = 1, *args, **kwargs): 
+                pass
+                
+            GFG(1, 2, 3, 4, 5, d = 6, g = 12.9) 
+            GFG(1, 2, 3) 
+            GFG(1, 2, d = 'Geeks') 
+    """
+    # Getting the argument names of the
+    # called function
+    argnames = func.__code__.co_varnames[:func.__code__.co_argcount]
+
+    # Getting the Function name of the
+    # called function
+    fname = func.__name__
+
+    def inner_func(*args, **kwargs):
+
+        print(fname, "(", end="")
+
+        # printing the function arguments
+        print(', '.join('% s = % r' % entry
+                    for entry in zip(argnames, args[:len(argnames)])), end=", ")
+
+        # Printing the variable length Arguments
+        print("args =", list(args[len(argnames):]), end=", ")
+
+        # Printing the variable length keyword
+        # arguments
+        print("kwargs =", kwargs, end="")
+        print(")")
+
+    return inner_func
+
