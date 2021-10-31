@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 2.1.1
+-------------
+
+Fix for version 2.1.0 setup not building correctly.
+
 Version 2.1.0
 -------------
 
