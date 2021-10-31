@@ -82,7 +82,6 @@ class _DecBase(ABC):
             ord = {1: 'st', 2: 'nd', 3: 'rd'}.get(num % 10, 'th')
             return '{0}{1}'.format(num, ord)
 
-
 class _RuleBase(_DecBase):
     def _get_err(self, fn: callable, e: RuleError):
         err = RuleError.from_rule_error(e, fn_name=fn.__name__)
@@ -144,7 +143,6 @@ class TypeCheck(_DecBase):
         if self._tc is None:
             self._tc = TypeChecker(*self._types, **self._kwargs)
         return self._tc
-
 
 class AcceptedTypes(_DecBase):
     """
@@ -255,7 +253,6 @@ class AcceptedTypes(_DecBase):
             msg = f"Arg in {str_ord} position of is expected to be of '{str_types}' but got '{type(value).__name__}'"
         return msg
 
-
 class ReturnRuleAll(_RuleBase):
     """
     Decorator that decorates methods that require return value to match all rules specificed.
@@ -302,7 +299,6 @@ class ReturnRuleAll(_RuleBase):
             self._rc = RuleChecker(rules_all=self._rules, **self._kwargs)
             self._rc.raise_error = True
         return self._rc
-
 
 class ReturnRuleAny(_RuleBase):
     """
@@ -480,7 +476,6 @@ class TypeCheckKw(_DecBase):
             return func(*args, **kwargs)
         # wrapper.is_types_valid = self.is_valid
         return wrapper
-
 
 class RuleCheckAny(_RuleBase):
     """
@@ -811,6 +806,9 @@ def calltracker(func):
             Hello World
             >>> print(foo.has_been_called)
             True
+
+    See Also:
+        :doc:`../../usage/Decorator/calltracker`
     """
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
@@ -846,6 +844,9 @@ def callcounter(func):
             World
             >>> print("Call Count:", foo.call_count)
             2
+
+    See Also:
+        :doc:`../../usage/Decorator/callcounter`
     """
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
@@ -857,7 +858,7 @@ def callcounter(func):
 
 def singleton(orig_cls):
     """
-    Makes a class a singleton class
+    Decorator that makes a class a singleton class
 
     Example:
         .. code-block:: python
@@ -869,7 +870,10 @@ def singleton(orig_cls):
 
             logger1 = Logger()
             logger2 = Logger()
-            assert logger1 is logger2
+            assert logger1 is logger
+
+    See Also:
+        :doc:`../../usage/Decorator/singleton`
     """
     orig_new = orig_cls.__new__
     instance = None

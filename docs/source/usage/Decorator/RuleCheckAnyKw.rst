@@ -59,14 +59,16 @@ If all rules fail validation then a :py:class:`~.exceptions.RuleError` is raised
 .. code-block:: python
 
     >>> result = speed_msg(speed=-2, limit=60)
-    RuleError: Argument: 'speed' failed validation. Rule 'RuleIntPositive' Failed validation.
+    kwhelp.exceptions.RuleError: RuleError: 'speed_msg' error. Argument: 'speed' failed validation.
+    Rule 'RuleIntPositive' Failed validation.
     Expected at least one of the following rules to match: RuleIntPositive, RuleFloatPositive.
     Inner Error Message: ValueError: Arg error: 'speed' must be a positive int value
 
 .. code-block:: python
 
     >>> result = speed_msg(speed=66, limit=60, name="  ")
-    RuleError: Argument: 'name' failed validation. Rule 'RuleStrNotNullEmptyWs' Failed validation.
+    kwhelp.exceptions.RuleError: RuleError: 'speed_msg' error. Argument: 'name' failed validation.
+    Rule 'RuleStrNotNullEmptyWs' Failed validation.
     Expected the following rule to match: RuleStrNotNullEmptyWs.
     Inner Error Message: ValueError: Arg error: 'name' must not be empty or whitespace str
 

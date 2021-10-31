@@ -19,8 +19,7 @@ Custom Rule for a maximum ``int`` value of 100
 
 .. code-block:: python
 
-    from kwhelp import KwargsHelper
-    import kwhelp.rules as rules
+    from kwhelp import rules, KwargsHelper
 
     class MyClass:
         def __init__(self, **kwargs):
@@ -43,7 +42,8 @@ Assign ``int`` greater then 100.
 .. code-block:: python
 
     >>> myclass = MyClass(speed = 126)
-    RuleError: Argument: 'speed' failed validation. Rule 'RuleIntMax100' Failed validation.
+    kwhelp.exceptions.RuleError: RuleError: Argument: 'speed' failed validation.
+    Rule 'RuleIntMax100' Failed validation.
     Expected all of the following rules to match: RuleIntPositive, RuleIntMax100.
     Inner Error Message: ValueError: Arg error: 'speed' must be equal or less than 100
     
@@ -52,7 +52,8 @@ Assign ``int`` negative.
 .. code-block:: python
 
     >>> myclass = MyClass(speed = -3)
-    RuleError: Argument: 'speed' failed validation. Rule 'RuleIntPositive' Failed validation.
+    kwhelp.exceptions.RuleError: RuleError: Argument: 'speed' failed validation.
+    Rule 'RuleIntPositive' Failed validation.
     Expected all of the following rules to match: RuleIntPositive, RuleIntMax100.
     Inner Error Message: ValueError: Arg error: 'speed' must be a positive int value
 
@@ -61,7 +62,8 @@ Assign ``float``.
 .. code-block:: python
 
     >>> myclass = MyClass(speed = 22.4)
-    RuleError: Argument: 'speed' failed validation. Rule 'RuleIntPositive' Failed validation.
+    kwhelp.exceptions.RuleError: RuleError: Argument: 'speed' failed validation.
+    Rule 'RuleIntPositive' Failed validation.
     Expected all of the following rules to match: RuleIntPositive, RuleIntMax100.
     Inner Error Message: TypeError: Argument Error: 'speed' is expecting type of 'int'. Got type of 'float'
 
@@ -75,8 +77,7 @@ Trying to assign any other type or value results in an error.
 
 .. code-block:: python
 
-    from kwhelp import KwargsHelper
-    import kwhelp.rules as rules
+    from kwhelp import rules, KwargsHelper
 
     class MyClass:
         def __init__(self, **kwargs):
@@ -115,7 +116,8 @@ Assign ``int`` negative.
 .. code-block:: python
 
     >>> myclass = MyClass(speed = -123)
-    RuleError: Argument: 'speed' failed validation. Rule 'RuleFloatPositive' Failed validation.
+    kwhelp.exceptions.RuleError: RuleError: Argument: 'speed' failed validation.
+    Rule 'RuleFloatPositive' Failed validation.
     Expected at least one of the following rules to match: RuleFloatPositive, RuleIntZero.
     Inner Error Message: TypeError: Argument Error: 'speed' is expecting type of 'float'. Got type of 'int'
 
@@ -124,7 +126,8 @@ Assign ``str``.
 .. code-block:: python
 
     >>> myclass = MyClass(speed="a")
-    RuleError: Argument: 'speed' failed validation. Rule 'RuleFloatPositive' Failed validation.
+    kwhelp.exceptions.RuleError: RuleError: Argument: 'speed' failed validation.
+    Rule 'RuleFloatPositive' Failed validation.
     Expected at least one of the following rules to match: RuleFloatPositive, RuleIntZero.
     Inner Error Message: TypeError: Argument Error: 'speed' is expecting type of 'float'. Got type of 'str'
 

@@ -12,8 +12,7 @@ is assigned to :py:class:`.KwArg` instance.
 
 .. code-block:: python
 
-    from kwhelp import KwArg
-    from kwhelp import AfterAssignEventArgs, BeforeAssignEventArgs, KwargsHelper
+    from kwhelp import AfterAssignEventArgs, BeforeAssignEventArgs, KwargsHelper, KwArg
 
     def my_method(**kwargs) -> str:
         def arg_before_cb(helper: KwargsHelper,

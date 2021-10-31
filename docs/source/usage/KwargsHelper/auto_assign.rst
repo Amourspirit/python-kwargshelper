@@ -97,7 +97,8 @@ Assigning an arg with a value that is not ``float`` result is an error.
 .. code-block:: python
 
     >>> myclass = MyClass(speed = 99.999, distance = 55)
-    RuleError: Argument: 'distance' failed validation. Rule 'RuleFloatPositive' Failed validation.
+    kwhelp.exceptions.RuleError: RuleError: Argument: 'distance' failed validation.
+    Rule 'RuleFloatPositive' Failed validation.
     Expected all of the following rules to match: RuleNotNone, RuleFloatPositive.
     Inner Error Message: TypeError: Argument Error: 'distance' is expecting type of 'float'. Got type of 'int'
 
@@ -106,7 +107,8 @@ Assigning an arg with a value that is a negative ``float`` result is an error.
 .. code-block:: python
 
     >>> myclass = MyClass(speed = 99.999, distance = -128.09)
-    RuleError: Argument: 'distance' failed validation. Rule 'RuleFloatPositive' Failed validation.
+    kwhelp.exceptions.RuleError: RuleError: Argument: 'distance' failed validation.
+    Rule 'RuleFloatPositive' Failed validation.
     Expected all of the following rules to match: RuleNotNone, RuleFloatPositive.
     Inner Error Message: ValueError: Arg error: 'distance' must be a positive float value
 
@@ -141,7 +143,8 @@ Assigning an arg with a value that is not ``int`` or ``float`` result is an erro
 .. code-block:: python
 
     >>> myclass = MyClass(speed = 'Fast', distance = 55)
-    RuleError: Argument: 'speed' failed validation. Rule 'RuleIntPositive' Failed validation.
+    kwhelp.exceptions.RuleError: RuleError: Argument: 'speed' failed validation.
+    Rule 'RuleIntPositive' Failed validation.
     Expected at least one of the following rules to match: RuleIntPositive, RuleFloatPositive.
     Inner Error Message: TypeError: Argument Error: 'speed' is expecting type of 'int'. Got type of 'str'
 
@@ -150,7 +153,8 @@ Assigning an arg with a value that is a negative ``int`` result is an error.
 .. code-block:: python
 
     >>> myclass = MyClass(speed = 99.999, distance = -35)
-    RuleError: Argument: 'distance' failed validation. Rule 'RuleIntPositive' Failed validation.
+    kwhelp.exceptions.RuleError: RuleError: Argument: 'distance' failed validation.
+    Rule 'RuleIntPositive' Failed validation.
     Expected at least one of the following rules to match: RuleIntPositive, RuleFloatPositive.
     Inner Error Message: ValueError: Arg error: 'distance' must be a positive int value
 
