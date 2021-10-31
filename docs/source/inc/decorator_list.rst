@@ -4,7 +4,7 @@
     import os
     r_path = os.path.join(os.path.abspath('.'), "source/kwhelp/decorator")
     dec_pattern = r_path + os.sep + "*.rst"
-    dec_list = [n for n in glob.glob(dec_pattern) if not n.endswith('index.rst')]
+    dec_list = [n for n in glob.glob(dec_pattern) if not n.endswith('index.rst') and not n.endswith('Enum.rst')]
     dec_list.sort()
     print("\n")
     for dec in dec_list:

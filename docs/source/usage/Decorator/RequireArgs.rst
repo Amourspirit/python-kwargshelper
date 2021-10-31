@@ -41,3 +41,5 @@ RequireArgs Usage
     >>> result = speed_msg(speed="Fast", limit=60, name="John")
     >>> print(result)
     TypeError: Arg 'speed' is expected to be of '<class 'int'> | <class 'float'>' but got 'str'
+
+

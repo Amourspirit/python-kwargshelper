@@ -28,7 +28,9 @@ class RuleError(Exception):
             arg_name (str, optional): Name of the argument for this exception.
             errors: (Union[Exception, Iterable[Exception]], optional): Exception or Exceptions
                 that cause this error.
+            fn_name: (str, optional): Name of function/property that raise error.
         """
+        self._fn_name = kwargs.get('fn_name', None)
         self._err_rule = kwargs.get('err_rule', None)
         _rules = kwargs.get('rules_all', False)
         self._rules_all = self._get_rules(_rules)
@@ -39,10 +41,12 @@ class RuleError(Exception):
         self._errors = kwargs.get('errors', None)
 
         msg = "RuleError:"
+        if self._fn_name:
+            msg = msg + f" '{self._fn_name}' error."
         if self._arg_name:
             msg = msg + f" Argument: '{self._arg_name}' failed validation."
         if self.err_rule and self._is_rule(self.err_rule):
-            msg = msg + f" Rule '{self.err_rule.__name__}' Failed validation."
+            msg = msg + f"\nRule '{self.err_rule.__name__}' Failed validation."
         if len(self._rules_all) > 0:
             if len(self._rules_all) == 1:
                 msg = msg + "\nExpected the following rule to match: "
@@ -126,5 +130,36 @@ class RuleError(Exception):
     def rules_any(self) -> List[Type[IRule]]:
         """Gets of rules that required one or more matches."""
         return self._rules_any
+    
+    @property
+    def fn_name(self) -> Union[None, str]:
+        """Gets the function/property name that raised the error"""
+        return self._fn_name
     # endregion Properties
+    # region Static Methods
+    @staticmethod
+    def from_rule_error(rule_error: 'RuleError', **kwargs) -> 'RuleError':
+        """
+        Creates a new RuleError from an existing RuleError
+        
+        Args:
+            rule_error (RuleError): Current instance of RuleError use to base return value on.
+        
+        Keyword Arguments:
+            kwargs: One or more Key, Value properties that will replace property of ``rule_error``.
+
+        Returns:
+            RuleError: New RuleError instance with updated properties included in ``**kwargs``.
+        """
+        rule_dict = {
+            "err_rule": rule_error.err_rule,
+            "rules_all": rule_error.rules_all,
+            "rules_any": rule_error.rules_any,
+            "arg_name": rule_error.arg_name,
+            "errors": rule_error.errors,
+            "fn_name": rule_error.fn_name
+        }
+        rule_dict.update({**kwargs})
+        return RuleError(**rule_dict)
+    # endregion Static Methods
 # endregion Custom Errors

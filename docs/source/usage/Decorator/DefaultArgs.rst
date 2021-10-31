@@ -33,3 +33,4 @@ DefaultArgs Usage
     >>> result = speed_msg(name="Sue", speed=47)
     >>> print(result)
     Current speed is '47'. Sue may go faster as the limit is '60'.
+
