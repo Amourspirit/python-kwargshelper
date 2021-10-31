@@ -33,13 +33,16 @@ def getListOfFiles(dir_name):
 
     return all_files
 
+
 def get_src_modules(root_path: pathlib.Path):
     dir_name = root_path / 'kwhelp'
     # Get the list of all files in directory tree at given path
     listOfFiles = getListOfFiles(dir_name)
     _slice = len(str(dir_name)) + 1
-    py_lst = [f[_slice:-3] for f in list(filter(lambda p: p.endswith('.py'), listOfFiles))]
+    py_lst = [f[_slice:-3]
+              for f in list(filter(lambda p: p.endswith('.py'), listOfFiles))]
     return py_lst
+
 
 MODULES = get_src_modules(HERE)
 
@@ -50,14 +53,15 @@ setup(
     version=VERSION,
     python_requires='>=3.6.0',
     description="Manages testing for valid kwargs key, values pairs and assigns class attributes for pairs.",
-    long_description_content_type="text/x-rst", # "text/markdown",
+    long_description_content_type="text/x-rst",  # "text/markdown",
     long_description=README,
     url="https://github.com/Amourspirit/python-kwargshelper",
     author=":Barry-Thomas-Paul: Moss",
     author_email='bigbytetech@gmail.com',
     license="MIT",
     # package_dir={'kwhelp': 'kwhelp'},
-    packages=['kwhelp', 'kwhelp.rules', 'kwhelp.helper'],
+    packages=['kwhelp', 'kwhelp.rules', 'kwhelp.helper',
+              'kwhelp.decorator', 'kwhelp.exceptions', 'kwhelp.checks'],
     py_modules=MODULES,
     keywords=['python', 'kwargs', 'args', 'parse', 'helper'],
     classifiers=[
