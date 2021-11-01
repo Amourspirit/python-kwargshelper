@@ -56,7 +56,9 @@ class _DecBase(ABC):
         return args
 
     def _get_arg_names(self, func):
-        #arg name will only contain argument names and not *args or **kwargs
+        # arg name will only contain argument names and not *args or **kwargs
+        # if func starts with *args eg: foo(*args, one, two) then
+        # return will be empty list
         argnames = func.__code__.co_varnames[:func.__code__.co_argcount]
         return argnames
 
@@ -240,10 +242,6 @@ class AcceptedTypes(_DecBase):
             self._kwargs = {**kwargs}
         else:
             self._kwargs = {}
-    def _get_arg_names(self, func):
-        #arg name will only contain argument names and not *args or **kwargs
-        argnames = func.__code__.co_varnames[:func.__code__.co_argcount]
-        return argnames
     
     def __call__(self, func: callable):
         @functools.wraps(func)
