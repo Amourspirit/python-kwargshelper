@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 2.1.2
+-------------
+
+Fix for Decorator ``AcceptedTypes`` not working correctly with optional arguments.
+
 Version 2.1.1
 -------------
 
