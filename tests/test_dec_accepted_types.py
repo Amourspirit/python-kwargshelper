@@ -133,8 +133,95 @@ class TestAcceptedTypesClassDecorators(unittest.TestCase):
         f = Foo(1, 99.9)
         assert f.start == 1
         assert f.stop == 99.9
+        f = Foo(start=1, stop=99.9)
+        assert f.start == 1
+        assert f.stop == 99.9
         with self.assertRaises(TypeError):
             f = Foo("yes", 99.9)
+
+    def test_accept_class_args(self):
+        class Foo:
+            @AcceptedTypes((int, float), (int, float), ftype=DecFuncEnum.METHOD)
+            def __init__(self, *args):
+                self.start = args[0]
+                self.stop = args[1]
+        f = Foo(1, 99.9)
+        assert f.start == 1
+        assert f.stop == 99.9
+        with self.assertRaises(TypeError):
+            f = Foo("yes", 99.9)
+
+    def test_accept_class_args_optional(self):
+        class Foo:
+            @AcceptedTypes((int, float), (int, float), int, int, ftype=DecFuncEnum.METHOD)
+            def __init__(self, *args, third, fourth=4):
+                self.start = args[0]
+                self.stop = args[1]
+                self.third = third
+                self.fourth = fourth
+        f = Foo(1, 99.9, third=3, fourth=44)
+        assert f.start == 1
+        assert f.stop == 99.9
+        assert f.third == 3
+        assert f.fourth == 44
+        f = Foo(1, 99.9, third=3)
+        assert f.start == 1
+        assert f.stop == 99.9
+        assert f.third == 3
+        assert f.fourth == 4
+        with self.assertRaises(TypeError):
+            f = Foo("yes", 99.9, third=3, fourth=44)
+        with self.assertRaises(TypeError):
+            f = Foo(1, 99.9, third=3.5)
+
+    def test_accept_class_args_optional_kwargs(self):
+        class Foo:
+            @AcceptedTypes((int, float), (int, float), int, int, int, int, ftype=DecFuncEnum.METHOD)
+            def __init__(self, *args, third, fourth=4, **kwargs):
+                self.start = args[0]
+                self.stop = args[1]
+                self.third = third
+                self.fourth = fourth
+                self.fifth = kwargs.get("fifth", None)
+                self.sixth = kwargs.get("sixth", None)
+        f = Foo(1, 99.9, third=3, fourth=44, fifth=5, sixth=6)
+        assert f.start == 1
+        assert f.stop == 99.9
+        assert f.third == 3
+        assert f.fourth == 44
+        assert f.fifth == 5
+        assert f.sixth == 6
+        f = Foo(1, 99.9, third=3, fifth=5, sixth=6)
+        assert f.start == 1
+        assert f.stop == 99.9
+        assert f.third == 3
+        assert f.fourth == 4
+        assert f.fifth == 5
+        assert f.sixth == 6
+        with self.assertRaises(TypeError):
+            f = Foo(1, 99.9, third=3, fourth=44, fifth=5, sixth=55.77)
+
+    def test_accept_class_args_kwargs(self):
+        class Foo:
+            @AcceptedTypes((int, float), (int, float), int, int, int, int, ftype=DecFuncEnum.METHOD)
+            def __init__(self, *args, **kwargs):
+                self.start = args[0]
+                self.stop = args[1]
+                self.third = kwargs.get("third", None)
+                self.fourth = kwargs.get("fourth", None)
+                self.fifth = kwargs.get("fifth", None)
+                self.sixth = kwargs.get("sixth", None)
+        f = Foo(1, 99.9, third=3, fourth=44, fifth=5, sixth=6)
+        assert f.start == 1
+        assert f.stop == 99.9
+        assert f.third == 3
+        assert f.fourth == 44
+        assert f.fifth == 5
+        assert f.sixth == 6
+        with self.assertRaises(TypeError):
+            f = Foo(1, 99.9, third=3, fourth=44, fifth=5, sixth=6.76)
+        with self.assertRaises(TypeError):
+            f = Foo("", 99.9, third=3, fourth=44, fifth=5, sixth=6)
 
     def test_accept_class_static(self):
         class Foo:
