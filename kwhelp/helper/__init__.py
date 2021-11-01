@@ -1,5 +1,5 @@
 # coding: utf-8
-import collections
+from collections.abc import Iterator
 
 class Singleton(type):
     """Singleton abstrace class"""
@@ -51,7 +51,11 @@ def is_iterable(arg: object) -> bool:
             assert not is_iterable(44)        # integer
             assert not is_iterable(is_iterable)  # function
     """
-    return (
-        isinstance(arg, collections.Iterable)
-        and not isinstance(arg, str)
-    )
+    if isinstance(arg, str):
+        return False
+    result = False
+    try:
+        result = isinstance(iter(arg), Iterator)
+    except Exception:
+        result = False
+    return result

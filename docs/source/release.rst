@@ -1,6 +1,13 @@
 Release Notes
 =============
 
+Version 2.1.3
+-------------
+
+Update fix for python DeprecationWarning:
+    Using or importing the ABCs from 'collections'
+    instead of from 'collections.abc' is deprecated
+
 Version 2.1.2
 -------------
 
