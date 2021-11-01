@@ -16,6 +16,8 @@ TOC
    source/general/rules
    source/example/index
    source/release
+   source/install
+   source/development
 
 .. toctree::
    :caption: Modules:
