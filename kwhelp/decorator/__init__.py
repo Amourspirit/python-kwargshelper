@@ -1,4 +1,5 @@
 import functools
+import inspect
 import re
 from typing import Dict, Iterable, Iterator, Optional, Union
 from inspect import _ParameterKind, signature, isclass, Parameter, Signature
@@ -6,6 +7,7 @@ from ..checks import TypeChecker, RuleChecker
 from ..rules import IRule
 from ..helper import is_iterable
 from ..exceptions import RuleError
+from ..helper import NO_THING
 from enum import IntEnum
 from abc import ABC
 # import wrapt
@@ -28,6 +30,8 @@ class DecFuncEnum(IntEnum):
         return self._name_
 
 class _DecBase(ABC):
+    _rx_star = re.compile("^\*(\d*)$")
+
     def __init__(self, **kwargs):
         self._ftype: DecFuncEnum = kwargs.get("ftype", None)
         if self._ftype is not None:
@@ -40,6 +44,9 @@ class _DecBase(ABC):
         else:
             self._ftype = DecFuncEnum.FUNCTION
 
+    def _is_placeholder_arg(self, arg_name: str):
+        return _DecBase._rx_star.match(arg_name)
+
     def _drop_arg_first(self) -> bool:
         return self._ftype.value > DecFuncEnum.METHOD_STATIC.value
 
@@ -48,15 +55,69 @@ class _DecBase(ABC):
             return args[1:]
         return args
 
+    def _get_arg_names(self, func):
+        # arg name will only contain argument names and not *args or **kwargs
+        # if func starts with *args eg: foo(*args, one, two) then
+        # return will be empty list
+        argnames = func.__code__.co_varnames[:func.__code__.co_argcount]
+        return argnames
+
     def _get_args_dict(self, method, args, kwargs):
+        # Positional argument cannot appear after keyword arguments
+        # no *args after **kwargs def foo(**kwargs, *args) not valid
+        # def foo(name, age, *args) not valid
+        #
+        # When only args are passed in (no **kwargs present) with named args then
+        # the last named args with defaults are like additional args
         sig = signature(method)
-        _names = [k for k in sig.parameters.keys()]
-        if self._drop_arg_first():
-            _names = _names[1:]
+        name_values = []
+        i = 0
+        args_first = False
+        drop_first = self._drop_arg_first()
+        if drop_first and len(args) > 0:
             _args = args[1:]
         else:
             _args = args
-        return {**dict(zip(_names, _args)), **kwargs}
+        arg_len = len(_args)
+        for k, v in sig.parameters.items():
+            if v.kind == _ParameterKind.VAR_POSITIONAL:  # args, can only be in first postition
+                if (drop_first is True and i == 1) or i == 0:
+                    args_first = True
+                continue
+            if v.kind == _ParameterKind.VAR_KEYWORD:  # kwargs
+                continue
+            if not v.default is inspect._empty:
+                name_values.append((k, v.default))
+            else:
+                name_values.append((k, NO_THING))
+            i += 1
+        if drop_first and i > 0:
+            del name_values[0]
+        offset = 0
+        if args_first is True and len(name_values) > 0:
+            reversed_list = list(reversed(name_values))
+            for k, v in reversed_list:
+                if not v is NO_THING:
+                    offset += 1
+                else:
+                    break
+        name_defaults = {}
+        if args_first is True:
+            for j, arg in enumerate(_args):
+                key = "*" + str(j)
+                name_defaults[key] = arg
+        for k, v in name_values:
+            name_defaults[k] = v
+        argnames = []
+        for j in range(len(name_values) - offset):
+            el = name_values[j]
+            argnames.append(el[0])
+        if args_first is False and arg_len > 0:
+            d = {**dict(zip(argnames, _args[:len(argnames)]))}
+            name_defaults.update(d)
+        if len(kwargs) > 0:
+            name_defaults.update(kwargs)
+        return name_defaults
 
     def _get_formated_types(self, types: Iterator[type]) -> str:
         result = ''
@@ -151,7 +212,7 @@ class AcceptedTypes(_DecBase):
     See Also:
         :doc:`../../usage/Decorator/AcceptedTypes`
     """
-    _rx_star = re.compile("^\*(\d*)$")
+    
     
     def __init__(self, *args: Union[type, Iterator[type]], **kwargs):
         """
@@ -181,31 +242,6 @@ class AcceptedTypes(_DecBase):
             self._kwargs = {**kwargs}
         else:
             self._kwargs = {}
-        
-
-    def _get_args_dict(self, method, args, kwargs):
-        sig = signature(method)
-        _names = []
-        _has_args = False
-        i = 0
-        for k, v in sig.parameters.items():
-            if v.kind == _ParameterKind.VAR_KEYWORD: # kwargs
-                continue
-            if v.kind == _ParameterKind.VAR_POSITIONAL: # args
-                _has_args = True
-                break
-            _names.append(k)
-            i += 1
-        if _has_args is True and i < len(args) - 1:
-            dif = len(args) - i
-            for j in range(i, dif+i):
-                _names.append("*" + str(j))
-        if self._drop_arg_first():
-            _names = _names[1:]
-            _args = args[1:]
-        else:
-            _args = args
-        return {**dict(zip(_names, _args)), **kwargs}
     
     def __call__(self, func: callable):
         @functools.wraps(func)
@@ -223,7 +259,7 @@ class AcceptedTypes(_DecBase):
                 tc = TypeChecker(*arg_info[1], **self._kwargs)
                 # ensure errors are raised if not valid
                 tc.raise_error = True
-                if AcceptedTypes._rx_star.match(key):
+                if self._is_placeholder_arg(key):
                     try:
                         tc.validate(value)
                     except TypeError:
@@ -535,7 +571,6 @@ class RuleCheckAny(_RuleBase):
             self._rc = RuleChecker(rules_any=self._rules, **self._kwargs)
         return self._rc
 
-
 class RuleCheckAll(_RuleBase):
     """
     Decorator that decorates methods that require args to match all rules specificed in ``rules`` list.
@@ -593,7 +628,6 @@ class RuleCheckAll(_RuleBase):
         if self._rc is None:
             self._rc = RuleChecker(rules_all=self._rules, **self._kwargs)
         return self._rc
-
 
 class RuleCheckAllKw(_RuleBase):
     """
@@ -679,7 +713,6 @@ class RuleCheckAllKw(_RuleBase):
             return func(*args, **kwargs)
         # wrapper.is_types_valid = self.is_valid
         return wrapper
-
 
 class RuleCheckAnyKw(RuleCheckAllKw):
     """
@@ -783,7 +816,6 @@ class DefaultArgs(object):
             return func(*args, **kwargs)
         return wrapper
 
-
 def calltracker(func):
     """
     Decorator method that adds ``has_been_called`` attribute to decorated method.
@@ -816,7 +848,6 @@ def calltracker(func):
         return func(*args, **kwargs)
     wrapper.has_been_called = False
     return wrapper
-
 
 def callcounter(func):
     """
@@ -854,7 +885,6 @@ def callcounter(func):
         return func(*args, **kwargs)
     wrapper.call_count = 0
     return wrapper
-
 
 def singleton(orig_cls):
     """
