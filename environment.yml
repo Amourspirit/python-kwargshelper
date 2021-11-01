@@ -10,11 +10,12 @@ dependencies:
   - babel=2.9.1=pyh44b312d_0
   - bleach=4.1.0=pyhd8ed1ab_0
   - brotlipy=0.7.0=py39h3811e60_1001
-  - ca-certificates=2021.5.30=ha878542_0
+  - ca-certificates=2021.10.8=ha878542_0
   - cffi=1.14.6=py39h4bc2ebd_1
   - chardet=4.0.0=py39hf3d152e_1
   - cmarkgfm=0.6.0=py39h3811e60_0
   - colorama=0.4.4=pyh9f0ad1d_0
+  - coverage=6.1.1=py39h3811e60_0
   - cryptography=3.4.7=py39hbca0aa6_0
   - dbus=1.13.6=h48d8840_2
   - docutils=0.17.1=py39hf3d152e_0
@@ -71,6 +72,7 @@ dependencies:
   - sqlite=3.36.0=h9cd32fc_2
   - tk=8.6.11=h27826a3_1
   - toml=0.10.2=pyhd8ed1ab_0
+  - tomli=1.2.2=pyhd8ed1ab_0
   - tqdm=4.62.3=pyhd8ed1ab_0
   - twine=3.4.2=pyhd8ed1ab_0
   - tzdata=2021b=he74cb21_0
@@ -92,7 +94,7 @@ dependencies:
     - python-jsonrpc-server==0.3.4
     - pyyaml==5.4.1
     - snooty-lextudio==1.11.4.dev0
-    - sphinx_rtd_theme==1.0.0
+    - sphinx-rtd-theme==1.0.0
     - typing-extensions==3.10.0.2
     - ujson==1.35
     - watchdog==1.0.2
