@@ -4,12 +4,17 @@ if __name__ == '__main__':
     import sys
     sys.path.append(os.path.realpath('.'))
 
+from enum import IntEnum, auto
 from kwhelp.decorator import AcceptedTypes, DecFuncEnum, RequireArgs, ReturnType
+class Color(IntEnum):
+    RED = auto()
+    GREEN = auto()
+    BLUE = auto()
 
-
+    def __str__(self) -> str:
+        return self._name_
 class TestAcceptedTypesDecorators(unittest.TestCase):
     def test_accepted_gen(self):
-
         @AcceptedTypes((int, str), (int, str))
         def req_test(**kwargs):
             return (kwargs.get("one"), kwargs.get("two"))
@@ -121,6 +126,37 @@ class TestAcceptedTypesDecorators(unittest.TestCase):
         with self.assertRaises(TypeError):
             result = req_test(first="start", second="", one=1, two=2.5)
 
+    def test_enum(self):
+        # enum are iterable so [*Color] is list comperhension.
+        # and becomes [<Color.RED: 1>, <Color.BLUE: 2>, <Color.GREEN: 3>]
+        # for this reason when passing enum types they must be in an itterable
+        # such as a list or tuple
+        @AcceptedTypes([Color], int, [Color])
+        def foo(e, length, oth):
+            return e, length, oth
+        result = foo(Color.BLUE, 2, Color.RED)
+        assert result[0] == Color.BLUE
+        assert result[1] == 2
+        assert result[2] == Color.RED
+        with self.assertRaises(TypeError):
+            result = foo(1, 2, Color.RED)
+
+    def test_enum_int(self):
+        # enum are iterable so [*Color] is list comperhension.
+        # and becomes [<Color.RED: 1>, <Color.BLUE: 2>, <Color.GREEN: 3>]
+        # for this reason when passing enum types they must be in an itterable
+        # such as a list or tuple
+        @AcceptedTypes([Color, int])
+        def foo(e):
+            if isinstance(e, int):
+                result = Color(e)
+            else:
+                result = e
+            return result
+        result = foo(Color.BLUE)
+        assert result == Color.BLUE
+        result = foo(e=2)
+        assert result == Color.GREEN
 
 class TestAcceptedTypesClassDecorators(unittest.TestCase):
 
@@ -298,6 +334,23 @@ class TestAcceptedTypesClassDecorators(unittest.TestCase):
             f.stop = "False"
         with self.assertRaises(TypeError):
             f.start = self
+
+    def test_enum(self):
+        # enum are iterable so [*Color] is list comperhension.
+        # and becomes [<Color.RED: 1>, <Color.BLUE: 2>, <Color.GREEN: 3>]
+        # for this reason when passing enum types they must be in an itterable
+        # such as a list or tuple
+        class Bar:
+            @AcceptedTypes([Color], int, [Color], ftype=DecFuncEnum.PROPERTY_CLASS)
+            def foo(self, e, length, oth):
+                return e, length, oth
+        b = Bar()
+        result = b.foo(Color.BLUE, 2, Color.RED)
+        assert result[0] == Color.BLUE
+        assert result[1] == 2
+        assert result[2] == Color.RED
+        with self.assertRaises(TypeError):
+            result = b.foo(1, 2, Color.RED)
 
 if __name__ == '__main__':
     unittest.main()

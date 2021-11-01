@@ -5,6 +5,16 @@ if __name__ == '__main__':
     sys.path.append(os.path.realpath('.'))
 
 from kwhelp.decorator import AcceptedTypes, DecFuncEnum, ReturnType
+from enum import IntEnum, auto
+
+
+class Color(IntEnum):
+    RED = auto()
+    GREEN = auto()
+    BLUE = auto()
+
+    def __str__(self) -> str:
+        return self._name_
 
 class TestReturnTypesDecorators(unittest.TestCase):
     def test_return_gen(self):
@@ -19,6 +29,17 @@ class TestReturnTypesDecorators(unittest.TestCase):
         assert result == - 12
         with self.assertRaises(TypeError):
             result = req_test(2, 2.5)
+
+    def test_return_enum(self):
+
+        @ReturnType(Color)
+        def req_test(c):
+            return c
+
+        result = req_test(Color.GREEN)
+        assert result == Color.GREEN
+        # with self.assertRaises(TypeError):
+        #     result = req_test(2, 2.5)
 
     def test_return_multi(self):
 

@@ -5,7 +5,16 @@ if __name__ == '__main__':
     sys.path.append(os.path.realpath('.'))
 
 from kwhelp.decorator import DefaultArgs, RequireArgs
+from enum import IntEnum, auto
 
+
+class Color(IntEnum):
+    RED = auto()
+    GREEN = auto()
+    BLUE = auto()
+
+    def __str__(self) -> str:
+        return self._name_
 
 class TestRequiredDecorators(unittest.TestCase):
 
@@ -28,6 +37,16 @@ class TestRequiredDecorators(unittest.TestCase):
             result = req_test(one=1)
         with self.assertRaises(ValueError):
             result = req_test(two=2)
+
+    def test_default_enum(self):
+        @DefaultArgs(one=Color.RED, two=Color.BLUE)
+        @RequireArgs("one", "two", "last")
+        def req_test(**kwargs) -> float:
+            return (kwargs.get("one"), kwargs.get("two"), kwargs.get("last"))
+        result = req_test(last="stop")
+        assert result[0] == Color.RED
+        assert result[1] == Color.BLUE
+        assert result[2] == "stop"
 
     def test_default_optional(self):
         @DefaultArgs(one=1, two=2)

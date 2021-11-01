@@ -1,4 +1,8 @@
 import unittest
+if __name__ == '__main__':
+    import os
+    import sys
+    sys.path.append(os.path.realpath('.'))
 import kwhelp.rules as rules
 
 class RuleTester(rules.IRule):
@@ -89,3 +93,7 @@ class TestIRule(unittest.TestCase):
         self.assertEqual(rt.raise_errors, False)
         with self.assertRaises(TypeError):
             rt.raise_errors = 22
+
+
+if __name__ == '__main__':
+    unittest.main()
