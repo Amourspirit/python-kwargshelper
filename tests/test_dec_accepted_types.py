@@ -33,7 +33,15 @@ class TestAcceptedTypesDecorators(unittest.TestCase):
         def req_test(first, second=2, third=3):
             return (first, second, third)
 
+        result = req_test(4, 5, 6)
+        assert result[0] == 4
+        assert result[1] == 5
+        assert result[2] == 6
         result = req_test(first="one")
+        assert result[0] == "one"
+        assert result[1] == 2
+        assert result[2] == 3
+        result = req_test("one")
         assert result[0] == "one"
         assert result[1] == 2
         assert result[2] == 3
@@ -41,11 +49,43 @@ class TestAcceptedTypesDecorators(unittest.TestCase):
         assert result[0] == 11
         assert result[1] == 12
         assert result[2] == 3
-        result = req_test(first="one",third="three", non=0)
-        assert result[0] == "one"
+        result = req_test(first=1, third=33)
+        assert result[0] == 1
         assert result[1] == 2
-        assert result[2] == "three"
- 
+        assert result[2] == 33
+        with self.assertRaises(TypeError):
+            result = req_test(first=33.44)
+        with self.assertRaises(TypeError):
+            result = req_test(33.44)
+        with self.assertRaises(TypeError):
+            result = req_test(5, 6, "7")
+        with self.assertRaises(TypeError):
+            result = req_test(first=5, third="7")
+
+    def test_accepted_args_optional_named(self):
+        @AcceptedTypes(int, int, int, (int, str), (int, str), int)
+        def req_test(*args, first, second=2, third=3):
+            return [*args] + [first, second, third]
+        result = req_test(1, 2, 3, first=4, second=5, third=6)
+        assert result[0] == 1
+        assert result[1] == 2
+        assert result[2] == 3
+        assert result[3] == 4
+        assert result[4] == 5
+        assert result[5] == 6
+        result = req_test(1, 2, 3, first=77)
+        assert result[3] == 77
+        assert result[4] == 2
+        assert result[5] == 3
+        result = req_test(1, 2, 3, first="one", third=55)
+        assert result[3] == "one"
+        assert result[4] == 2
+        assert result[5] == 55
+        with self.assertRaises(TypeError):
+            esult = req_test(1, 2.2, 3, first=77)
+        with self.assertRaises(TypeError):
+            esult = req_test(1, 2, 3, first=77, third="yes")
+
 
     def test_accept_args_and_kwargs(self):
         @AcceptedTypes(str, str, (int, str), (int, str))

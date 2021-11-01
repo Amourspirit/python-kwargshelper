@@ -188,12 +188,6 @@ class AcceptedTypes(_DecBase):
         argnames = func.__code__.co_varnames[:func.__code__.co_argcount]
         return argnames
 
-    def __get_args_dict(self, method, args, kwargs):
-        argnames = self._get_arg_names(method)
-        d = {**dict(zip(argnames, args[:len(argnames)]))}
-        d.update(kwargs)
-        return d
-
     def _get_args_dict(self, method, args, kwargs):
         # Positional argument cannot appear after keyword arguments
         # no *args after **kwargs def foo(**kwargs, *args) not valid
@@ -202,24 +196,22 @@ class AcceptedTypes(_DecBase):
         # When only args are passed in (no **kwargs present) with named args then
         # the last named args with defaults are like additional args
         sig = signature(method)
-        name_defaults = {}
         name_values = []
-        i = -1
+        i = 0
         args_first = False
         for k, v in sig.parameters.items():
-            i += 1
-            if v.kind == _ParameterKind.VAR_POSITIONAL:  # args
+            if v.kind == _ParameterKind.VAR_POSITIONAL:  # args, can only be in first postition
                 if i == 0:
                     args_first = True
                 continue
             if v.kind == _ParameterKind.VAR_KEYWORD:  # kwargs
                 continue
             if not v.default is inspect._empty:
-                name_defaults[k] = v.default
                 name_values.append((k, v.default))
             else:
-                name_defaults[k] = NO_THING
                 name_values.append((k, NO_THING))
+            i += 1
+
         offset = 0
         if args_first is True and len(name_values) > 0:
             reversed_list = list(reversed(name_values))
@@ -228,56 +220,30 @@ class AcceptedTypes(_DecBase):
                     offset += 1
                 else:
                     break
-        
-        # argnames = name_defaults.keys()
+
+        name_defaults = {}
+        if args_first is True:
+            for j, arg in enumerate(args):
+                key = "*" + str(j)
+                name_defaults[key] = arg
+        for k, v in name_values:
+            name_defaults[k] = v
         argnames = []
-        for i in range(len(name_values) - offset):
-            el = name_values[i]
+        for j in range(len(name_values) - offset):
+            el = name_values[j]
             argnames.append(el[0])
-        if len(args) > 0:
-            if args_first is True:
-                d = {
-                    **dict(zip(argnames, args[-len(argnames):]))}
-            else:
-                d = {**dict(zip(argnames, args[:len(argnames)]))}
-            # update 
+        if args_first is False and len(args) > 0:
+            d = {**dict(zip(argnames, args[:len(argnames)]))}
             name_defaults.update(d)
         if len(kwargs) > 0:
             name_defaults.update(kwargs)
-        del_list = []
-        for k, v in name_defaults.items():
-            if v is NO_THING:
-                del_list.append(k)
-        for el in del_list:
-            del name_defaults[el]
         return name_defaults
-
-    def _get_args_dict_old(self, method, args, kwargs):
-        sig = signature(method)
-        _names = []
-        _has_args = False
-        i = 0
-        _kw = {**kwargs}
-        for k, v in sig.parameters.items():
-            if v.kind == _ParameterKind.VAR_KEYWORD: # kwargs
-                continue
-            if v.kind == _ParameterKind.VAR_POSITIONAL: # args
-                _has_args = True
-                break
-            if not v.default is inspect._empty and not k in _kw:
-                _kw[k] = v.default
-            _names.append(k)
-            i += 1
-        if _has_args is True and i < len(args) - 1:
-            dif = len(args) - i
-            for j in range(i, dif+i):
-                _names.append("*" + str(j))
         if self._drop_arg_first():
             _names = _names[1:]
             _args = args[1:]
         else:
             _args = args
-        return {**dict(zip(_names, _args)), **_kw}
+        return {**dict(zip(_names, _args)), **kwargs}
     
     def __call__(self, func: callable):
         @functools.wraps(func)
