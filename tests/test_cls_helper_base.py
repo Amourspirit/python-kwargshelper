@@ -1,6 +1,8 @@
 # coding: utf-8
 if __name__ == '__main__':
-    import path_imports
+    import os
+    import sys
+    sys.path.append(os.path.realpath('.'))
 
 import unittest
 from kwhelp.helper.base import HelperBase

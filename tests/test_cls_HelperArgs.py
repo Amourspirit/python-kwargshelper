@@ -1,4 +1,8 @@
 import unittest
+if __name__ == '__main__':
+    import os
+    import sys
+    sys.path.append(os.path.realpath('.'))
 from kwhelp import HelperArgs
 from kwhelp.helper import NO_THING
 import kwhelp.rules as rules
@@ -100,3 +104,7 @@ class TestHelperArgs(unittest.TestCase):
         self.assertEqual(len(args.types), 3)
         with self.assertRaises(TypeError):
             args.types = str
+
+
+if __name__ == '__main__':
+    unittest.main()
