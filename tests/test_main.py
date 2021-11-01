@@ -1,8 +1,9 @@
 # coding: utf-8
-if __name__ == '__main__':
-    import path_imports
-
 import unittest
+if __name__ == '__main__':
+    import os
+    import sys
+    sys.path.append(os.path.realpath('.'))
 from kwhelp import KwArg, KwargsHelper, CancelEventError, AssignBuilder, HelperArgs, AfterAssignEventArgs, BeforeAssignEventArgs, AfterAssignAutoEventArgs, BeforeAssignAutoEventArgs
 from kwhelp.exceptions import RuleError
 import kwhelp.rules as rules

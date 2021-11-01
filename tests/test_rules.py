@@ -1,5 +1,9 @@
 from typing import Type
 import unittest
+if __name__ == '__main__':
+    import os
+    import sys
+    sys.path.append(os.path.realpath('.'))
 from kwhelp import rules
 
 
@@ -448,4 +452,7 @@ class TestRules(unittest.TestCase):
         r.raise_errors = True
         with self.assertRaises(TypeError):
             r.validate()
+
     # endregion String
+if __name__ == '__main__':
+    unittest.main()
