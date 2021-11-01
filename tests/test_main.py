@@ -6,6 +6,7 @@ import unittest
 from kwhelp import KwArg, KwargsHelper, CancelEventError, AssignBuilder, HelperArgs, AfterAssignEventArgs, BeforeAssignEventArgs, AfterAssignAutoEventArgs, BeforeAssignAutoEventArgs
 from kwhelp.exceptions import RuleError
 import kwhelp.rules as rules
+from kwhelp.helper import is_iterable
 from pathlib import Path
 
 
@@ -1585,6 +1586,21 @@ class TestAssignAllRules(unittest.TestCase):
             obj.kw_assign(key='val', require=True,
                           rules_all=[rules.RuleAttrNotExist],
                           rules_any=[rules.RuleIntNegativeOrZero, rules.RuleFloatNegativeOrZero])
+
+
+class TestIsIterable(unittest.TestCase):
+    def test_is_iterable(self):
+        assert is_iterable(("f", "f"))    # tuple
+        assert is_iterable(["f", "f"])    # list
+        assert is_iterable(iter("ff"))    # iterator
+        assert is_iterable(range(44))     # generator
+        # bytes (Python 2 calls this a string)
+        assert is_iterable(b"ff")
+
+        # strings or non-iterables
+        assert not is_iterable(u"ff")     # string
+        assert not is_iterable(44)        # integer
+        assert not is_iterable(is_iterable)  # function
 
 
 if __name__ == '__main__':
