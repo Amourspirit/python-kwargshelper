@@ -299,7 +299,7 @@ class ArgsLen(_DecBase):
             args (Union[int, iterable[int]]): One or more int or Iterator[int] for validation.
 
                 * Single ``int`` values are to match exact.
-                * iterable[int] must be a pair of ``int`` with the first ``int`` less then the second ``int``.
+                * ``iterable[int]`` must be a pair of ``int`` with the first ``int`` less then the second ``int``.
 
         Keyword Arguments:
             ftype (DecFuncType, optional): Type of function that decorator is applied on.
