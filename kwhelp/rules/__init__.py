@@ -377,6 +377,56 @@ class RuleIntNegativeOrZero(RuleInt):
                     f"Arg error: '{self.key}' must be equal to zero or a negative int value")
             return False
         return True
+
+
+class RuleByteUnsigned(RuleInt):
+    '''
+    Unsigned Byte rule, range from ``0`` to ``255``.
+    '''
+
+    def validate(self) -> bool:
+        """
+        Valids
+
+        Raises:
+            ValueError: If ``raise_errors`` is ``False`` and value is less then ``0`` or greater than ``255``.
+
+        Returns:
+            bool: ``True`` if Validation passes; Otherwise, ``False``.
+        """
+        if not super().validate():
+            return False
+        if self.field_value < 0 or self.field_value > 255:
+            if self.raise_errors:
+                raise ValueError(
+                    f"Arg error: '{self.key}' must be a num from 0 to 255")
+            return False
+        return True
+
+
+class RuleByteSigned(RuleInt):
+    '''
+    Signed Byte rule, range from ``-128`` to ``127``.
+    '''
+
+    def validate(self) -> bool:
+        """
+        Valids
+
+        Raises:
+            ValueError: If ``raise_errors`` is ``False`` and value is less then ``-128`` or greater than ``128``.
+
+        Returns:
+            bool: ``True`` if Validation passes; Otherwise, ``False``.
+        """
+        if not super().validate():
+            return False
+        if self.field_value < -128 or self.field_value > 127:
+            if self.raise_errors:
+                raise ValueError(
+                    f"Arg error: '{self.key}' must be a num from -128 to 127")
+            return False
+        return True
 # endregion Integer
 
 # region Float Rules
