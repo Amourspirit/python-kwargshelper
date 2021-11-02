@@ -21,6 +21,11 @@ class TestArgsLen(unittest.TestCase):
         with self.assertRaises(ValueError):
             foo("a")
 
+    def test_incorrect_args(self):
+        with self.assertRaises(ValueError):
+            @ArgsLen()
+            def foo(*args): pass
+
     def test_two_lens(self):
         @ArgsLen(3, 5)
         def foo(*args):

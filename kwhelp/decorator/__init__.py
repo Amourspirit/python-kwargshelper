@@ -1,3 +1,4 @@
+import enum
 import functools
 import inspect
 import re
@@ -291,10 +292,21 @@ class AcceptedTypes(_DecBase):
 
 
 class ArgsLen(_DecBase):
-    """Decorartor that sets the number of args that can be added to a function"""
+    """
+    Decorartor that sets the number of args that can be added to a function
+
+    Raises:
+        ValueError: If wrong args are passed into construcor.
+        ValueError: If validation of arg count fails.
+
+    See Also:
+        :doc:`../../usage/Decorator/ArgsLen`
+    """
 
     def __init__(self, *args: Union[type, Iterable[type]], **kwargs):
         """
+        Constructor
+
         Other Parameters:
             args (Union[int, iterable[int]]): One or more int or Iterator[int] for validation.
 
@@ -320,19 +332,40 @@ class ArgsLen(_DecBase):
                     self._ranges.add((arg1, arg2))
         valid = len(self._lengths) > 0 or len(self._ranges) > 0
         if not valid:
-            raise ValueError(
-                "ArgsLen error. constructor must have valid args of of postive int and/or postive pairs of int.")
+            msg = f"{self.__class__.__name__} error. constructor must have valid args of of postive int and/or postive pairs of int."
+            raise ValueError(msg)
 
-    def _get_fn_args_len(self,  func: callable) -> int:
-        sig = signature(func)
-        args_name = False
-        for k, v in sig.parameters.items():
-            if v.kind == _ParameterKind.VAR_POSITIONAL:  # args
-              args_name = k
-              break
-        if args_name:
-            return func.__code__.co_argcount
-        return 0
+    def _get_valid_counts(self) -> str:
+        str_len = ""
+        lengths = sorted(self._lengths)
+        ranges = sorted(self._ranges)
+        for i, length in enumerate(lengths):
+            if i > 0:
+                str_len = str_len + ", "
+            str_len = str_len + str(length)
+        str_rng = ""
+        for i, rng in enumerate(ranges):
+            if i > 0:
+                str_rng = str_rng + ", "
+            str_rng = str_rng + f"({rng[0]}, {rng[1]})"
+        result = ""
+        len_lengths = len(lengths)
+        len_ranges = len(ranges)
+        if len_lengths > 0:
+            if len_lengths == 1:
+                result = result + "Expected Length: "
+            else:
+                result = result + "Expected Lengths: "
+            result = result + str_len + "."
+        if len_ranges > 0:
+            if len_lengths > 0:
+                result = result + " "
+            if len_ranges == 1:
+                result = result + "Expected Range: "
+            else:
+                result = result + "Expected Ranges: "
+            result = result + str_rng + "."
+        return result
 
     def __call__(self, func: callable):
         @functools.wraps(func)
@@ -354,8 +387,10 @@ class ArgsLen(_DecBase):
                             is_valid = True
                             break
             if is_valid is False:
-                raise ValueError(
-                    f"'{func.__name__}'' invalid number of args. ArgsLen Decorator Error.")
+                msg = f"Invalid number of args pass into '{func.__name__}'.\n{self._get_valid_counts()}"
+                msg = msg + f" Got '{_args_len}' args."
+                msg = msg + f"\n{self.__class__.__name__} decorator Error."
+                raise ValueError(msg)
             return func(*args, **kwargs)
         # wrapper.is_types_valid = self.is_valid
         return wrapper
