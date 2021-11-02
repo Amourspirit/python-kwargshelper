@@ -1,7 +1,7 @@
 import functools
 import inspect
 import re
-from typing import Dict, Iterable, Iterator, Optional, Union
+from typing import Dict, Iterable, Iterator, Optional, Set, Tuple, Union
 from inspect import _ParameterKind, signature, isclass, Parameter, Signature
 from ..checks import TypeChecker, RuleChecker
 from ..rules import IRule
@@ -155,7 +155,7 @@ class TypeCheck(_DecBase):
         :doc:`../../usage/Decorator/TypeCheck`
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Union[type, Iterable[type]], **kwargs):
         """
         Constructor
 
@@ -214,12 +214,12 @@ class AcceptedTypes(_DecBase):
     """
     
     
-    def __init__(self, *args: Union[type, Iterator[type]], **kwargs):
+    def __init__(self, *args: Union[type, Iterable[type]], **kwargs):
         """
         Constructor
 
         Other Parameters:
-            args (Union[type, Iterator[type]]): One or more types or Iterator[type] for validation.
+            args (Union[type, Iterable[type]]): One or more types or Iterator[type] for validation.
 
         Keyword Arguments:
             type_instance_check (bool, optional): If ``True`` then args are tested also for ``isinstance()``
@@ -288,6 +288,77 @@ class AcceptedTypes(_DecBase):
         else:
             msg = f"Arg in {str_ord} position of is expected to be of '{str_types}' but got '{type(value).__name__}'"
         return msg
+
+
+class ArgsLen(_DecBase):
+    """Decorartor that sets the number of args that can be added to a function"""
+
+    def __init__(self, *args: Union[type, Iterable[type]], **kwargs):
+        """
+        Other Parameters:
+            args (Union[int, iterable[int]]): One or more int or Iterator[int] for validation.
+
+                * Single ``int`` values are to match exact.
+                * iterable[int] must be a pair of ``int`` with the first ``int`` less then the second ``int``.
+
+        Keyword Arguments:
+            ftype (DecFuncType, optional): Type of function that decorator is applied on.
+                Default ``DecFuncType.FUNCTION``
+        """
+        super().__init__(**kwargs)
+        self._ranges: Set[Tuple[int, int]] = set()
+        self._lengths: Set[int] = set()
+        for arg in args:
+            if isinstance(arg, int):
+                if arg >= 0:
+                    self._lengths.add(arg)
+            elif is_iterable(arg) and len(arg) == 2:
+                arg1 = arg[0]
+                arg2 = arg[1]
+                if isinstance(arg1, int) and isinstance(arg2, int) \
+                        and arg1 >= 0 and arg2 > arg1:
+                    self._ranges.add((arg1, arg2))
+        valid = len(self._lengths) > 0 or len(self._ranges) > 0
+        if not valid:
+            raise ValueError(
+                "ArgsLen error. constructor must have valid args of of postive int and/or postive pairs of int.")
+
+    def _get_fn_args_len(self,  func: callable) -> int:
+        sig = signature(func)
+        args_name = False
+        for k, v in sig.parameters.items():
+            if v.kind == _ParameterKind.VAR_POSITIONAL:  # args
+              args_name = k
+              break
+        if args_name:
+            return func.__code__.co_argcount
+        return 0
+
+    def __call__(self, func: callable):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            # func_args_len = self._get_fn_args_len(func)
+            # if func_args_len = 0
+            _args_len = len(args)
+            if _args_len > 0 and self._drop_arg_first() is True:
+                _args_len -= 1
+            is_valid = False
+            if _args_len > 0:
+                for i in self._lengths:
+                    if _args_len == i:
+                        is_valid = True
+                        break
+                if is_valid is False:
+                    for range in self._ranges:
+                        if _args_len >= range[0] and _args_len <= range[1]:
+                            is_valid = True
+                            break
+            if is_valid is False:
+                raise ValueError(
+                    f"'{func.__name__}'' invalid number of args. ArgsLen Decorator Error.")
+            return func(*args, **kwargs)
+        # wrapper.is_types_valid = self.is_valid
+        return wrapper
 
 class ReturnRuleAll(_RuleBase):
     """
