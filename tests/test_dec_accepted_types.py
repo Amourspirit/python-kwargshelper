@@ -91,7 +91,6 @@ class TestAcceptedTypesDecorators(unittest.TestCase):
         with self.assertRaises(TypeError):
             esult = req_test(1, 2, 3, first=77, third="yes")
 
-
     def test_accept_args_and_kwargs(self):
         @AcceptedTypes(str, str, (int, str), (int, str))
         def req_test(*args, **kwargs):
@@ -157,6 +156,42 @@ class TestAcceptedTypesDecorators(unittest.TestCase):
         assert result == Color.BLUE
         result = foo(e=2)
         assert result == Color.GREEN
+
+    def test_star_args_pos3(self):
+        @AcceptedTypes(int, int, int, int, int, int)
+        def myfunc(arg1, arg2, *args, kwonlyarg=22):
+            return [arg1, arg2] + [*args] + [kwonlyarg]
+        result = myfunc(1, 2, 3, 4, 5, kwonlyarg=33)
+        assert result[0] == 1
+        assert result[1] == 2
+        assert result[2] == 3
+        assert result[3] == 4
+        assert result[4] == 5
+        assert result[5] == 33
+        with self.assertRaises(TypeError):
+            myfunc("", 2, 3, 4, 5, kwonlyarg=33)
+        with self.assertRaises(TypeError):
+            myfunc(1, "", 3, 4, 5, kwonlyarg=33)
+        with self.assertRaises(TypeError):
+            myfunc(1, 2, "", 4, 5, kwonlyarg=33)
+        with self.assertRaises(TypeError):
+            myfunc(1, 2, 3, "4", 5, kwonlyarg=33)
+        with self.assertRaises(TypeError):
+            myfunc(1, 2, 3, 4, "5", kwonlyarg=33)
+        with self.assertRaises(TypeError):
+            myfunc(1, 2, 3, 4, 5, kwonlyarg="33")
+
+    def test_star_args_pos3_mix(self):
+        @AcceptedTypes(float, str, int, [Color], int, bool)
+        def myfunc(arg1, arg2, *args, kwonlyarg=22):
+            return [arg1, arg2] + [*args] + [kwonlyarg]
+        result = myfunc(1.33, "two", 3, Color.BLUE, 5, kwonlyarg=True)
+        assert result[0] == 1.33
+        assert result[1] == "two"
+        assert result[2] == 3
+        assert result[3] == Color.BLUE
+        assert result[4] == 5
+        assert result[5] == True
 
 class TestAcceptedTypesClassDecorators(unittest.TestCase):
 
