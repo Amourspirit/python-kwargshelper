@@ -6,6 +6,11 @@ Version 2.2.0
 
 Added Decorator ArgsLen.
 
+Added Rules:
+
+    * RuleByteSigned
+    * RuleByteUnsigned
+
 Version 2.1.3
 -------------
 
