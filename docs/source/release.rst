@@ -4,7 +4,7 @@ Release Notes
 Version 2.1.4
 -------------
 
-Bug fix for AcceptedTypes Decorator when function has leading nameed args before postional args.
+Bug fix for ``AcceptedTypes`` Decorator when function has leading named args before positional args.
 
 The following will now work.
 
