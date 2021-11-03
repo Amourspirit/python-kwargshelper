@@ -1,6 +1,16 @@
 Release Notes
 =============
 
+Version 2.2.1
+-------------
+
+``ArgsLen`` decorator now allows zero length args.
+
+.. code-block:: python
+
+    @ArgsLen(0, 2)
+    def foo(*args, **kwargs): pass
+
 Version 2.2.0
 -------------
 
