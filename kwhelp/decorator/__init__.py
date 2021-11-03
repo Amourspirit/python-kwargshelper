@@ -255,8 +255,7 @@ class AcceptedTypes(_DecBase):
         i = 0
         args_pos = -1
         drop_first = self._drop_arg_first()
-        params = sig.parameters
-        for k, v in params.items():
+        for k, v in sig.parameters.items():
             if v.kind == _ParameterKind.VAR_POSITIONAL:  # args
                 args_pos = i
                 if drop_first:
@@ -275,10 +274,14 @@ class AcceptedTypes(_DecBase):
         else:
             _args = args[arg_offset:]
         arg_len = len(_args)
-        if drop_first and i > 0:
+        name_values_len = len(name_values)
+        if drop_first and name_values_len > 0:
             del name_values[0]
+            name_values_len -= 1
         offset = 0
-        if args_pos >= 0 and len(name_values) > 0:
+        if args_pos >= 0 and name_values_len > 0:
+            # count how many name, values from default
+            # are default values
             reversed_list = list(reversed(name_values))
             for k, v in reversed_list:
                 if not v is NO_THING:
@@ -296,12 +299,13 @@ class AcceptedTypes(_DecBase):
                 name_defaults[nv[0]] = nv[1]
         # add args
         if args_pos >= 0:
+            # add args that are positional arguments
             for j, arg in enumerate(_args):
                 key = "*" + str(j + arg_offset)
                 name_defaults[key] = arg
         
-        # add any remaining keys for name_values
         if args_pos > 0:
+            # add any remaining keys for name_values
             remaining = len(name_values) - args_pos
             if remaining > 0:
                 for j in range(remaining):
@@ -309,14 +313,18 @@ class AcceptedTypes(_DecBase):
                     nv = name_values[index]
                     name_defaults[nv[0]] = nv[1]
         else:
+            # there were no positional args before *args keyword so
+            # all all the name, values after postitioan args.
             for k, v in name_values:
                 name_defaults[k] = v
-        argnames = []
-        for j in range(len(name_values) - offset):
-            el = name_values[j]
-            argnames.append(el[0])
-        # if args_first is False and arg_len > 0:
-        if (args_pos == -1 or args_pos > 0) and arg_len > 0:
+        if args_pos != 0 and arg_len > 0:
+            # if *args are not in position 0 and there are *args then
+            # make a dictionary of name values and update the
+            # name_defaults dictionary.
+            argnames = []
+            for j in range(len(name_values) - offset):
+                el = name_values[j]
+                argnames.append(el[0])
             if drop_first:
                 _zip_args = args[1:]
             else:
@@ -324,6 +332,9 @@ class AcceptedTypes(_DecBase):
             d = {**dict(zip(argnames, _zip_args[:len(argnames)]))}
             name_defaults.update(d)
         if len(kwargs) > 0:
+            # update name_default with any kwargs that are passed in.
+            # this will update any default values with the values passed
+            # into function at call time.
             name_defaults.update(kwargs)
         return name_defaults
 
