@@ -16,15 +16,15 @@ class TestDecBase(unittest.TestCase):
         args = base._get_args([1, 2, 3])
         assert len(args) == 3
         args_dic = base._get_args_dict(foo, [], {})
-        assert args_dic["arg1"] is NO_THING
-        assert args_dic["arg2"] is NO_THING
+        assert args_dic["arg1"] == NO_THING
+        assert args_dic["arg2"] == NO_THING
         args_dic = base._get_args_dict(foo, [], {"arg1": 1, "arg2": 2})
-        assert args_dic["arg1"] is 1
-        assert args_dic["arg2"] is 2
+        assert args_dic["arg1"] == 1
+        assert args_dic["arg2"] == 2
         sig = base._get_signature(foo)
-        assert base._get_signature(foo) is sig
+        assert base._get_signature(foo) == sig
         assert base._get_star_args_pos(foo) == -1
-        assert base._is_placeholder_arg("*199") is True
+        assert base._is_placeholder_arg("*199") == True
 
     def test_star_args(self):
         def foo(*args, arg1, arg2, **kwargs): pass
@@ -34,15 +34,15 @@ class TestDecBase(unittest.TestCase):
         args = base._get_args([1, 2, 3])
         assert len(args) == 3
         args_dic = base._get_args_dict(foo, [], {})
-        assert args_dic["arg1"] is NO_THING
-        assert args_dic["arg2"] is NO_THING
+        assert args_dic["arg1"] == NO_THING
+        assert args_dic["arg2"] == NO_THING
         args_dic = base._get_args_dict(foo, [], {"arg1": 1, "arg2": 2})
-        assert args_dic["arg1"] is 1
-        assert args_dic["arg2"] is 2
+        assert args_dic["arg1"] == 1
+        assert args_dic["arg2"] == 2
         sig = base._get_signature(foo)
-        assert base._get_signature(foo) is sig
+        assert base._get_signature(foo) == sig
         assert base._get_star_args_pos(foo) == 0
-        assert base._is_placeholder_arg("199") is False
+        assert base._is_placeholder_arg("199") == False
 
     def test_star_args_class(self):
         class Bar:
@@ -53,15 +53,15 @@ class TestDecBase(unittest.TestCase):
         args = base._get_args([0, 1, 2, 3])
         assert len(args) == 3
         args_dic = base._get_args_dict(Bar.foo, [], {})
-        assert args_dic["arg1"] is NO_THING
-        assert args_dic["arg2"] is NO_THING
+        assert args_dic["arg1"] == NO_THING
+        assert args_dic["arg2"] == NO_THING
         args_dic = base._get_args_dict(Bar.foo, [], {"arg1": 1, "arg2": 2})
-        assert args_dic["arg1"] is 1
-        assert args_dic["arg2"] is 2
+        assert args_dic["arg1"] == 1
+        assert args_dic["arg2"] == 2
         sig = base._get_signature(Bar.foo)
-        assert base._get_signature(Bar.foo) is sig
+        assert base._get_signature(Bar.foo) == sig
         assert base._get_star_args_pos(Bar.foo) == 0
-        assert base._is_placeholder_arg("199") is False
+        assert base._is_placeholder_arg("199") == False
 
 if __name__ == '__main__':
     unittest.main()
