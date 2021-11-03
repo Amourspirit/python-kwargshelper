@@ -8,6 +8,10 @@ from kwhelp.decorator import DecFuncEnum, _DecBase
 from kwhelp.helper import NO_THING
 
 class TestDecBase(unittest.TestCase):
+    def test_bad_constructro(self):
+        with self.assertRaises(TypeError):
+            base = _DecBase(ftype="")
+
     def test_gen(self):
         def foo(arg1, arg2, **kwargs): pass
         
@@ -62,6 +66,24 @@ class TestDecBase(unittest.TestCase):
         assert base._get_signature(Bar.foo) == sig
         assert base._get_star_args_pos(Bar.foo) == 0
         assert base._is_placeholder_arg("199") == False
+
+
+    def test_ordianl(self):
+        rt = _DecBase()
+        result = rt._get_ordinal(1)
+        self.assertEqual(result, "1st")
+        result = rt._get_ordinal(2)
+        self.assertEqual(result, "2nd")
+        result = rt._get_ordinal(4)
+        self.assertEqual(result, "4th")
+        result = rt._get_ordinal(10)
+        self.assertEqual(result, "10th")
+        result = rt._get_ordinal(11)
+        self.assertEqual(result, "11th")
+        result = rt._get_ordinal(22)
+        self.assertEqual(result, "22nd")
+        result = rt._get_ordinal(33)
+        self.assertEqual(result, "33rd")
 
 if __name__ == '__main__':
     unittest.main()
