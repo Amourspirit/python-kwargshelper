@@ -159,9 +159,11 @@ Normal class
 .. code-block:: python
 
     class Foo:
+        @ArgsLen(0, (2, 4), ftype=DecFuncEnum.METHOD)
+        def __init__(self, *args): pass
+
         @ArgsLen(3, 5, ftype=DecFuncEnum.METHOD)
-        def bar(self, *args):
-            pass
+        def bar(self, *args): pass
 
 Static method
 +++++++++++++
@@ -171,8 +173,7 @@ Static method
     class Foo:
         @staticmethod
         @ArgsLen(3, 5, ftype=DecFuncEnum.METHOD_STATIC)
-        def bar(self, *args):
-            pass
+        def bar(self, *args): pass
 
 Class method
 ++++++++++++
@@ -182,5 +183,4 @@ Class method
     class Foo:
         @staticmethod
         @ArgsLen(3, 5, ftype=DecFuncEnum.METHOD_CLASS)
-        def bar(self, *args):
-            pass
+        def bar(self, *args): pass
