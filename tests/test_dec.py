@@ -23,40 +23,5 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(str(DecFuncEnum.PROPERTY_CLASS), "PROPERTY_CLASS")
 
 
-class Test_DecBase(unittest.TestCase):
-    def test_general(self):
-        #bad ftype
-        with self.assertRaises(TypeError):
-            @ReturnRuleAll(rules.RuleInt, ftype=self)
-            def fn():
-                return 1
-
-    def test_ordianl(self):
-        rt = ReturnRuleAll(rules.RuleInt)
-        result = rt._get_ordinal(1)
-        self.assertEqual(result, "1st")
-        result = rt._get_ordinal(2)
-        self.assertEqual(result, "2nd")
-        result = rt._get_ordinal(4)
-        self.assertEqual(result, "4th")
-        result = rt._get_ordinal(10)
-        self.assertEqual(result, "10th")
-        result = rt._get_ordinal(11)
-        self.assertEqual(result, "11th")
-        result = rt._get_ordinal(22)
-        self.assertEqual(result, "22nd")
-        result = rt._get_ordinal(33)
-        self.assertEqual(result, "33rd")
-
-    def test_get_arg_names(self):
-        def foo(one, two, three, **kwargs): pass
-        rt = ReturnRuleAll(rules.RuleInt)
-        argnames = rt._get_arg_names(foo)
-        assert len(argnames) == 3
-        assert argnames[0] == "one"
-        assert argnames[1] == "two"
-        assert argnames[2] == "three"
-
-
 if __name__ == '__main__':
     unittest.main()
