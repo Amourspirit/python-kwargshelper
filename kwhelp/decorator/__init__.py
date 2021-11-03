@@ -255,9 +255,9 @@ class AcceptedTypes(_DecBase):
         i = 0
         args_pos = -1
         drop_first = self._drop_arg_first()
-        
-        for k, v in sig.parameters.items():
-            if v.kind == _ParameterKind.VAR_POSITIONAL:  # args, can only be in first postition
+        params = sig.parameters
+        for k, v in params.items():
+            if v.kind == _ParameterKind.VAR_POSITIONAL:  # args
                 args_pos = i
                 if drop_first:
                     args_pos -= 1
@@ -285,13 +285,32 @@ class AcceptedTypes(_DecBase):
                     offset += 1
                 else:
                     break
+        
         name_defaults = {}
+        # add first keys of name_values
+        if args_pos > 0:
+            # there are name values before *args in function
+            # add first args so they are in the same order as entered.
+            for j in range(args_pos):
+                nv = name_values[j]
+                name_defaults[nv[0]] = nv[1]
+        # add args
         if args_pos >= 0:
             for j, arg in enumerate(_args):
                 key = "*" + str(j + arg_offset)
                 name_defaults[key] = arg
-        for k, v in name_values:
-            name_defaults[k] = v
+        
+        # add any remaining keys for name_values
+        if args_pos > 0:
+            remaining = len(name_values) - args_pos
+            if remaining > 0:
+                for j in range(remaining):
+                    index = j + args_pos
+                    nv = name_values[index]
+                    name_defaults[nv[0]] = nv[1]
+        else:
+            for k, v in name_values:
+                name_defaults[k] = v
         argnames = []
         for j in range(len(name_values) - offset):
             el = name_values[j]

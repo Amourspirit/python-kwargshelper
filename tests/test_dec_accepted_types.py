@@ -182,10 +182,17 @@ class TestAcceptedTypesDecorators(unittest.TestCase):
             myfunc(1, 2, 3, 4, 5, kwonlyarg="33")
 
     def test_star_args_pos3_mix(self):
-        @AcceptedTypes(float, str, int, [Color], int, bool)
-        def myfunc(arg1, arg2, *args, kwonlyarg=22):
+        # Positional argument cannot appear after keyword arguments
+        # however positional arg can come after keword arguments if keyword argumnets are filled out
+        # as positional args.
+        # myfunc(1.33, "two", 3, Color.BLUE, 5) is allow
+        # myfunc(arg1=1.33, arg2="two", 3, Color.BLUE, 5,  kwonlyarg=True) not allowed
+        # result = myfunc(3, Color.BLUE, 5, arg1=1.33, arg2="two", kwonlyarg=True) not allowed
+        
+        # @AcceptedTypes(float, str, int, [Color], int, bool)
+        def myfunc(arg1, arg2, *args, kwonlyarg=True):
             return [arg1, arg2] + [*args] + [kwonlyarg]
-        result = myfunc(1.33, "two", 3, Color.BLUE, 5, kwonlyarg=True)
+        result = myfunc(1.33, "two", 3, Color.BLUE, 5)
         assert result[0] == 1.33
         assert result[1] == "two"
         assert result[2] == 3
