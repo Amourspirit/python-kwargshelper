@@ -1,7 +1,8 @@
+import enum
 import functools
 import inspect
 import re
-from typing import Dict, Iterable, Iterator, Optional, Union
+from typing import Dict, Iterable, Iterator, Optional, Set, Tuple, Union
 from inspect import _ParameterKind, signature, isclass, Parameter, Signature
 from ..checks import TypeChecker, RuleChecker
 from ..rules import IRule
@@ -32,7 +33,6 @@ class _DecBase(object):
     _rx_star = re.compile("^\*(\d*)$")
 
     def __init__(self, **kwargs):
-        self._signature = None
         self._ftype: DecFuncEnum = kwargs.get("ftype", None)
         if self._ftype is not None:
             if not isinstance(self._ftype, DecFuncEnum):
@@ -43,6 +43,7 @@ class _DecBase(object):
                         f"{self.__class__.__name__} requires arg 'ftype' to be a 'DecFuncType")
         else:
             self._ftype = DecFuncEnum.FUNCTION
+        self._cache = {}
 
     def _is_placeholder_arg(self, arg_name: str) -> bool:
         m = _DecBase._rx_star.match(arg_name)
@@ -53,17 +54,41 @@ class _DecBase(object):
     def _drop_arg_first(self) -> bool:
         return self._ftype.value > DecFuncEnum.METHOD_STATIC.value
 
-    def _get_args(self, args):
+    def _get_args(self, args: Iterable[object]):
         if self._drop_arg_first():
             return args[1:]
         return args
 
+    def _get_args_star(self, func: callable, args: Iterable[object]) -> Iterable[object]:
+        """
+        Get args accounting for ``*args`` postions in function and if function class method.
+
+        Args:
+            func (callable): function with args
+            args (Iterable[object]): function current args
+
+        Returns:
+            Iterable[object]: New args that may be a subset of all of orignial ``args``.
+        """
+        pos = self._get_star_args_pos(func)
+        drop_first = self._drop_arg_first()
+        i = 0
+        if pos > 0:
+            i += pos
+        if drop_first:
+            i += 1
+        if i > 0:
+            return args[i:]
+        return args
+
     def _get_signature(self, func) -> Signature:
-        if self._signature is None:
-            self._signature = signature(func)
-        return self._signature
+        sig = self._cache.get("signature", False)
+        if sig:
+            return sig
+        self._cache["signature"] = signature(func)
+        return self._cache["signature"]
     
-    def _get_args_dict(self, func, args, kwargs) -> Dict[str, object]:
+    def _get_args_dict(self, func: callable, args: Iterable[object], kwargs: Dict[str, object]) -> Dict[str, object]:
         # Positional argument cannot appear after keyword arguments
         # no *args after **kwargs def foo(**kwargs, *args) not valid
         # def foo(name, age, *args) not valid
@@ -182,7 +207,7 @@ class _DecBase(object):
             ord = {1: 'st', 2: 'nd', 3: 'rd'}.get(num % 10, 'th')
             return '{0}{1}'.format(num, ord)
 
-    def _get_star_args_pos(self, func) -> int:
+    def _get_star_args_pos(self, func: callable) -> int:
         """
         Gets the zero base postion of *args in a function.
 
@@ -192,6 +217,9 @@ class _DecBase(object):
         Returns:
             int: -1 if  *args not present; Otherwise zero based postion of *args
         """
+        result = self._cache.get("star_args_pos", None)
+        if not result is None:
+            return result
         sig = self._get_signature(func)
         args_pos = -1
         drop_first = self._drop_arg_first()
@@ -203,7 +231,8 @@ class _DecBase(object):
                     args_pos -= 1
                 break
             i += 1
-        return args_pos
+        self._cache["star_args_pos"] = args_pos
+        return self._cache["star_args_pos"]
 
 class _RuleBase(_DecBase):
     def _get_err(self, fn: callable, e: RuleError):
@@ -217,7 +246,7 @@ class TypeCheck(_DecBase):
         :doc:`../../usage/Decorator/TypeCheck`
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Union[type, Iterable[type]], **kwargs):
         """
         Constructor
 
@@ -276,12 +305,12 @@ class AcceptedTypes(_DecBase):
     """
     
     
-    def __init__(self, *args: Union[type, Iterator[type]], **kwargs):
+    def __init__(self, *args: Union[type, Iterable[type]], **kwargs):
         """
         Constructor
 
         Other Parameters:
-            args (Union[type, Iterator[type]]): One or more types or Iterator[type] for validation.
+            args (Union[type, Iterable[type]]): One or more types or Iterator[type] for validation.
 
         Keyword Arguments:
             type_instance_check (bool, optional): If ``True`` then args are tested also for ``isinstance()``
@@ -359,6 +388,109 @@ class AcceptedTypes(_DecBase):
         else:
             msg = f"Arg in {str_ord} position of is expected to be of '{str_types}' but got '{type(value).__name__}'"
         return msg
+
+
+class ArgsLen(_DecBase):
+    """
+    Decorartor that sets the number of args that can be added to a function
+
+    Raises:
+        ValueError: If wrong args are passed into construcor.
+        ValueError: If validation of arg count fails.
+
+    See Also:
+        :doc:`../../usage/Decorator/ArgsLen`
+    """
+
+    def __init__(self, *args: Union[type, Iterable[type]], **kwargs):
+        """
+        Constructor
+
+        Other Parameters:
+            args (Union[int, iterable[int]]): One or more int or Iterator[int] for validation.
+
+                * Single ``int`` values are to match exact.
+                * ``iterable[int]`` must be a pair of ``int`` with the first ``int`` less then the second ``int``.
+
+        Keyword Arguments:
+            ftype (DecFuncType, optional): Type of function that decorator is applied on.
+                Default ``DecFuncType.FUNCTION``
+        """
+        super().__init__(**kwargs)
+        self._ranges: Set[Tuple[int, int]] = set()
+        self._lengths: Set[int] = set()
+        for arg in args:
+            if isinstance(arg, int):
+                if arg >= 0:
+                    self._lengths.add(arg)
+            elif is_iterable(arg) and len(arg) == 2:
+                arg1 = arg[0]
+                arg2 = arg[1]
+                if isinstance(arg1, int) and isinstance(arg2, int) \
+                        and arg1 >= 0 and arg2 > arg1:
+                    self._ranges.add((arg1, arg2))
+        valid = len(self._lengths) > 0 or len(self._ranges) > 0
+        if not valid:
+            msg = f"{self.__class__.__name__} error. constructor must have valid args of of postive int and/or postive pairs of int."
+            raise ValueError(msg)
+
+    def _get_valid_counts(self) -> str:
+        str_len = ""
+        lengths = sorted(self._lengths)
+        ranges = sorted(self._ranges)
+        for i, length in enumerate(lengths):
+            if i > 0:
+                str_len = str_len + ", "
+            str_len = str_len + str(length)
+        str_rng = ""
+        for i, rng in enumerate(ranges):
+            if i > 0:
+                str_rng = str_rng + ", "
+            str_rng = str_rng + f"({rng[0]}, {rng[1]})"
+        result = ""
+        len_lengths = len(lengths)
+        len_ranges = len(ranges)
+        if len_lengths > 0:
+            if len_lengths == 1:
+                result = result + "Expected Length: "
+            else:
+                result = result + "Expected Lengths: "
+            result = result + str_len + "."
+        if len_ranges > 0:
+            if len_lengths > 0:
+                result = result + " "
+            if len_ranges == 1:
+                result = result + "Expected Range: "
+            else:
+                result = result + "Expected Ranges: "
+            result = result + str_rng + "."
+        return result
+    
+
+    def __call__(self, func: callable):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            _args = self._get_args_star(func=func,args=args)
+            _args_len = len(_args)
+            is_valid = False
+            if _args_len > 0:
+                for i in self._lengths:
+                    if _args_len == i:
+                        is_valid = True
+                        break
+                if is_valid is False:
+                    for range in self._ranges:
+                        if _args_len >= range[0] and _args_len <= range[1]:
+                            is_valid = True
+                            break
+            if is_valid is False:
+                msg = f"Invalid number of args pass into '{func.__name__}'.\n{self._get_valid_counts()}"
+                msg = msg + f" Got '{_args_len}' args."
+                msg = msg + f"\n{self.__class__.__name__} decorator Error."
+                raise ValueError(msg)
+            return func(*args, **kwargs)
+        # wrapper.is_types_valid = self.is_valid
+        return wrapper
 
 class ReturnRuleAll(_RuleBase):
     """

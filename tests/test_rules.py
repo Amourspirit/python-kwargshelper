@@ -453,6 +453,55 @@ class TestRules(unittest.TestCase):
         with self.assertRaises(TypeError):
             r.validate()
 
+
+    def test_RuleByteUnsigned(self):
+        class Foo:
+            pass
+        f = Foo()
+        rule = rules.RuleByteUnsigned(
+            key="tesst",
+            name="irule",
+            value=22,
+            raise_errors=True,
+            originator=f
+        )
+        rule.validate()
+        rule.field_value = -1
+        with self.assertRaises(ValueError):
+            rule.validate()
+        rule.field_value = 1.3
+        with self.assertRaises(TypeError):
+            rule.validate()
+        rule.field_value = 256
+        rule.raise_errors = False
+        assert rule.validate() == False
+        rule.field_value = 1.3
+        assert rule.validate() == False
+
+    def test_RuleByteSigned(self):
+        class Foo:
+            pass
+        f = Foo()
+        rule = rules.RuleByteSigned(
+            key="tesst",
+            name="irule",
+            value=22,
+            raise_errors=True,
+            originator=f
+        )
+        rule.validate()
+        rule.field_value = -129
+        with self.assertRaises(ValueError):
+            rule.validate()
+        rule.field_value = 1.3
+        with self.assertRaises(TypeError):
+            rule.validate()
+        rule.field_value = 128
+        rule.raise_errors = False
+        assert rule.validate() == False
+        rule.field_value = 1.3
+        assert rule.validate() == False
+
     # endregion String
 if __name__ == '__main__':
     unittest.main()
