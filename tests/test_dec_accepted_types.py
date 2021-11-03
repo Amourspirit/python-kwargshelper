@@ -91,7 +91,6 @@ class TestAcceptedTypesDecorators(unittest.TestCase):
         with self.assertRaises(TypeError):
             esult = req_test(1, 2, 3, first=77, third="yes")
 
-
     def test_accept_args_and_kwargs(self):
         @AcceptedTypes(str, str, (int, str), (int, str))
         def req_test(*args, **kwargs):
@@ -158,6 +157,44 @@ class TestAcceptedTypesDecorators(unittest.TestCase):
         result = foo(e=2)
         assert result == Color.GREEN
 
+    def test_star_args_pos3_mix(self):
+        # Positional argument cannot appear after keyword arguments
+        # however positional arg can come after keword arguments if keyword argumnets are filled out
+        # as positional args.
+        # myfunc(1.33, "two", 3, Color.BLUE, 5) is allow
+        # myfunc(arg1=1.33, arg2="two", 3, Color.BLUE, 5,  kwonlyarg=True) not allowed
+        # result = myfunc(3, Color.BLUE, 5, arg1=1.33, arg2="two", kwonlyarg=True) not allowed
+        
+        @AcceptedTypes(float, str, int, [Color], int, bool)
+        def myfunc(arg1, arg2, *args, kwonlyarg=True):
+            return [arg1, arg2] + [*args] + [kwonlyarg]
+        result = myfunc(1.33, "two", 3, Color.BLUE, 5)
+        assert result[0] == 1.33
+        assert result[1] == "two"
+        assert result[2] == 3
+        assert result[3] == Color.BLUE
+        assert result[4] == 5
+        assert result[5] == True
+        result = myfunc(1.33, "two", 3, Color.RED, 5, kwonlyarg=False)
+        assert result[0] == 1.33
+        assert result[1] == "two"
+        assert result[2] == 3
+        assert result[3] == Color.RED
+        assert result[4] == 5
+        assert result[5] == False
+        with self.assertRaises(TypeError):
+            myfunc(1.33, "two", 3, Color.BLUE, 5, kwonlyarg=22)
+        with self.assertRaises(TypeError):
+            myfunc(1, "two", 3, Color.BLUE, 5)
+        with self.assertRaises(TypeError):
+            myfunc(1.33, 2, 3, Color.BLUE, 5)
+        with self.assertRaises(TypeError):
+            myfunc(1.33, "two", "three", Color.BLUE, 5)
+        with self.assertRaises(TypeError):
+            myfunc(1.33, "two", 3, 22, 5)
+        with self.assertRaises(TypeError):
+            myfunc(1.33, "two", 3, Color.BLUE, 5.5)
+            
 class TestAcceptedTypesClassDecorators(unittest.TestCase):
 
     def test_accept_class(self):
@@ -351,6 +388,45 @@ class TestAcceptedTypesClassDecorators(unittest.TestCase):
         assert result[2] == Color.RED
         with self.assertRaises(TypeError):
             result = b.foo(1, 2, Color.RED)
+
+    def test_star_args_pos3_mix(self):
+        # Positional argument cannot appear after keyword arguments
+        # however positional arg can come after keword arguments if keyword argumnets are filled out
+        # as positional args.
+        # myfunc(1.33, "two", 3, Color.BLUE, 5) is allow
+        # myfunc(arg1=1.33, arg2="two", 3, Color.BLUE, 5,  kwonlyarg=True) not allowed
+        # result = myfunc(3, Color.BLUE, 5, arg1=1.33, arg2="two", kwonlyarg=True) not allowed
+        class Bar:
+            @AcceptedTypes(float, str, int, [Color], int, bool, ftype=DecFuncEnum.METHOD)
+            def myfunc(self, arg1, arg2, *args, kwonlyarg=True):
+                return [arg1, arg2] + [*args] + [kwonlyarg]
+        b = Bar()
+        result = b.myfunc(1.33, "two", 3, Color.BLUE, 5)
+        assert result[0] == 1.33
+        assert result[1] == "two"
+        assert result[2] == 3
+        assert result[3] == Color.BLUE
+        assert result[4] == 5
+        assert result[5] == True
+        result = b.myfunc(1.33, "two", 3, Color.RED, 5, kwonlyarg=False)
+        assert result[0] == 1.33
+        assert result[1] == "two"
+        assert result[2] == 3
+        assert result[3] == Color.RED
+        assert result[4] == 5
+        assert result[5] == False
+        with self.assertRaises(TypeError):
+            b.myfunc(1.33, "two", 3, Color.BLUE, 5, kwonlyarg=3)
+        with self.assertRaises(TypeError):
+            b.myfunc(1, "two", 3, Color.BLUE, 5)
+        with self.assertRaises(TypeError):
+            b.myfunc(1.33, 2, 3, Color.BLUE, 5)
+        with self.assertRaises(TypeError):
+            b.myfunc(1.33, "two", "three", Color.BLUE, 5)
+        with self.assertRaises(TypeError):
+            b.myfunc(1.33, "two", 3, 22, 5)
+        with self.assertRaises(TypeError):
+            b.myfunc(1.33, "two", 3, Color.BLUE, 5.5)
 
 if __name__ == '__main__':
     unittest.main()
