@@ -1,15 +1,17 @@
 Release Notes
 =============
 
-Version 2.2.0
+Version 2.1.4
 -------------
 
-Added Decorator ArgsLen.
+Bug fix for ``AcceptedTypes`` Decorator when function has leading named args before positional args.
 
-Added Rules:
+The following will now work.
 
-    * RuleByteSigned
-    * RuleByteUnsigned
+.. code-block:: python
+
+    @AcceptedTypes(float, str, int, [Color], int, bool)
+    def myfunc(arg1, arg2, *args, opt=True): pass
 
 Version 2.1.3
 -------------
