@@ -44,8 +44,11 @@ class _DecBase(object):
         else:
             self._ftype = DecFuncEnum.FUNCTION
 
-    def _is_placeholder_arg(self, arg_name: str):
-        return _DecBase._rx_star.match(arg_name)
+    def _is_placeholder_arg(self, arg_name: str) -> bool:
+        m = _DecBase._rx_star.match(arg_name)
+        if m:
+            return True
+        return False
 
     def _drop_arg_first(self) -> bool:
         return self._ftype.value > DecFuncEnum.METHOD_STATIC.value
@@ -54,13 +57,6 @@ class _DecBase(object):
         if self._drop_arg_first():
             return args[1:]
         return args
-
-    def _get_arg_names(self, func):
-        # arg name will only contain argument names and not *args or **kwargs
-        # if func starts with *args eg: foo(*args, one, two) then
-        # return will be empty list
-        argnames = func.__code__.co_varnames[:func.__code__.co_argcount]
-        return argnames
 
     def _get_signature(self, func) -> Signature:
         if self._signature is None:
