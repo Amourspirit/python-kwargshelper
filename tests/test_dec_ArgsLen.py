@@ -185,6 +185,14 @@ class TestArgsLen(unittest.TestCase):
         with self.assertRaises(ValueError):
             foo("a", "b", "c", a=1, b=2, one="one", two="two")
 
+    def test_star_args_third(self):
+        @ArgsLen(2, 4)
+        def foo(arg1, arg2, *args, a, b, **kwargs):
+            return len(args), len(kwargs), (a, b), (arg1, arg2)
+        result = foo("a1", "b2", 1, 2, a=1, b=2, opt1="one", opt2="two")
+        assert result[0] == 2
+        result = foo("a1", "b2", 1, 2,3 , 4, a=1, b=2, opt1="one", opt2="two")
+        assert result[0] == 4
 
 class TestArgsLenClass(unittest.TestCase):
 
@@ -398,6 +406,16 @@ class TestArgsLenClass(unittest.TestCase):
         result = Bar.foo("a", "b", a=1, b=2, one="one", two="two")
         assert result[0] == 2
 
+    def test_star_args_third(self):
+        class Bar:
+            @ArgsLen(2, 4, ftype=DecFuncEnum.METHOD)
+            def foo(self, arg1, arg2, *args, a, b, **kwargs):
+                return len(args), len(kwargs), (a, b), (arg1, arg2)
+        b = Bar()
+        result = b.foo("a1", "b2", 1, 2, a=1, b=2, opt1="one", opt2="two")
+        assert result[0] == 2
+        result = b.foo("a1", "b2", 1, 2, 3, 4, a=1, b=2, opt1="one", opt2="two")
+        assert result[0] == 4
 
 if __name__ == '__main__':
     unittest.main()
