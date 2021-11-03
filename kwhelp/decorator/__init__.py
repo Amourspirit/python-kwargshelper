@@ -33,7 +33,6 @@ class _DecBase(object):
     _rx_star = re.compile("^\*(\d*)$")
 
     def __init__(self, **kwargs):
-        self._signature = None
         self._ftype: DecFuncEnum = kwargs.get("ftype", None)
         if self._ftype is not None:
             if not isinstance(self._ftype, DecFuncEnum):
@@ -44,6 +43,7 @@ class _DecBase(object):
                         f"{self.__class__.__name__} requires arg 'ftype' to be a 'DecFuncType")
         else:
             self._ftype = DecFuncEnum.FUNCTION
+        self._cache = {}
 
     def _is_placeholder_arg(self, arg_name: str) -> bool:
         m = _DecBase._rx_star.match(arg_name)
@@ -54,17 +54,41 @@ class _DecBase(object):
     def _drop_arg_first(self) -> bool:
         return self._ftype.value > DecFuncEnum.METHOD_STATIC.value
 
-    def _get_args(self, args):
+    def _get_args(self, args: Iterable[object]):
         if self._drop_arg_first():
             return args[1:]
         return args
 
+    def _get_args_star(self, func: callable, args: Iterable[object]) -> Iterable[object]:
+        """
+        Get args accounting for ``*args`` postions in function and if function class method.
+
+        Args:
+            func (callable): function with args
+            args (Iterable[object]): function current args
+
+        Returns:
+            Iterable[object]: New args that may be a subset of all of orignial ``args``.
+        """
+        pos = self._get_star_args_pos(func)
+        drop_first = self._drop_arg_first()
+        i = 0
+        if pos > 0:
+            i += pos
+        if drop_first:
+            i += 1
+        if i > 0:
+            return args[i:]
+        return args
+
     def _get_signature(self, func) -> Signature:
-        if self._signature is None:
-            self._signature = signature(func)
-        return self._signature
+        sig = self._cache.get("signature", False)
+        if sig:
+            return sig
+        self._cache["signature"] = signature(func)
+        return self._cache["signature"]
     
-    def _get_args_dict(self, func, args, kwargs) -> Dict[str, object]:
+    def _get_args_dict(self, func: callable, args: Iterable[object], kwargs: Dict[str, object]) -> Dict[str, object]:
         # Positional argument cannot appear after keyword arguments
         # no *args after **kwargs def foo(**kwargs, *args) not valid
         # def foo(name, age, *args) not valid
@@ -183,7 +207,7 @@ class _DecBase(object):
             ord = {1: 'st', 2: 'nd', 3: 'rd'}.get(num % 10, 'th')
             return '{0}{1}'.format(num, ord)
 
-    def _get_star_args_pos(self, func) -> int:
+    def _get_star_args_pos(self, func: callable) -> int:
         """
         Gets the zero base postion of *args in a function.
 
@@ -193,6 +217,9 @@ class _DecBase(object):
         Returns:
             int: -1 if  *args not present; Otherwise zero based postion of *args
         """
+        result = self._cache.get("star_args_pos", None)
+        if not result is None:
+            return result
         sig = self._get_signature(func)
         args_pos = -1
         drop_first = self._drop_arg_first()
@@ -204,7 +231,8 @@ class _DecBase(object):
                     args_pos -= 1
                 break
             i += 1
-        return args_pos
+        self._cache["star_args_pos"] = args_pos
+        return self._cache["star_args_pos"]
 
 class _RuleBase(_DecBase):
     def _get_err(self, fn: callable, e: RuleError):
@@ -437,15 +465,13 @@ class ArgsLen(_DecBase):
                 result = result + "Expected Ranges: "
             result = result + str_rng + "."
         return result
+    
 
     def __call__(self, func: callable):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            # func_args_len = self._get_fn_args_len(func)
-            # if func_args_len = 0
-            _args_len = len(args)
-            if _args_len > 0 and self._drop_arg_first() is True:
-                _args_len -= 1
+            _args = self._get_args_star(func=func,args=args)
+            _args_len = len(_args)
             is_valid = False
             if _args_len > 0:
                 for i in self._lengths:
