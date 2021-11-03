@@ -473,7 +473,7 @@ class ArgsLen(_DecBase):
             _args = self._get_args_star(func=func,args=args)
             _args_len = len(_args)
             is_valid = False
-            if _args_len > 0:
+            if _args_len >= 0:
                 for i in self._lengths:
                     if _args_len == i:
                         is_valid = True

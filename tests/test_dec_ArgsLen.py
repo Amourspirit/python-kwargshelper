@@ -1,10 +1,21 @@
 import unittest
+from collections import namedtuple
+from enum import IntEnum, auto
 if __name__ == '__main__':
     import os
     import sys
     sys.path.append(os.path.realpath('.'))
 from kwhelp.decorator import ArgsLen, DecFuncEnum
 
+class Color(IntEnum):
+    RED = auto()
+    GREEN = auto()
+    BLUE = auto()
+
+    def __str__(self) -> str:
+        return self._name_
+
+RangeTuple = namedtuple('RangeTuple', ['start', 'end'])
 
 class TestArgsLen(unittest.TestCase):
 
@@ -25,6 +36,53 @@ class TestArgsLen(unittest.TestCase):
         with self.assertRaises(ValueError):
             @ArgsLen()
             def foo(*args): pass
+
+    def test_enum(self):
+        @ArgsLen(0, 2)
+        def foo(*args):
+            return len(args)
+        result = foo()
+        assert result == 0
+        result = foo(Color.RED, Color.BLUE)
+        assert result == 2
+        with self.assertRaises(ValueError):
+            foo(Color.RED, Color.BLUE, Color.GREEN)
+        with self.assertRaises(ValueError):
+            foo(Color.RED)
+
+    def test_tuple(self):
+        @ArgsLen(3)
+        def foo(*args):
+            return len(args)
+        result = foo(("a",1), ("b", 2), ("c", 3))
+        assert result == 3
+        with self.assertRaises(ValueError):
+            result = foo()
+        with self.assertRaises(ValueError):
+            foo("a", "b")
+        with self.assertRaises(ValueError):
+            foo("a")
+
+    def test_repeat_lens(self):
+        @ArgsLen(3, 3, 3, 3, 3)
+        def foo(*args):
+            return len(args)
+        result = foo("a", "b", "c")
+        assert result == 3
+        with self.assertRaises(ValueError):
+            result = foo()
+        with self.assertRaises(ValueError):
+            foo("a", "b")
+        with self.assertRaises(ValueError):
+            foo("a")
+
+
+    def test_name_tuple(self):
+        @ArgsLen(2)
+        def foo(*args):
+            return len(args)
+        result = foo(RangeTuple(0, 2), (2, 4))
+        assert result == 2
 
     def test_two_lens(self):
         @ArgsLen(3, 5)
@@ -66,6 +124,17 @@ class TestArgsLen(unittest.TestCase):
 
     def test_range(self):
         @ArgsLen((3,5))
+        def foo(*args):
+            return len(args)
+        result = foo("a", "b", "c")
+        assert result == 3
+        result = foo("a", "b", "c", "d")
+        assert result == 4
+        result = foo("a", "b", "c", "d", "e")
+        assert result == 5
+
+    def test_range_repeat(self):
+        @ArgsLen((3, 5), (3, 5), (3, 5), (3, 5))
         def foo(*args):
             return len(args)
         result = foo("a", "b", "c")
@@ -416,6 +485,62 @@ class TestArgsLenClass(unittest.TestCase):
         assert result[0] == 2
         result = b.foo("a1", "b2", 1, 2, 3, 4, a=1, b=2, opt1="one", opt2="two")
         assert result[0] == 4
+
+    def test_enum(self):
+        class Bar:
+            @ArgsLen(0, 2, ftype=DecFuncEnum.METHOD)
+            def foo(self, *args):
+                return len(args)
+        b = Bar()
+        result = b.foo()
+        assert result == 0
+        result = b.foo(Color.RED, Color.BLUE)
+        assert result == 2
+        with self.assertRaises(ValueError):
+            b.foo(Color.RED, Color.BLUE, Color.GREEN)
+        with self.assertRaises(ValueError):
+            b.foo(Color.RED)
+
+    def test_tuple(self):
+        @ArgsLen(3)
+        def foo(*args):
+            return len(args)
+        result = foo(("a", 1), ("b", 2), ("c", 3))
+        assert result == 3
+        with self.assertRaises(ValueError):
+            result = foo()
+        with self.assertRaises(ValueError):
+            foo("a", "b")
+        with self.assertRaises(ValueError):
+            foo("a")
+
+    def test_name_tuple(self):
+        class Words:
+            @ArgsLen(0, 2, 4, ftype=DecFuncEnum.METHOD)
+            def __init__(self, *args):
+                self._ranges  = []
+                self._end = 0
+                self._value = 0
+                self.append(*args)
+
+            @ArgsLen(0, 1, 2, 4, ftype=DecFuncEnum.METHOD)
+            def append(self, *args):
+                return [*args]
+        t = Words()
+        result = t.append(RangeTuple(0, 2))
+        assert len(result) == 1
+        result = t.append(RangeTuple(0, 2), (2, 4))
+        assert len(result) == 2
+        result = t.append(RangeTuple(0, 2), (2, 4), (6, 8, 10), 2)
+        assert len(result) == 4
+        with self.assertRaises(ValueError):
+            result = t.append(RangeTuple(0, 2), (2, 4), (6, 8, 10))
+        with self.assertRaises(ValueError):
+            Words(1)
+        with self.assertRaises(ValueError):
+            Words(1, 1, 1)
+        with self.assertRaises(ValueError):
+            Words(1, 1, 1, 1, 1)
 
 if __name__ == '__main__':
     unittest.main()
