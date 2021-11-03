@@ -72,17 +72,13 @@ class _DecBase(ABC):
         sig = signature(method)
         name_values = []
         i = 0
-        args_first = False
+        args_pos = -1
         drop_first = self._drop_arg_first()
-        if drop_first and len(args) > 0:
-            _args = args[1:]
-        else:
-            _args = args
-        arg_len = len(_args)
         for k, v in sig.parameters.items():
-            if v.kind == _ParameterKind.VAR_POSITIONAL:  # args, can only be in first postition
-                if (drop_first is True and i == 1) or i == 0:
-                    args_first = True
+            if v.kind == _ParameterKind.VAR_POSITIONAL:  # args
+                args_pos = i
+                if drop_first:
+                    args_pos -= 1
                 continue
             if v.kind == _ParameterKind.VAR_KEYWORD:  # kwargs
                 continue
@@ -91,31 +87,73 @@ class _DecBase(ABC):
             else:
                 name_values.append((k, NO_THING))
             i += 1
-        if drop_first and i > 0:
+        arg_offset = 0 if args_pos == -1 else args_pos
+        if drop_first and len(args) > arg_offset:
+            _args = args[(arg_offset + 1):]
+        else:
+            _args = args[arg_offset:]
+        arg_len = len(_args)
+        name_values_len = len(name_values)
+        if drop_first and name_values_len > 0:
             del name_values[0]
+            name_values_len -= 1
         offset = 0
-        if args_first is True and len(name_values) > 0:
+        if args_pos >= 0 and name_values_len > 0:
+            # count how many name, values from default
+            # are default values
             reversed_list = list(reversed(name_values))
             for k, v in reversed_list:
                 if not v is NO_THING:
                     offset += 1
                 else:
                     break
+
         name_defaults = {}
-        if args_first is True:
+        # add first keys of name_values
+        if args_pos > 0:
+            # there are name values before *args in function
+            # add first args so they are in the same order as entered.
+            for j in range(args_pos):
+                nv = name_values[j]
+                name_defaults[nv[0]] = nv[1]
+        # add args
+        if args_pos >= 0:
+            # add args that are positional arguments
             for j, arg in enumerate(_args):
-                key = "*" + str(j)
+                key = "*" + str(j + arg_offset)
                 name_defaults[key] = arg
-        for k, v in name_values:
-            name_defaults[k] = v
-        argnames = []
-        for j in range(len(name_values) - offset):
-            el = name_values[j]
-            argnames.append(el[0])
-        if args_first is False and arg_len > 0:
-            d = {**dict(zip(argnames, _args[:len(argnames)]))}
+
+        if args_pos > 0:
+            # add any remaining keys for name_values
+            remaining = len(name_values) - args_pos
+            if remaining > 0:
+                for j in range(remaining):
+                    index = j + args_pos
+                    nv = name_values[index]
+                    name_defaults[nv[0]] = nv[1]
+        else:
+            # there were no positional args before *args keyword so
+            # all all the name, values after postitioan args.
+            for k, v in name_values:
+                name_defaults[k] = v
+        if args_pos != 0 and arg_len > 0:
+            # if *args are not in position 0 and there are *args then
+            # make a dictionary of name values and update the
+            # name_defaults dictionary.
+            argnames = []
+            for j in range(len(name_values) - offset):
+                el = name_values[j]
+                argnames.append(el[0])
+            if drop_first:
+                _zip_args = args[1:]
+            else:
+                _zip_args = args
+            d = {**dict(zip(argnames, _zip_args[:len(argnames)]))}
             name_defaults.update(d)
         if len(kwargs) > 0:
+            # update name_default with any kwargs that are passed in.
+            # this will update any default values with the values passed
+            # into function at call time.
             name_defaults.update(kwargs)
         return name_defaults
 
@@ -242,101 +280,6 @@ class AcceptedTypes(_DecBase):
             self._kwargs = {**kwargs}
         else:
             self._kwargs = {}
-    
-    def _get_args_dict(self, method, args, kwargs):
-        # Positional argument cannot appear after keyword arguments
-        # no *args after **kwargs def foo(**kwargs, *args) not valid
-        # def foo(name, age, *args) not valid
-        #
-        # When only args are passed in (no **kwargs present) with named args then
-        # the last named args with defaults are like additional args
-        sig = signature(method)
-        name_values = []
-        i = 0
-        args_pos = -1
-        drop_first = self._drop_arg_first()
-        for k, v in sig.parameters.items():
-            if v.kind == _ParameterKind.VAR_POSITIONAL:  # args
-                args_pos = i
-                if drop_first:
-                    args_pos -= 1
-                continue
-            if v.kind == _ParameterKind.VAR_KEYWORD:  # kwargs
-                continue
-            if not v.default is inspect._empty:
-                name_values.append((k, v.default))
-            else:
-                name_values.append((k, NO_THING))
-            i += 1
-        arg_offset = 0 if args_pos == -1 else args_pos
-        if drop_first and len(args) > arg_offset:
-            _args = args[(arg_offset + 1):]
-        else:
-            _args = args[arg_offset:]
-        arg_len = len(_args)
-        name_values_len = len(name_values)
-        if drop_first and name_values_len > 0:
-            del name_values[0]
-            name_values_len -= 1
-        offset = 0
-        if args_pos >= 0 and name_values_len > 0:
-            # count how many name, values from default
-            # are default values
-            reversed_list = list(reversed(name_values))
-            for k, v in reversed_list:
-                if not v is NO_THING:
-                    offset += 1
-                else:
-                    break
-        
-        name_defaults = {}
-        # add first keys of name_values
-        if args_pos > 0:
-            # there are name values before *args in function
-            # add first args so they are in the same order as entered.
-            for j in range(args_pos):
-                nv = name_values[j]
-                name_defaults[nv[0]] = nv[1]
-        # add args
-        if args_pos >= 0:
-            # add args that are positional arguments
-            for j, arg in enumerate(_args):
-                key = "*" + str(j + arg_offset)
-                name_defaults[key] = arg
-        
-        if args_pos > 0:
-            # add any remaining keys for name_values
-            remaining = len(name_values) - args_pos
-            if remaining > 0:
-                for j in range(remaining):
-                    index = j + args_pos
-                    nv = name_values[index]
-                    name_defaults[nv[0]] = nv[1]
-        else:
-            # there were no positional args before *args keyword so
-            # all all the name, values after postitioan args.
-            for k, v in name_values:
-                name_defaults[k] = v
-        if args_pos != 0 and arg_len > 0:
-            # if *args are not in position 0 and there are *args then
-            # make a dictionary of name values and update the
-            # name_defaults dictionary.
-            argnames = []
-            for j in range(len(name_values) - offset):
-                el = name_values[j]
-                argnames.append(el[0])
-            if drop_first:
-                _zip_args = args[1:]
-            else:
-                _zip_args = args
-            d = {**dict(zip(argnames, _zip_args[:len(argnames)]))}
-            name_defaults.update(d)
-        if len(kwargs) > 0:
-            # update name_default with any kwargs that are passed in.
-            # this will update any default values with the values passed
-            # into function at call time.
-            name_defaults.update(kwargs)
-        return name_defaults
 
     def _get_formated_types(self, types: Iterator[type]) -> str:
         result = ''
