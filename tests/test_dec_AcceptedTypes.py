@@ -52,6 +52,22 @@ class TestAcceptedTypesDecorators(unittest.TestCase):
         result = req_test(one=4.5, two=2)
         assert result == False
 
+    def test_accepted_opt_return_args(self):
+        @AcceptedTypes((int, str), (int, str), opt_return=False)
+        def req_test(*args):
+            return [*args]
+        result = req_test(1, 2)
+        assert result[0] == 1
+        assert result[1] == 2
+        result = req_test("a", "b")
+        assert result[0] == "a"
+        assert result[1] == "b"
+        result = req_test(1)
+        assert result == False
+        result = True
+        result = req_test(4.5, 2)
+        assert result == False
+
     def test_accepted_optional_args(self):
 
         @AcceptedTypes((int, str), (int, str), int)
