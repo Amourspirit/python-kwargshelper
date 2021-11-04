@@ -1,7 +1,7 @@
 # coding: utf-8
 from abc import ABC, abstractmethod
 import numbers
-
+from ..helper import is_iterable
 # region Interface
 
 
@@ -676,7 +676,7 @@ class RuleBool(IRule):
         Validates that value to assign is a bool
 
         Raises:
-            ValueError: If ``raise_errors`` is ``True`` and ``field_value`` is not instance of bool.
+            TypeError: If ``raise_errors`` is ``True`` and ``field_value`` is not instance of bool.
 
         Returns:
             bool: ``True`` if ``field_value`` is a bool; Otherwise, ``False``.
@@ -688,3 +688,52 @@ class RuleBool(IRule):
             return False
         return True
 # endregion boolean
+
+# region Iterable
+
+
+class RuleIterable(IRule):
+    """
+     Rule that matched only if value is iterable such as list, tuple, set.
+    """
+
+    def validate(self) -> bool:
+        """
+        Validates that value to assign is iterable
+
+        Raises:
+            TypeError: If ``raise_errors`` is ``True`` and ``field_value`` is not iterable.
+
+        Returns:
+            bool: ``True`` if ``field_value`` is a iterable; Otherwise, ``False``.
+        """
+        if not is_iterable(self.field_value):
+            if self.raise_errors:
+                raise TypeError(self._get_type_error_msg(
+                    self.field_value, self.key, 'Iterable'))
+            return False
+        return True
+
+
+class RuleNotIterable(IRule):
+    """
+     Rule that matched only if value is not iterable.
+    """
+
+    def validate(self) -> bool:
+        """
+        Validates that value to assign is not iterable
+
+        Raises:
+            TypeError: If ``raise_errors`` is ``True`` and ``field_value`` is iterable.
+
+        Returns:
+            bool: ``True`` if ``field_value`` is a not iterable; Otherwise, ``False``.
+        """
+        if is_iterable(self.field_value):
+            if self.raise_errors:
+                raise TypeError(self._get_type_error_msg(
+                    self.field_value, self.key, 'Iterable'))
+            return False
+        return True
+# region Iterable
