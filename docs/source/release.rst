@@ -1,6 +1,14 @@
 Release Notes
 =============
 
+Version 2.3.0
+-------------
+
+Added Rules:
+
+    * RuleIterable
+    * RuleNotIterable
+
 Version 2.2.1
 -------------
 
