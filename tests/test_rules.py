@@ -544,7 +544,5 @@ class TestRules(unittest.TestCase):
             r.validate()
     # endregion Iterable
 
-
-
 if __name__ == '__main__':
     unittest.main()

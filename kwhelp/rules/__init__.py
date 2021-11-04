@@ -1,6 +1,7 @@
 # coding: utf-8
 from abc import ABC, abstractmethod
 import numbers
+from typing import Optional
 from ..helper import is_iterable
 # region Interface
 
@@ -47,9 +48,23 @@ class IRule(ABC):
         '''Gets attrib field and value are valid'''
     # endregion Abstract Methods
 
-    def _get_type_error_msg(self, arg: object, arg_name: str, expected_type: str) -> str:
-        result = f"Argument Error: '{arg_name}' is expecting type of '{expected_type}'. Got type of '{type(arg).__name__}'"
-        return result
+    def _get_type_error_msg(self, arg: Optional[object] = None, arg_name: Optional[str] = None, expected_type: Optional[str] = None) -> str:
+        _arg = self.field_value if arg is None else arg
+        _arg_name = self.key if arg_name is None else arg_name
+        if expected_type:
+            msg = f"Argument Error: '{_arg_name}' is expecting type of '{expected_type}'. Got type of '{type(_arg).__name__}'"
+        else:
+            msg = f"Argument Error: '{_arg_name}' is not expecting '{type(_arg).__name__}'"
+        return msg
+
+    def _get_not_type_error_msg(self, arg: Optional[object] = None, arg_name: Optional[str] = None, not_type: Optional[str] = None) -> str:
+        _arg = self.field_value if arg is None else arg
+        _arg_name = self.key if arg_name is None else arg_name
+        if not_type:
+            msg = f"Argument Error: '{_arg_name}' is expecting non '{not_type}'. Got type of '{type(_arg).__name__}'"
+        else:
+            msg = f"Argument Error: '{_arg_name}' is expecting non '{type(_arg).__name__}'."
+        return msg
     # region Properties
 
     @property
@@ -274,8 +289,7 @@ class RuleInt(IRule):
         # print(int(False)) 0
         if not isinstance(self.field_value, int) or isinstance(self.field_value, bool):
             if self.raise_errors:
-                raise TypeError(self._get_type_error_msg(
-                    self.field_value, self.key, 'int'))
+                raise TypeError(self._get_type_error_msg(expected_type='int'))
             return False
         return True
 
@@ -683,8 +697,7 @@ class RuleBool(IRule):
         """
         if not isinstance(self.field_value, bool):
             if self.raise_errors:
-                raise TypeError(self._get_type_error_msg(
-                    self.field_value, self.key, 'bool'))
+                raise TypeError(self._get_type_error_msg(expected_type='bool'))
             return False
         return True
 # endregion boolean
@@ -709,8 +722,7 @@ class RuleIterable(IRule):
         """
         if not is_iterable(self.field_value):
             if self.raise_errors:
-                raise TypeError(self._get_type_error_msg(
-                    self.field_value, self.key, 'Iterable'))
+                raise TypeError(self._get_type_error_msg(expected_type="iterable"))
             return False
         return True
 
@@ -732,8 +744,9 @@ class RuleNotIterable(IRule):
         """
         if is_iterable(self.field_value):
             if self.raise_errors:
-                raise TypeError(self._get_type_error_msg(
-                    self.field_value, self.key, 'Iterable'))
+                raise TypeError(self._get_not_type_error_msg(not_type="iterable"))
             return False
         return True
-# region Iterable
+    
+    
+# endregion Iterable
