@@ -1,5 +1,5 @@
-ArgsLen Usage
-=============
+ArgsMinMax Usage
+================
 
 :py:class:`~.decorator.ArgsLen` decorartor that sets the number of args that can be added to a function.
 

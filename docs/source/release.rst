@@ -4,6 +4,8 @@ Release Notes
 Version 2.3.0
 -------------
 
+Added decorator ``ArgsMinMax``
+
 Added Rules:
 
     * RuleIterable

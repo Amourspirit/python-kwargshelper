@@ -533,7 +533,7 @@ class ArgsLen(_DecBase):
                             is_valid = True
                             break
             if is_valid is False:
-                if not self._opt_return is NO_THING:
+                if self._is_opt_return():
                     return self._opt_return
                 msg = f"Invalid number of args pass into '{func.__name__}'.\n{self._get_valid_counts()}"
                 msg = msg + f" Got '{_args_len}' args."
@@ -543,6 +543,83 @@ class ArgsLen(_DecBase):
         # wrapper.is_types_valid = self.is_valid
         return wrapper
 
+
+class ArgsMinMax(_DecBase):
+    """
+    Decorartor that sets the min and or max number of args that can be added to a function
+
+
+    See Also:
+        :doc:`../../usage/Decorator/ArgsMinMax`
+    """
+
+    def __init__(self, min: Optional[int]=0, max: Optional[int] = None, **kwargs):
+        """
+        Constructor
+
+        Args:
+            min (int, optional): Min number of args for a function. Defaults to 0.
+            max (int, optional): Max number of args for a function. Defaults to None.
+
+        Keyword Arguments:
+            ftype (DecFuncType, optional): Type of function that decorator is applied on.
+                Default ``DecFuncType.FUNCTION``
+            opt_return (object, optional): Return value when decorator is invalid.
+                By default an error is rasied when validation fails. If ``opt_return`` is
+                supplied then it will be return when validation fails and no error will be raised.
+        """
+        super().__init__(**kwargs)
+        self._min = int(min)
+        if isinstance(max, int):
+            self._max = max
+        else:
+            self._max = None
+    
+    def _get_min_max(self) -> Tuple[int, int]:
+        _max = -1 if self._max is None else self._max
+        _min = self._min
+        return _min, _max
+    
+    def _get_valid_counts(self) -> str:
+
+        _min, _max  = self._get_min_max()
+        msg = ""
+        if _min > 0:
+            msg = msg + "Expected min of " + str(_min) + "."
+        if _max >= 0:
+            if _min > 0:
+                msg = msg + " "
+            msg = msg + "Expected max of " + str(_max) + "."
+        return msg
+
+    def _get_error_msg(self, func: callable, args_len: int) -> str:
+        msg = f"Invalid number of args pass into '{func.__name__}'.\n{self._get_valid_counts()}"
+        msg = msg + f" Got '{args_len}' args."
+        msg = msg + f"\n{self.__class__.__name__} decorator Error."
+        return msg
+    
+    def __call__(self, func: callable):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            _min, _max = self._get_min_max()
+            has_rules = _min > 0 or _max >= 0
+            if has_rules:
+                _args = self._get_args_star(func=func, args=args)
+                _args_len = len(_args)
+                is_valid = True
+                if _min > 0:
+                    if _args_len < _min:
+                        is_valid = False
+                if is_valid == True and _max >= 0:
+                    if _args_len > _max:
+                        is_valid = False
+                if is_valid is False:
+                    if self._is_opt_return():
+                        return self._opt_return
+                    raise ValueError(self._get_error_msg(func=func,args_len=_args_len))
+            return func(*args, **kwargs)
+        # wrapper.is_types_valid = self.is_valid
+        return wrapper
 
 class ReturnRuleAll(_RuleBase):
     """

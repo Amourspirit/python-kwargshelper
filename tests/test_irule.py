@@ -94,6 +94,16 @@ class TestIRule(unittest.TestCase):
         with self.assertRaises(TypeError):
             rt.raise_errors = 22
 
+    def test_type_err_msg(self):
+        rt = RuleTester(key="test",
+                        name="tests",
+                        value=111,
+                        raise_errors=False,
+                        originator=self)
+        msg = rt._get_type_error_msg()
+        assert len(msg) > 0
+        msg = rt._get_not_type_error_msg()
+        assert len(msg) > 0
 
 if __name__ == '__main__':
     unittest.main()
