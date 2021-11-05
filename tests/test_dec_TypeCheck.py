@@ -106,7 +106,6 @@ class TestTypeCheck(unittest.TestCase):
         assert result == 23.1
         assert add_numbers.is_types_valid == True
 
-
 class TestTypeCheckClass(unittest.TestCase):
     def test_type_check_gen(self):
         class Foo:

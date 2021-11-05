@@ -139,6 +139,27 @@ class TestTypeCheckKw(unittest.TestCase):
         result = foo(first=1, last=100, hours=12.5, name=7)
         assert result == None
 
+    def test_kw_type_checker_dec_arg_index_three_list(self):
+
+        @TypeCheckKw(arg_info={"one": 0, "two": 0, "three": [int]}, types=[(int, float)])
+        def type_test(one, two, three) -> float:
+            return float(one) + float(two) + float(three)
+
+        result = type_test(10, 12.3, 1)
+        assert result == 23.3
+
+        with self.assertRaises(TypeError):
+            type_test(19, 1, 3.4)
+        with self.assertRaises(TypeError):
+            type_test(two=19, one=2.2, three="2")
+
+    def test_kw_type_checker_dec_empty_type(self):
+        @TypeCheckKw(arg_info={"one": 0}, types=[[]])
+        def type_test(one, two) -> float:
+            return float(one) + float(two)
+
+        result = type_test(10, 12.3)
+        assert result == 22.3
 class TestTypeCheckKwClass(unittest.TestCase):
     def test_type_checkkw_gen(self):
         class Bar:
