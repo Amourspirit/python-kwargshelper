@@ -24,6 +24,24 @@ class TestRequiredDecorators(unittest.TestCase):
         with self.assertRaises(ValueError):
             result = req_test(two=2)
 
+    def test_required_opt_return(self):
+        @RequireArgs("one", "two", opt_return=False)
+        def req_test(**kwargs) -> float:
+            return (kwargs.get("one", None), kwargs.get("two", None))
+
+        result = req_test(one=1, two=2)
+        assert result[0] == 1
+        assert result[1] == 2
+        result = req_test(two="b", one="a")
+        assert result[0] == "a"
+        assert result[1] == "b"
+        result = True
+        result = req_test(one=1)
+        assert result == False
+        result = True
+        result = req_test(two=2)
+        assert result == False
+
     def test_required_with_args(self):
 
         @RequireArgs("one", "two")
@@ -86,6 +104,25 @@ class TestClsRequiredDecorators(unittest.TestCase):
             result = f.req_test(one=1)
         with self.assertRaises(ValueError):
             result = f.req_test(two=2)
+
+    def test_required_opt_return(self):
+        class Foo:
+            @RequireArgs("one", "two", ftype=DecFuncEnum.METHOD, opt_return=False)
+            def req_test(self, **kwargs) -> float:
+                return (kwargs.get("one", None), kwargs.get("two", None))
+        f = Foo()
+        result = f.req_test(one=1, two=2)
+        assert result[0] == 1
+        assert result[1] == 2
+        result = f.req_test(two="b", one="a")
+        assert result[0] == "a"
+        assert result[1] == "b"
+        result = True
+        result = f.req_test(one=1)
+        assert result == False
+        result = True
+        result = f.req_test(two=2)
+        assert result == False
 
     def test_required_with_args(self):
         class Foo:

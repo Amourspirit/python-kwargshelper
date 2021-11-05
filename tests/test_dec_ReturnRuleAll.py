@@ -11,7 +11,6 @@ from kwhelp.exceptions import RuleError
 
 class TestReturnRuleAllDecorators(unittest.TestCase):
     def test_return_gen(self):
-
         @ReturnRuleAll(rules.RuleInt)
         def req_test(*arg):
             return sum(arg)
@@ -21,6 +20,18 @@ class TestReturnRuleAllDecorators(unittest.TestCase):
         assert result == - 12
         with self.assertRaises(RuleError):
             result = req_test(2, 2.5)
+
+    def test_return_opt_return(self):
+        @ReturnRuleAll(rules.RuleInt, opt_return=None)
+        def req_test(*arg):
+            return sum(arg)
+        result = req_test(2, 4)
+        assert result == 6
+        result = req_test(-2, -10)
+        assert result == - 12
+        result = False
+        result = req_test(2, 2.5)
+        assert result == None
 
     def test_return_none(self):
         @ReturnRuleAll(rules.RuleNone)
@@ -45,6 +56,20 @@ class TestReturnRuleAllDecoratorsClass(unittest.TestCase):
         assert result == -12
         with self.assertRaises(RuleError):
             result = t.req_test(2, 2.5)
+
+    def test_return_opt_return(self):
+        class T:
+            @ReturnRuleAll(rules.RuleInt, ftype=DecFuncEnum.METHOD, opt_return=None)
+            def req_test(self, *arg):
+                return sum(arg)
+        t = T()
+        result = t.req_test(2, 4)
+        assert result == 6
+        result = t.req_test(-2, -10)
+        assert result == -12
+        result = False
+        result = t.req_test(2, 2.5)
+        assert result == None
 
     def test_return_static(self):
         class T:

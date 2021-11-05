@@ -1,3 +1,4 @@
+from typing import Optional
 import unittest
 from collections import namedtuple
 from enum import IntEnum, auto
@@ -36,6 +37,22 @@ class TestArgsLen(unittest.TestCase):
         with self.assertRaises(ValueError):
             @ArgsLen()
             def foo(*args): pass
+
+    def test_opt_return(self):
+        @ArgsLen(3, opt_return=None)
+        def foo(*args):
+            return len(args)
+        result = foo("a", "b", "c")
+        assert result == 3
+        result = True
+        result = foo()
+        assert result == None
+        result = True
+        result = foo("a", "b")
+        assert result == None
+        result = True
+        result = foo("a")
+        assert result == None
 
     def test_enum(self):
         @ArgsLen(0, 2)
@@ -263,6 +280,20 @@ class TestArgsLen(unittest.TestCase):
         result = foo("a1", "b2", 1, 2,3 , 4, a=1, b=2, opt1="one", opt2="two")
         assert result[0] == 4
 
+    def test_return_gen(self):
+        @ArgsLen(3, 5, opt_return=False)
+        def foo(*args):
+            return [*args]
+        result = foo()
+        assert result == False
+    
+    def test_return_none(self):
+        @ArgsLen(3, 5, opt_return=None)
+        def foo(*args):
+            return [*args]
+        result = foo()
+        assert result == None
+
 class TestArgsLenClass(unittest.TestCase):
 
     def test_gen(self):
@@ -279,6 +310,24 @@ class TestArgsLenClass(unittest.TestCase):
             b.foo("a", "b")
         with self.assertRaises(ValueError):
             b.foo("a")
+
+    def test_opt_return(self):
+        class Bar:
+            @ArgsLen(3, ftype=DecFuncEnum.METHOD, opt_return=None)
+            def foo(self, *args):
+                return len(args)
+        b = Bar()
+        result = b.foo("a", "b", "c")
+        assert result == 3
+        result = True
+        result = b.foo()
+        assert result == None
+        result = True
+        result = b.foo("a", "b")
+        assert result == None
+        result = True
+        result = b. foo("a")
+        assert result == None
 
     def test_two_lens(self):
         class Bar:
@@ -541,6 +590,15 @@ class TestArgsLenClass(unittest.TestCase):
             Words(1, 1, 1)
         with self.assertRaises(ValueError):
             Words(1, 1, 1, 1, 1)
+
+    def test_return_gen(self):
+        class Bar:
+            @ArgsLen(3, 5, opt_return=False, ftype=DecFuncEnum.METHOD)
+            def foo(self, *args):
+                return [*args]
+        b = Bar()
+        result = b.foo()
+        assert result == False
 
 if __name__ == '__main__':
     unittest.main()

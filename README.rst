@@ -1,7 +1,7 @@
 Welcome to kwargs’s docs!
 =========================
 
-|codecov| |gws| |lic| |pver| |pwheel|
+|codecov| |gws| |lic| |pver| |pwheel| |github|
 
 kwargshelper
 ------------
@@ -100,3 +100,7 @@ The following example ensures all function args are a positive ``int`` or a posi
 
 .. |pwheel| image:: https://img.shields.io/pypi/wheel/kwargshelper
     :alt: PyPI - Wheel
+
+.. |github| image:: https://img.shields.io/badge/GitHub-100000?style=plastic&logo=github&logoColor=white
+    :target: https://github.com/Amourspirit/python-kwargshelper
+    :alt: Github

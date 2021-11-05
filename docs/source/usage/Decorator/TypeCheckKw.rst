@@ -4,6 +4,13 @@ TypeCheckKw Usage
 :py:class:`~.decorator.TypeCheckKw` decorator allows each arg of a function match one of the rules specified.
 Each arg can have seperate rules applied.
 
+Includes features:
+
+    * :doc:`/source/general/dec_feature/ftype`
+    * :doc:`/source/general/dec_feature/opt_return`
+    * :doc:`/source/general/dec_feature/raise_error`
+    * :doc:`/source/general/dec_feature/type_instance_check`
+
 :py:class:`~.decorator.TypeCheckKw` constructor args ``arg_info`` and ``rules``  work together.
 ``arg_info`` is a dictionary with a key of ``str`` that matches an arg name of the function that
 is being decorated.

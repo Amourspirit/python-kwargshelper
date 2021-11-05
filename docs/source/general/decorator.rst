@@ -14,6 +14,15 @@ The following example ensures all function args are a positive ``int`` or a posi
 
 .. include:: /source/inc/ex/RuleCheckAny_pos.rst
 
+Features
+--------
+
+.. toctree::
+    :titlesonly:
+    :glob:
+
+    dec_feature/*
+
 Decorator Index
 ---------------
 

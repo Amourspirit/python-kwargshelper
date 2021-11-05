@@ -1,7 +1,12 @@
 ArgsLen Usage
-===================
+=============
 
 :py:class:`~.decorator.ArgsLen` decorartor that sets the number of args that can be added to a function.
+
+Includes features:
+
+    * :doc:`/source/general/dec_feature/ftype`
+    * :doc:`/source/general/dec_feature/opt_return`
 
 Single Length
 -------------
@@ -10,6 +15,8 @@ Decorator can be applied with a single set Length. In the following example
 if anything other than ``3`` args are passed into ``foo`` a ``ValueError`` will be raised
 
 .. code-block:: python
+
+    from kwhelp.decorator import ArgsLen
 
     @ArgsLen(3)
     def foo(*args):
@@ -38,6 +45,8 @@ Multiple Lengths
 It is possible to allow more then one length to function by passing in multilple ``int`` values to decorator.
 
 .. code-block:: python
+
+    from kwhelp.decorator import ArgsLen
 
     @ArgsLen(3, 5)
     def foo(*args):
@@ -79,6 +88,8 @@ Note that 1, 2, 6 or greater than 9 args will result in a ``ValueError``.
 
 .. code-block:: python
 
+    from kwhelp.decorator import ArgsLen
+
     @ArgsLen((3, 5), (7, 9))
     def foo(*args):
         return len(args)
@@ -94,6 +105,8 @@ Passing in ``3`` args.
 Passing in ``8`` args.
 
 .. code-block:: python
+
+    from kwhelp.decorator import ArgsLen
 
     >>> result = foo("a", "b", "c", "d", "e", "f", "g", "h")
     >>> print(result)
@@ -117,6 +130,8 @@ The following example allows 3, 4, 5, 7, 8, 9 args.
 Note that 1, 2, 6 or greater than 9 args will result in a ``ValueError``.
 
 .. code-block:: python
+
+    from kwhelp.decorator import ArgsLen
 
     @ArgsLen(3, 4, 5, (7, 9))
     def foo(*args):
@@ -158,6 +173,8 @@ Normal class
 
 .. code-block:: python
 
+    from kwhelp.decorator import ArgsLen
+
     class Foo:
         @ArgsLen(0, (2, 4), ftype=DecFuncEnum.METHOD)
         def __init__(self, *args): pass
@@ -170,6 +187,8 @@ Static method
 
 .. code-block:: python
 
+    from kwhelp.decorator import ArgsLen
+
     class Foo:
         @staticmethod
         @ArgsLen(3, 5, ftype=DecFuncEnum.METHOD_STATIC)
@@ -179,6 +198,8 @@ Class method
 ++++++++++++
 
 .. code-block:: python
+
+    from kwhelp.decorator import ArgsLen
 
     class Foo:
         @staticmethod

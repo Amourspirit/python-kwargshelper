@@ -4,6 +4,13 @@ AcceptedTypes Usage
 :py:class:`~.decorator.AcceptedTypes` Decorator that decorates methods that requires
 args to match types specificed.
 
+Includes features:
+
+    * :doc:`/source/general/dec_feature/type_instance_check`
+    * :doc:`/source/general/dec_feature/ftype`
+    * :doc:`/source/general/dec_feature/opt_return`
+
+
 Normal Function
 ---------------
 

@@ -3,6 +3,11 @@ RequireArgs Usage
 
 :py:class:`~.decorator.RequireArgs` decorator defines required args for ``**kwargs`` of a function.
 
+Includes features:
+
+    * :doc:`/source/general/dec_feature/ftype`
+    * :doc:`/source/general/dec_feature/opt_return`
+
 .. code-block:: python
 
     from kwhelp.decorator import TypeCheckKw, RequireArgs

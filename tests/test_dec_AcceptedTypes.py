@@ -32,6 +32,42 @@ class TestAcceptedTypesDecorators(unittest.TestCase):
         with self.assertRaises(TypeError):
             result = req_test(one=4.5, two=2)
     
+    def test_accepted_opt_return(self):
+        @AcceptedTypes((int, str), (int, str), opt_return=False)
+        def req_test(**kwargs):
+            return (kwargs.get("one"), kwargs.get("two"))
+
+        result = req_test(one=1, two=2)
+        assert result[0] == 1
+        assert result[1] == 2
+        result = req_test(two="b", one="a")
+        assert result[0] == "a"
+        assert result[1] == "b"
+        result = req_test(one=1)
+        assert result == False
+        result = True
+        result = req_test(two=2)
+        assert result == False
+        result = True
+        result = req_test(one=4.5, two=2)
+        assert result == False
+
+    def test_accepted_opt_return_args(self):
+        @AcceptedTypes((int, str), (int, str), opt_return=False)
+        def req_test(*args):
+            return [*args]
+        result = req_test(1, 2)
+        assert result[0] == 1
+        assert result[1] == 2
+        result = req_test("a", "b")
+        assert result[0] == "a"
+        assert result[1] == "b"
+        result = req_test(1)
+        assert result == False
+        result = True
+        result = req_test(4.5, 2)
+        assert result == False
+
     def test_accepted_optional_args(self):
 
         @AcceptedTypes((int, str), (int, str), int)
@@ -427,6 +463,25 @@ class TestAcceptedTypesClassDecorators(unittest.TestCase):
             b.myfunc(1.33, "two", 3, 22, 5)
         with self.assertRaises(TypeError):
             b.myfunc(1.33, "two", 3, Color.BLUE, 5.5)
+
+    def test_accepted_opt_return(self):
+        class Bar:
+            @AcceptedTypes((int, str), (int, str), opt_return=False, ftype=DecFuncEnum.METHOD)
+            def req_test(self, **kwargs):
+                return (kwargs.get("one"), kwargs.get("two"))
+        b = Bar()
+        result = b.req_test(one=1, two=2)
+        assert result[0] == 1
+        assert result[1] == 2
+        result = b.req_test(two="b", one="a")
+        assert result[0] == "a"
+        assert result[1] == "b"
+        result = b.req_test(one=1)
+        assert result == False
+        result = b.req_test(two=2)
+        assert result == False
+        result = b.req_test(one=4.5, two=2)
+        assert result == False
 
 if __name__ == '__main__':
     unittest.main()

@@ -6,7 +6,7 @@ if __name__ == '__main__':
     sys.path.append(os.path.realpath('.'))
 from kwhelp import rules
 
-
+# region Test Helpers
 class TestObj:
     
     def __init__(self):
@@ -20,7 +20,7 @@ class TestRule(rules.IRule):
                 raise ValueError("Expected None")
             return False
         return True
-
+# endregion Test Helpers
 class TestRules(unittest.TestCase):
     def setUp(self):
         self.obj = TestObj()
@@ -40,6 +40,7 @@ class TestRules(unittest.TestCase):
         r.raise_errors = True
         with self.assertRaises(ValueError):
             r.validate()
+
 
     # region test IRule
     def test_rule_constructor(self):
@@ -436,7 +437,9 @@ class TestRules(unittest.TestCase):
         r.field_value = " "
         with self.assertRaises(ValueError):
             r.validate()
+    # endregion String
 
+    # region bool
     def test_RuleBool(self):
         r = self.create(rule=rules.RuleBool, val=True)
         self.assertTrue(r.validate())
@@ -453,7 +456,9 @@ class TestRules(unittest.TestCase):
         with self.assertRaises(TypeError):
             r.validate()
 
+    # endregion bool
 
+    #region Byte
     def test_RuleByteUnsigned(self):
         class Foo:
             pass
@@ -501,7 +506,43 @@ class TestRules(unittest.TestCase):
         assert rule.validate() == False
         rule.field_value = 1.3
         assert rule.validate() == False
+    # endregion byte
 
-    # endregion String
+    # region Iterable
+    def test_RuleIterable(self):
+        r = self.create(rule=rules.RuleIterable, val=[0, 1])
+        self.assertTrue(r.validate())
+        r.field_value = (1, 2)
+        self.assertTrue(r.validate())
+        r.field_value = set([1, 2])
+        self.assertTrue(r.validate())
+        r.field_value = 44
+        self.assertFalse(r.validate())
+        r.field_value = ""
+        self.assertFalse(r.validate())
+        r.field_value = False
+        self.assertFalse(r.validate())
+        r.raise_errors = True
+        with self.assertRaises(TypeError):
+            r.validate()
+
+    def test_RuleNotIterable(self):
+        r = self.create(rule=rules.RuleNotIterable, val=1)
+        self.assertTrue(r.validate())
+        r.field_value = (1, 2)
+        self.assertFalse(r.validate())
+        r.field_value = 44
+        self.assertTrue(r.validate())
+        r.field_value = ""
+        self.assertTrue(r.validate())
+        r.field_value = False
+        self.assertTrue(r.validate())
+        r.field_value = set([1, 2])
+        self.assertFalse(r.validate())
+        r.raise_errors = True
+        with self.assertRaises(TypeError):
+            r.validate()
+    # endregion Iterable
+
 if __name__ == '__main__':
     unittest.main()
