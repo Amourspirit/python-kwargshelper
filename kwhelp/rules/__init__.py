@@ -7,7 +7,12 @@ from ..helper import is_iterable
 
 
 class IRule(ABC):
-    """Abstract Interface Class for rules"""
+    """
+    Abstract Interface Class for rules
+
+    See Also:
+        :doc:`/source/general/rules`
+    """
 
     def __init__(self, key: str, name: str, value: object, raise_errors: bool, originator: object):
         """

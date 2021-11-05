@@ -3,6 +3,12 @@ RuleCheckAll Usage
 
 :py:class:`~.decorator.RuleCheckAll` decorator reqires that each args of a function match all rules specified.
 
+Includes features:
+
+    * :doc:`/source/general/dec_feature/ftype`
+    * :doc:`/source/general/dec_feature/opt_return`
+    * :doc:`/source/general/dec_feature/raise_error`
+
 Decorating with ``*args``
 -------------------------
 

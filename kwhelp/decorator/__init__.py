@@ -1036,8 +1036,8 @@ class RuleCheckAllKw(_RuleBase):
             rules (Iterable[Union[IRule, Iterable[IRule]]], optional): List of rules for arg_info entries to match.
                 Default ``None``
 
-         Keyword Arguments:
-            raise_error: (bool, optional): If ``True`` then an Exception will be raised if a
+        Keyword Arguments:
+            raise_error (bool, optional): If ``True`` then an Exception will be raised if a
                 validation fails. The kind of exception raised depends on the rule that is
                 invalid. Typically a ``TypeError`` or a ``ValueError`` is raised.
 

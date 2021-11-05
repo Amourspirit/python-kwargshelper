@@ -3,6 +3,11 @@ ReturnType Usage
 
 :py:class:`~.decorator.ReturnType` decorator reqires that return matches ``type``.
 
+Includes features:
+
+    * :doc:`/source/general/dec_feature/type_instance_check`
+    * :doc:`/source/general/dec_feature/opt_return`
+
 Single Arg Usage
 ----------------
 
