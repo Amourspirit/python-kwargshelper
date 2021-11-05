@@ -3,6 +3,13 @@ TypeCheck Usage
 
 :py:class:`~.decorator.TypeCheck` decorator reqires that each args of a function match a ``type``.
 
+Includes features:
+
+    * :doc:`/source/general/dec_feature/ftype`
+    * :doc:`/source/general/dec_feature/opt_return`
+    * :doc:`/source/general/dec_feature/raise_error`
+    * :doc:`/source/general/dec_feature/type_instance_check`
+
 Decorating with ``*args``
 -------------------------
 

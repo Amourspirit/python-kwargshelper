@@ -3,7 +3,7 @@ if __name__ == '__main__':
     import os
     import sys
     sys.path.append(os.path.realpath('.'))
-from kwhelp.decorator import DecFuncEnum, ReturnRuleAll
+from kwhelp.decorator import DecFuncEnum
 from kwhelp import rules
 
 class TestGeneral(unittest.TestCase):

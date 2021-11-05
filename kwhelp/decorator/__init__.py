@@ -29,10 +29,34 @@ class DecFuncEnum(IntEnum):
     def __str__(self):
         return self._name_
 
-class _DecBase(object):
+
+class _CommonBase(object):
+    def __init__(self, **kwargs):
+        """
+        Constructor
+
+        Keyword Arguments:
+            opt_return (object, optional): Return value when decorator is invalid.
+                By default an error is rasied when validation fails. If ``opt_return`` is
+                supplied then it will be return when validation fails and no error will be raised.
+        """
+        self._opt_return = kwargs.get("opt_return", NO_THING)
+
+    def _is_opt_return(self) -> bool:
+        """
+        Gets if opt_return value has been set in constructor
+
+        Returns:
+            bool: True if opt_return value is set; Otherwise, False
+        """
+        return not self._opt_return is NO_THING
+
+
+class _DecBase(_CommonBase):
     _rx_star = re.compile("^\*(\d*)$")
 
     def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self._ftype: DecFuncEnum = kwargs.get("ftype", None)
         if self._ftype is not None:
             if not isinstance(self._ftype, DecFuncEnum):
@@ -87,7 +111,7 @@ class _DecBase(object):
             return sig
         self._cache["signature"] = signature(func)
         return self._cache["signature"]
-    
+
     def _get_args_dict(self, func: callable, args: Iterable[object], kwargs: Dict[str, object]) -> Dict[str, object]:
         # Positional argument cannot appear after keyword arguments
         # no *args after **kwargs def foo(**kwargs, *args) not valid
@@ -234,10 +258,13 @@ class _DecBase(object):
         self._cache["star_args_pos"] = args_pos
         return self._cache["star_args_pos"]
 
+
 class _RuleBase(_DecBase):
     def _get_err(self, fn: callable, e: RuleError):
         err = RuleError.from_rule_error(e, fn_name=fn.__name__)
         return err
+
+
 class TypeCheck(_DecBase):
     """
     Decorator that decorates methods that requires args to match a type specificed in a list
@@ -264,6 +291,9 @@ class TypeCheck(_DecBase):
                 Default ``True``
             ftype (DecFuncType, optional): Type of function that decorator is applied on.
                 Default ``DecFuncType.FUNCTION``
+            opt_return (object, optional): Return value when decorator is invalid.
+                By default an error is rasied when validation fails. If ``opt_return`` is
+                supplied then it will be return when validation fails and no error will be raised.
 
         Raises:
             TypeError: If ``types`` arg is not a iterable object such as a list or tuple.
@@ -277,17 +307,25 @@ class TypeCheck(_DecBase):
             self._kwargs = {**kwargs}
         else:
             self._kwargs = {}
-        
 
     def __call__(self, func: callable):
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             _args = self._get_args(args)
-            is_valid = self._typechecker.validate(*_args, **kwargs)
-            if self._typechecker.raise_error is False:
-                wrapper.is_types_valid = is_valid
+            try:
+                is_valid = self._typechecker.validate(*_args, **kwargs)
+                if self._typechecker.raise_error is False:
+                    wrapper.is_types_valid = is_valid
+                if is_valid is False and self._is_opt_return() is True:
+                    return self._opt_return
+            except TypeError as e:
+                if self._is_opt_return():
+                    return self._opt_return
+                raise e
             return func(*args, **kwargs)
-        # wrapper.is_types_valid = self.is_valid
+        if self._typechecker.raise_error is False:
+            wrapper.is_types_valid = True
         return wrapper
 
     @property
@@ -296,6 +334,7 @@ class TypeCheck(_DecBase):
             self._tc = TypeChecker(*self._types, **self._kwargs)
         return self._tc
 
+
 class AcceptedTypes(_DecBase):
     """
     Decorator that decorates methods that requires args to match types specificed in a list
@@ -303,8 +342,7 @@ class AcceptedTypes(_DecBase):
     See Also:
         :doc:`../../usage/Decorator/AcceptedTypes`
     """
-    
-    
+
     def __init__(self, *args: Union[type, Iterable[type]], **kwargs):
         """
         Constructor
@@ -319,6 +357,9 @@ class AcceptedTypes(_DecBase):
                 Default ``True``
             ftype (DecFuncType, optional): Type of function that decorator is applied on.
                 Default ``DecFuncType.FUNCTION``
+            opt_return (object, optional): Return value when decorator is invalid.
+                By default an error is rasied when validation fails. If ``opt_return`` is
+                supplied then it will be return when validation fails and no error will be raised.
         """
         super().__init__(**kwargs)
         self._tc = None
@@ -342,13 +383,14 @@ class AcceptedTypes(_DecBase):
             result = f"{result}{t}"
         return result
 
-    
     def __call__(self, func: callable):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             arg_name_values = self._get_args_dict(func, args, kwargs)
             arg_keys = arg_name_values.keys()
             if len(arg_keys) is not len(self._types):
+                if self._is_opt_return():
+                    return self._opt_return
                 raise ValueError(
                     'Invalid number of arguments for {0}()'.format(func.__name__))
             arg_type = zip(arg_keys, self._types)
@@ -363,6 +405,8 @@ class AcceptedTypes(_DecBase):
                     try:
                         tc.validate(value)
                     except TypeError:
+                        if self._is_opt_return():
+                            return self._opt_return
                         raise TypeError(self._get_err_msg(name=None, value=value,
                                                           types=arg_info[1], arg_index=i,
                                                           fn=func))
@@ -370,6 +414,8 @@ class AcceptedTypes(_DecBase):
                     try:
                         tc.validate(**{key: value})
                     except TypeError:
+                        if self._is_opt_return():
+                            return self._opt_return
                         raise TypeError(self._get_err_msg(name=key, value=value,
                                                           types=arg_info[1], arg_index=i,
                                                           fn=func))
@@ -377,7 +423,7 @@ class AcceptedTypes(_DecBase):
             return func(*args, **kwargs)
         return wrapper
 
-    def _get_err_msg(self, name:Union[str, None], value: object, types: Iterator[type], arg_index: int, fn: callable):
+    def _get_err_msg(self, name: Union[str, None], value: object, types: Iterator[type], arg_index: int, fn: callable):
         str_types = self._get_formated_types(types=types)
         str_ord = self._get_ordinal(arg_index + 1)
         if self._ftype == DecFuncEnum.PROPERTY_CLASS:
@@ -415,6 +461,9 @@ class ArgsLen(_DecBase):
         Keyword Arguments:
             ftype (DecFuncType, optional): Type of function that decorator is applied on.
                 Default ``DecFuncType.FUNCTION``
+            opt_return (object, optional): Return value when decorator is invalid.
+                By default an error is rasied when validation fails. If ``opt_return`` is
+                supplied then it will be return when validation fails and no error will be raised.
         """
         super().__init__(**kwargs)
         self._ranges: Set[Tuple[int, int]] = set()
@@ -465,12 +514,12 @@ class ArgsLen(_DecBase):
                 result = result + "Expected Ranges: "
             result = result + str_rng + "."
         return result
-    
 
     def __call__(self, func: callable):
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            _args = self._get_args_star(func=func,args=args)
+            _args = self._get_args_star(func=func, args=args)
             _args_len = len(_args)
             is_valid = False
             if _args_len >= 0:
@@ -484,10 +533,90 @@ class ArgsLen(_DecBase):
                             is_valid = True
                             break
             if is_valid is False:
+                if self._is_opt_return():
+                    return self._opt_return
                 msg = f"Invalid number of args pass into '{func.__name__}'.\n{self._get_valid_counts()}"
                 msg = msg + f" Got '{_args_len}' args."
                 msg = msg + f"\n{self.__class__.__name__} decorator Error."
                 raise ValueError(msg)
+            return func(*args, **kwargs)
+        # wrapper.is_types_valid = self.is_valid
+        return wrapper
+
+
+class ArgsMinMax(_DecBase):
+    """
+    Decorartor that sets the min and or max number of args that can be added to a function
+
+
+    See Also:
+        :doc:`../../usage/Decorator/ArgsMinMax`
+    """
+
+    def __init__(self, min: Optional[int]=0, max: Optional[int] = None, **kwargs):
+        """
+        Constructor
+
+        Args:
+            min (int, optional): Min number of args for a function. Defaults to 0.
+            max (int, optional): Max number of args for a function. Defaults to None.
+
+        Keyword Arguments:
+            ftype (DecFuncType, optional): Type of function that decorator is applied on.
+                Default ``DecFuncType.FUNCTION``
+            opt_return (object, optional): Return value when decorator is invalid.
+                By default an error is rasied when validation fails. If ``opt_return`` is
+                supplied then it will be return when validation fails and no error will be raised.
+        """
+        super().__init__(**kwargs)
+        self._min = int(min)
+        if isinstance(max, int):
+            self._max = max
+        else:
+            self._max = None
+    
+    def _get_min_max(self) -> Tuple[int, int]:
+        _max = -1 if self._max is None else self._max
+        _min = self._min
+        return _min, _max
+    
+    def _get_valid_counts(self) -> str:
+
+        _min, _max  = self._get_min_max()
+        msg = ""
+        if _min > 0:
+            msg = msg + "Expected min of " + str(_min) + "."
+        if _max >= 0:
+            if _min > 0:
+                msg = msg + " "
+            msg = msg + "Expected max of " + str(_max) + "."
+        return msg
+
+    def _get_error_msg(self, func: callable, args_len: int) -> str:
+        msg = f"Invalid number of args pass into '{func.__name__}'.\n{self._get_valid_counts()}"
+        msg = msg + f" Got '{args_len}' args."
+        msg = msg + f"\n{self.__class__.__name__} decorator Error."
+        return msg
+    
+    def __call__(self, func: callable):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            _min, _max = self._get_min_max()
+            has_rules = _min > 0 or _max >= 0
+            if has_rules:
+                _args = self._get_args_star(func=func, args=args)
+                _args_len = len(_args)
+                is_valid = True
+                if _min > 0:
+                    if _args_len < _min:
+                        is_valid = False
+                if is_valid == True and _max >= 0:
+                    if _args_len > _max:
+                        is_valid = False
+                if is_valid is False:
+                    if self._is_opt_return():
+                        return self._opt_return
+                    raise ValueError(self._get_error_msg(func=func,args_len=_args_len))
             return func(*args, **kwargs)
         # wrapper.is_types_valid = self.is_valid
         return wrapper
@@ -510,6 +639,9 @@ class ReturnRuleAll(_RuleBase):
             ftype (DecFuncType, optional): Type of function that decorator is applied on.
                 Default ``DecFuncType.FUNCTION``
                 Default ``True``
+            opt_return (object, optional): Return value when decorator is invalid.
+                By default an error is rasied when validation fails. If ``opt_return`` is
+                supplied then it will be return when validation fails and no error will be raised.
         """
         super().__init__(**kwargs)
         self._rc = None
@@ -527,6 +659,8 @@ class ReturnRuleAll(_RuleBase):
             try:
                 rc.validate_all(**{"return": return_value})
             except RuleError as e:
+                if self._is_opt_return():
+                    return self._opt_return
                 err = self._get_err(fn=func, e=e)
                 raise err
             return return_value
@@ -538,6 +672,7 @@ class ReturnRuleAll(_RuleBase):
             self._rc = RuleChecker(rules_all=self._rules, **self._kwargs)
             self._rc.raise_error = True
         return self._rc
+
 
 class ReturnRuleAny(_RuleBase):
     """
@@ -556,6 +691,9 @@ class ReturnRuleAny(_RuleBase):
         Keyword Arguments:
             ftype (DecFuncType, optional): Type of function that decorator is applied on.
                 Default ``DecFuncType.FUNCTION``
+            opt_return (object, optional): Return value when decorator is invalid.
+                By default an error is rasied when validation fails. If ``opt_return`` is
+                supplied then it will be return when validation fails and no error will be raised.
         """
         super().__init__(**kwargs)
         self._rc = None
@@ -574,6 +712,8 @@ class ReturnRuleAny(_RuleBase):
             try:
                 rc.validate_any(**{"return": return_value})
             except RuleError as e:
+                if self._is_opt_return():
+                    return self._opt_return
                 err = self._get_err(fn=func, e=e)
                 raise err
             return return_value
@@ -585,6 +725,8 @@ class ReturnRuleAny(_RuleBase):
             self._rc = RuleChecker(rules_any=self._rules, **self._kwargs)
             self._rc.raise_error = True
         return self._rc
+
+
 class ReturnType(_DecBase):
     """
     Decorator that decorates methods that require return value to match a type specificed.
@@ -599,11 +741,15 @@ class ReturnType(_DecBase):
 
         Args:
             args (type): One ore more types that is used to validate return type.
+
         Keyword Arguments:
             type_instance_check (bool, optional): If ``True`` then args are tested also for ``isinstance()``
                 if type does not match, rather then just type check. If ``False`` then values willl only be
                 tested as type.
                 Default ``True``
+            opt_return (object, optional): Return value when decorator is invalid.
+                By default an error is rasied when validation fails. If ``opt_return`` is
+                supplied then it will be return when validation fails and no error will be raised.
         """
         super().__init__(**kwargs)
         self._tc = None
@@ -621,6 +767,8 @@ class ReturnType(_DecBase):
             try:
                 self._typechecker.validate(return_value)
             except TypeError:
+                if self._is_opt_return():
+                    return self._opt_return
                 # catch type error and raise a new one so a more fitting message is raised.
                 raise TypeError(self._get_err_msg(return_value))
             return return_value
@@ -638,6 +786,7 @@ class ReturnType(_DecBase):
             # ensure errors are raised if not valid
             self._tc.raise_error = True
         return self._tc
+
 
 class TypeCheckKw(_DecBase):
     """
@@ -668,8 +817,12 @@ class TypeCheckKw(_DecBase):
                 tested as type. Default ``True``
             ftype (DecFuncType, optional): Type of function that decorator is applied on.
                 Default ``DecFuncType.FUNCTION``
+            opt_return (object, optional): Return value when decorator is invalid.
+                By default an error is rasied when validation fails. If ``opt_return`` is
+                supplied then it will be return when validation fails and no error will be raised.
         """
         super().__init__(**kwargs)
+        self._raise_error = bool(kwargs.get("raise_error", True))
         self._arg_index = arg_info
         if types is None:
             self._types = []
@@ -702,19 +855,29 @@ class TypeCheckKw(_DecBase):
             tc = False
             for key in self._arg_index.keys():
                 if key in arg_keys:
+                    is_valid = False
                     types = self._get_types(key=key)
                     if len(types) == 0:
                         continue
                     value = arg_name_values[key]
                     tc = TypeChecker(*types, **self._kwargs)
-                    is_valid = tc.validate(**{key: value})
-                    if is_valid is False:
-                        break
+                    try:
+                        is_valid = tc.validate(**{key: value})
+                        if is_valid is False:
+                            break
+                    except TypeError as e:
+                        if self._is_opt_return():
+                            return self._opt_return
+                        raise e
             if tc and tc.raise_error is False:
                 wrapper.is_types_kw_valid = is_valid
+                if is_valid == False and self._is_opt_return() == True:
+                    return self._opt_return
             return func(*args, **kwargs)
-        # wrapper.is_types_valid = self.is_valid
+        if self._raise_error is False:
+            wrapper.is_types_kw_valid = True
         return wrapper
+
 
 class RuleCheckAny(_RuleBase):
     """
@@ -743,8 +906,12 @@ class RuleCheckAny(_RuleBase):
                 Default ``True``.
             ftype (DecFuncType, optional): Type of function that decorator is applied on.
                 Default ``DecFuncType.FUNCTION``
+            opt_return (object, optional): Return value when decorator is invalid.
+                By default an error is rasied when validation fails. If ``opt_return`` is
+                supplied then it will be return when validation fails and no error will be raised.
         """
         super().__init__(**kwargs)
+        self._raise_error = bool(kwargs.get("raise_error", True))
         self._rc = None
         self._rules = [arg for arg in args]
         if kwargs:
@@ -760,12 +927,17 @@ class RuleCheckAny(_RuleBase):
             try:
                 is_valid = self._rulechecker.validate_any(*_args, **kwargs)
             except RuleError as err:
-                err_rule = self._get_err(fn=func,e=err)
+                if self._is_opt_return():
+                    return self._opt_return
+                err_rule = self._get_err(fn=func, e=err)
                 raise err_rule
-            if self._rulechecker.raise_error is False:
+            if self._raise_error is False:
                 wrapper.is_rules_any_valid = is_valid
+                if is_valid == False and self._is_opt_return() == True:
+                    return self._opt_return
             return func(*args, **kwargs)
-        # wrapper.is_types_valid = self.is_valid
+        if self._raise_error is False:
+            wrapper.is_rules_any_valid = True
         return wrapper
 
     @property
@@ -773,6 +945,7 @@ class RuleCheckAny(_RuleBase):
         if self._rc is None:
             self._rc = RuleChecker(rules_any=self._rules, **self._kwargs)
         return self._rc
+
 
 class RuleCheckAll(_RuleBase):
     """
@@ -801,8 +974,12 @@ class RuleCheckAll(_RuleBase):
                 Default ``True``.
             ftype (DecFuncType, optional): Type of function that decorator is applied on.
                 Default ``DecFuncType.FUNCTION``
+            opt_return (object, optional): Return value when decorator is invalid.
+                By default an error is rasied when validation fails. If ``opt_return`` is
+                supplied then it will be return when validation fails and no error will be raised.
         """
         super().__init__(**kwargs)
+        self._raise_error = bool(kwargs.get("raise_error", True))
         self._rc = None
         self._rules = [arg for arg in args]
         if kwargs:
@@ -818,12 +995,17 @@ class RuleCheckAll(_RuleBase):
             try:
                 is_valid = self._rulechecker.validate_all(*_args, **kwargs)
             except RuleError as err:
-                err_rule = self._get_err(fn=func,e=err)
+                if self._is_opt_return():
+                    return self._opt_return
+                err_rule = self._get_err(fn=func, e=err)
                 raise err_rule
             if self._rulechecker.raise_error is False:
                 wrapper.is_rules_all_valid = is_valid
+                if is_valid == False and self._is_opt_return() == True:
+                    return self._opt_return
             return func(*args, **kwargs)
-        # wrapper.is_types_valid = self.is_valid
+        if self._raise_error is False:
+            wrapper.is_rules_all_valid = True
         return wrapper
 
     @property
@@ -831,6 +1013,7 @@ class RuleCheckAll(_RuleBase):
         if self._rc is None:
             self._rc = RuleChecker(rules_all=self._rules, **self._kwargs)
         return self._rc
+
 
 class RuleCheckAllKw(_RuleBase):
     """
@@ -853,8 +1036,8 @@ class RuleCheckAllKw(_RuleBase):
             rules (Iterable[Union[IRule, Iterable[IRule]]], optional): List of rules for arg_info entries to match.
                 Default ``None``
 
-         Keyword Arguments:
-            raise_error: (bool, optional): If ``True`` then an Exception will be raised if a
+        Keyword Arguments:
+            raise_error (bool, optional): If ``True`` then an Exception will be raised if a
                 validation fails. The kind of exception raised depends on the rule that is
                 invalid. Typically a ``TypeError`` or a ``ValueError`` is raised.
 
@@ -863,8 +1046,12 @@ class RuleCheckAllKw(_RuleBase):
                 Default ``True``.
             ftype (DecFuncType, optional): Type of function that decorator is applied on.
                 Default ``DecFuncType.FUNCTION``
+            opt_return (object, optional): Return value when decorator is invalid.
+                By default an error is rasied when validation fails. If ``opt_return`` is
+                supplied then it will be return when validation fails and no error will be raised.
         """
         super().__init__(**kwargs)
+        self._raise_error = bool(kwargs.get("raise_error", True))
         self._arg_index = arg_info
         if rules is None:
             self._rules = []
@@ -907,15 +1094,21 @@ class RuleCheckAllKw(_RuleBase):
                     try:
                         is_valid = rc.validate_all(**{key: value})
                     except RuleError as err:
+                        if self._is_opt_return():
+                            return self._opt_return
                         err_rule = self._get_err(fn=func, e=err)
                         raise err_rule
                     if is_valid is False:
                         break
             if add_attrib:
                 wrapper.is_rules_kw_all_valid = is_valid
+                if is_valid == False and self._is_opt_return() == True:
+                    return self._opt_return
             return func(*args, **kwargs)
-        # wrapper.is_types_valid = self.is_valid
+        if self._raise_error is False:
+            wrapper.is_rules_kw_all_valid = True
         return wrapper
+
 
 class RuleCheckAnyKw(RuleCheckAllKw):
     """
@@ -942,20 +1135,26 @@ class RuleCheckAnyKw(RuleCheckAllKw):
                     value = arg_name_values[key]
                     rc = RuleChecker(rules_any=rules, **self._kwargs)
                     if add_attrib is None:
-                        add_attrib = not rc.raise_error
+                        add_attrib = not self._raise_error
                     is_valid = False
                     try:
                         is_valid = rc.validate_any(**{key: value})
                     except RuleError as err:
+                        if self._is_opt_return():
+                            return self._opt_return
                         err_rule = self._get_err(fn=func, e=err)
                         raise err_rule
                     if is_valid is False:
                         break
             if add_attrib:
                 wrapper.is_rules_any_valid = is_valid
+                if is_valid == False and self._is_opt_return() == True:
+                    return self._opt_return
             return func(*args, **kwargs)
-        # wrapper.is_types_valid = self.is_valid
+        if self._raise_error is False:
+            wrapper.is_rules_any_valid = True
         return wrapper
+
 
 class RequireArgs(_DecBase):
     """
@@ -975,6 +1174,9 @@ class RequireArgs(_DecBase):
         Keyword Arguments:
             ftype (DecFuncType, optional): Type of function that decorator is applied on.
                 Default ``DecFuncType.FUNCTION``
+            opt_return (object, optional): Return value when decorator is invalid.
+                By default an error is rasied when validation fails. If ``opt_return`` is
+                supplied then it will be return when validation fails and no error will be raised.
         """
         super().__init__(**kwargs)
         self._args = []
@@ -989,11 +1191,15 @@ class RequireArgs(_DecBase):
             arg_keys = arg_name_values.keys()
             for key in self._args:
                 if not key in arg_keys:
-                    raise ValueError(f"'{func.__name__}', '{key}' is a required arg.")
+                    if self._is_opt_return():
+                        return self._opt_return
+                    raise ValueError(
+                        f"'{func.__name__}', '{key}' is a required arg.")
             return func(*args, **kwargs)
         return wrapper
 
-class DefaultArgs(object):
+
+class DefaultArgs(_CommonBase):
     """
     Decorator that defines default values for ``**kwargs`` of a function.
 
@@ -1008,6 +1214,7 @@ class DefaultArgs(object):
         Keyword Arguments:
             kwargs (Dict[str, object]): One or more Key, Value pairs to assign to wrapped function args as defaults.
         """
+        super().__init__(**kwargs)
         self._kwargs = {**kwargs}
 
     def __call__(self, func):
@@ -1018,6 +1225,7 @@ class DefaultArgs(object):
                     kwargs[key] = value
             return func(*args, **kwargs)
         return wrapper
+
 
 def calltracker(func):
     """
@@ -1051,6 +1259,7 @@ def calltracker(func):
         return func(*args, **kwargs)
     wrapper.has_been_called = False
     return wrapper
+
 
 def callcounter(func):
     """
@@ -1089,6 +1298,7 @@ def callcounter(func):
     wrapper.call_count = 0
     return wrapper
 
+
 def singleton(orig_cls):
     """
     Decorator that makes a class a singleton class
@@ -1119,6 +1329,7 @@ def singleton(orig_cls):
         return instance
     orig_cls.__new__ = __new__
     return orig_cls
+
 
 class AutoFill:
     """
@@ -1165,6 +1376,7 @@ class AutoFill:
 
         cls.__init__ = init
 
+
 class AutoFillKw:
     """
     Class decorator that replaces the ``__init__`` function with one that
@@ -1180,6 +1392,7 @@ class AutoFillKw:
             >>> sorted(Foo(a=1, b=2, End="!").__dict__.items())
             [('End', '!'), ('a', 1), ('b', 2)]
     """
+
     def __init__(self, cls):
         self._cls = cls
 

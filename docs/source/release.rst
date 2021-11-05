@@ -1,6 +1,18 @@
 Release Notes
 =============
 
+Version 2.3.0
+-------------
+
+Added decorator ``ArgsMinMax``
+
+Added Rules:
+
+    * RuleIterable
+    * RuleNotIterable
+
+Added ``opt_return`` feature to many decorators. See :doc:`/source/general/dec_feature/opt_return`
+
 Version 2.2.1
 -------------
 

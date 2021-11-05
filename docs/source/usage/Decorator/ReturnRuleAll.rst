@@ -3,6 +3,11 @@ ReturnRuleAll usage
 
 :py:class:`~.decorator.ReturnRuleAll` decorator that decorates methods that require return value to match all of the rules specificed.
 
+Includes features:
+
+    * :doc:`/source/general/dec_feature/ftype`
+    * :doc:`/source/general/dec_feature/opt_return`
+
 Function Usage
 --------------
 

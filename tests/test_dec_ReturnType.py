@@ -18,7 +18,6 @@ class Color(IntEnum):
 
 class TestReturnTypesDecorators(unittest.TestCase):
     def test_return_gen(self):
-
         @ReturnType(int)
         def req_test(*arg):
             return sum(arg)
@@ -29,6 +28,19 @@ class TestReturnTypesDecorators(unittest.TestCase):
         assert result == - 12
         with self.assertRaises(TypeError):
             result = req_test(2, 2.5)
+
+    def test_return_opt_return(self):
+        @ReturnType(int, opt_return=None)
+        def req_test(*arg):
+            return sum(arg)
+
+        result = req_test(2, 4)
+        assert result == 6
+        result = req_test(-2, -10)
+        assert result == - 12
+        result = False
+        result = req_test(2, 2.5)
+        assert result == None
 
     def test_return_enum(self):
 
@@ -82,6 +94,21 @@ class TestReturnTypesClsDecorators(unittest.TestCase):
         assert result == - 12
         with self.assertRaises(TypeError):
             result = t.req_test(2, 2.5)
+
+    def test_return_opt_return(self):
+        class T:
+            @ReturnType(int, opt_return=None)
+            def req_test(self, *arg) -> float:
+                return sum(arg)
+        t = T()
+
+        result = t.req_test(2, 4)
+        assert result == 6
+        result = t.req_test(-2, -10)
+        assert result == - 12
+        result = False
+        result = t.req_test(2, 2.5)
+        assert result == None
 
     def test_return_multi(self):
         class T:
