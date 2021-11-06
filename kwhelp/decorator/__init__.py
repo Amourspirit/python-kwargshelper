@@ -4,7 +4,7 @@ import inspect
 import re
 from typing import Dict, Iterable, Iterator, Optional, Set, Tuple, Union
 from inspect import _ParameterKind, signature, isclass, Parameter, Signature
-from ..checks import TypeChecker, RuleChecker
+from ..checks import TypeChecker, RuleChecker, SubClassChecker
 from ..rules import IRule
 from ..helper import is_iterable
 from ..exceptions import RuleError
@@ -1411,3 +1411,105 @@ class AutoFillKw:
 
         self._cls.__init__ = init
         return self._cls(*args, **kwargs)
+
+class SubClass(_DecBase):
+    """
+    Decorator that decorates methods that requires args to match types specificed in a list
+
+    See Also:
+        :doc:`../../usage/Decorator/SubClass`
+    """
+
+    def __init__(self, *args: Union[type, Iterable[type]], **kwargs):
+        """
+        Constructor
+
+        Other Parameters:
+            args (Union[type, Iterable[type]]): One or more types or Iterator[type] for validation.
+
+        Keyword Arguments:
+            type_instance_check (bool, optional): If ``True`` then args are tested also for ``isinstance()``
+                if type does not match, rather then just type check. If ``False`` then values willl only be
+                tested as type.
+                Default ``True``
+            ftype (DecFuncType, optional): Type of function that decorator is applied on.
+                Default ``DecFuncType.FUNCTION``
+            opt_return (object, optional): Return value when decorator is invalid.
+                By default an error is rasied when validation fails. If ``opt_return`` is
+                supplied then it will be return when validation fails and no error will be raised.
+            instance_only (bool, optional): If ``True`` then validation will requires all values being tested to be an
+                instance of a class. If ``False`` valadition will test class instance and class type.
+                Default ``True``
+        """
+        super().__init__(**kwargs)
+        self._types = []
+        for arg in args:
+            if is_iterable(arg):
+                self._types.append(arg)
+            else:
+                self._types.append(tuple([arg]))
+        if kwargs:
+            # keyword args are passed to TypeChecker
+            self._kwargs = {**kwargs}
+        else:
+            self._kwargs = {}
+
+    def _get_formated_types(self, types: Iterator[type]) -> str:
+        result = ''
+        for i, t in enumerate(types):
+            if i > 0:
+                result = result + ' | '
+            result = f"{result}{t}"
+        return result
+
+    def __call__(self, func: callable):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            arg_name_values = self._get_args_dict(func, args, kwargs)
+            arg_keys = arg_name_values.keys()
+            if len(arg_keys) is not len(self._types):
+                if self._is_opt_return():
+                    return self._opt_return
+                raise ValueError(
+                    'Invalid number of arguments for {0}()'.format(func.__name__))
+            arg_type = zip(arg_keys, self._types)
+            i = 0
+            for arg_info in arg_type:
+                key = arg_info[0]
+                value = arg_name_values[key]
+                sc = SubClassChecker(*arg_info[1], **self._kwargs)
+                # ensure errors are raised if not valid
+                sc.raise_error = True
+                if self._is_placeholder_arg(key):
+                    try:
+                        sc.validate(value)
+                    except TypeError:
+                        if self._is_opt_return():
+                            return self._opt_return
+                        raise TypeError(self._get_err_msg(name=None, value=value,
+                                                          types=arg_info[1], arg_index=i,
+                                                          fn=func))
+                else:
+                    try:
+                        sc.validate(**{key: value})
+                    except TypeError:
+                        if self._is_opt_return():
+                            return self._opt_return
+                        raise TypeError(self._get_err_msg(name=key, value=value,
+                                                          types=arg_info[1], arg_index=i,
+                                                          fn=func))
+                i += 1
+            return func(*args, **kwargs)
+        return wrapper
+
+    def _get_err_msg(self, name: Union[str, None], value: object, types: Iterator[type], arg_index: int, fn: callable):
+        str_types = self._get_formated_types(types=types)
+        str_ord = self._get_ordinal(arg_index + 1)
+        if self._ftype == DecFuncEnum.PROPERTY_CLASS:
+            msg = f"'{fn.__name__}' property error. Arg '{name}' expected is expected be a subclass of '{str_types}'."
+            return msg
+        if name:
+            msg = f"Arg '{name}' in {str_ord} position is expected be a subclass of '{str_types}'."
+        else:
+            msg = f"Arg in {str_ord} position of is expected to be of a subclass of '{str_types}'."
+        return msg
