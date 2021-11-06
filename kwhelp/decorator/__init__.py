@@ -553,7 +553,7 @@ class ArgsMinMax(_DecBase):
         :doc:`../../usage/Decorator/ArgsMinMax`
     """
 
-    def __init__(self, min: Optional[int]=0, max: Optional[int] = None, **kwargs):
+    def __init__(self, min: Optional[int] = 0, max: Optional[int] = None, **kwargs):
         """
         Constructor
 
@@ -574,15 +574,15 @@ class ArgsMinMax(_DecBase):
             self._max = max
         else:
             self._max = None
-    
+
     def _get_min_max(self) -> Tuple[int, int]:
         _max = -1 if self._max is None else self._max
         _min = self._min
         return _min, _max
-    
+
     def _get_valid_counts(self) -> str:
 
-        _min, _max  = self._get_min_max()
+        _min, _max = self._get_min_max()
         msg = ""
         if _min > 0:
             msg = msg + "Expected min of " + str(_min) + "."
@@ -597,7 +597,7 @@ class ArgsMinMax(_DecBase):
         msg = msg + f" Got '{args_len}' args."
         msg = msg + f"\n{self.__class__.__name__} decorator Error."
         return msg
-    
+
     def __call__(self, func: callable):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -616,10 +616,12 @@ class ArgsMinMax(_DecBase):
                 if is_valid is False:
                     if self._is_opt_return():
                         return self._opt_return
-                    raise ValueError(self._get_error_msg(func=func,args_len=_args_len))
+                    raise ValueError(self._get_error_msg(
+                        func=func, args_len=_args_len))
             return func(*args, **kwargs)
         # wrapper.is_types_valid = self.is_valid
         return wrapper
+
 
 class ReturnRuleAll(_RuleBase):
     """
@@ -1411,6 +1413,7 @@ class AutoFillKw:
 
         self._cls.__init__ = init
         return self._cls(*args, **kwargs)
+
 
 class SubClass(_DecBase):
     """

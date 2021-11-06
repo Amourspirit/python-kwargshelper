@@ -5,6 +5,7 @@ from ..rules import IRule
 from ..helper import is_iterable
 from ..exceptions import RuleError
 
+
 class _CheckBase:
     def __init__(self, **kwargs):
         """Constructor"""
@@ -33,7 +34,7 @@ class _CheckBase:
 class TypeChecker(_CheckBase):
     """Class that validates args match a given type"""
 
-    def __init__(self, *args: type, **kwargs): 
+    def __init__(self, *args: type, **kwargs):
         """
         Constructor
 
@@ -50,19 +51,14 @@ class TypeChecker(_CheckBase):
                 Default ``True``
         """
         super().__init__(**kwargs)
-        self._types = [arg for arg in args]
-
-        key = 'raise_error'
-        if key in kwargs:
-            self._raise_error: bool = bool(kwargs[key])
-        else:
-            self._raise_error: bool = True
-
-        key = 'type_instance_check'
-        if key in kwargs:
-            self._type_instance_check: bool = bool(kwargs[key])
-        else:
-            self._type_instance_check: bool = True
+        # self._types = [arg for arg in args]
+        _types = set()
+        for arg in args:
+            _types.add(self._get_type(arg))
+        self._types: Tuple[type] = tuple(_types)
+        self._raise_error: bool = bool(kwargs.get('raise_error', True))
+        self._type_instance_check: bool = bool(
+            kwargs.get('type_instance_check', True))
 
     def _get_formated_types(self) -> str:
         result = ''
@@ -162,9 +158,9 @@ class TypeChecker(_CheckBase):
     @raise_error.setter
     def raise_error(self, value: bool) -> bool:
         self._raise_error = bool(value)
-    
+
     @property
-    def types(self) -> Iterable[type]:
+    def types(self) -> Tuple[type]:
         """
         Gets the types passed into constructor that are used for validating args
         """
@@ -210,8 +206,7 @@ class RuleChecker(_CheckBase):
                     "rules_aany arg must be an iterable object such as list or tuple.")
             self._rules_any = rules_any
             self._len_any = len(self._rules_any)
-            
-        
+
         key = 'raise_error'
         if key in kwargs:
             self._raise_error: bool = bool(kwargs[key])
@@ -229,7 +224,7 @@ class RuleChecker(_CheckBase):
         else:
             _key = 'arg'
             _field = 'arg'
-           
+
         result = True
         if self._len_all > 0:
             for rule in self._rules_all:
@@ -280,12 +275,12 @@ class RuleChecker(_CheckBase):
             arg_name = _key if valid_arg else None
             raise RuleError(rules_any=self._rules_any,
                             err_rule=failed_rules[0], arg_name=arg_name, errors=error_lst) from error_lst[0]
-            
+
         return result
 
-    def _is_valid_arg(self, arg:str) -> bool:
+    def _is_valid_arg(self, arg: str) -> bool:
         return arg != '..arg'
-    
+
     # endregion internal validation methods
 
     def validate_all(self, *args, **kwargs) -> bool:
@@ -400,7 +395,7 @@ class SubClassChecker(_CheckBase):
         _types = set()
         for arg in args:
             _types.add(self._get_type(arg))
-        
+
         self._types: Tuple[type] = tuple(_types)
         self._raise_error: bool = bool(kwargs.get('raise_error', True))
         self._instance_only: bool = bool(kwargs.get('instance_only', True))
@@ -413,7 +408,6 @@ class SubClassChecker(_CheckBase):
             result = f"{result}{t}"
         return result
 
-    
     def _validate_subclass(self, value: object,  key: Union[str, None] = None):
         result = True
         if self._instance_only is True:
@@ -458,7 +452,7 @@ class SubClassChecker(_CheckBase):
         return result
 
     # region Properties
- 
+
     @property
     def raise_error(self) -> bool:
         """
@@ -474,7 +468,7 @@ class SubClassChecker(_CheckBase):
     @raise_error.setter
     def raise_error(self, value: bool) -> bool:
         self._raise_error = bool(value)
-    
+
     @property
     def instance_only(self) -> bool:
         """
