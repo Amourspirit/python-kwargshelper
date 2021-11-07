@@ -7,6 +7,21 @@ if __name__ == '__main__':
 from enum import IntEnum, auto
 from kwhelp.decorator import SubClass, DecFuncEnum, RequireArgs, ReturnType
 
+def gen_args(length:int) -> list:
+    return [i for i in range(length)]
+
+
+def gen_int_float(length: int) -> list:
+    r = []
+    for i in range(length):
+        if (i % 3) == 0:
+            r.append(i + 0.3)
+            continue
+        if (i % 2) == 0:  # even
+            r.append(i)
+            continue
+        r.append(i + 0.7)
+    return r
 
 class Color(IntEnum):
     RED = auto()
@@ -32,6 +47,21 @@ class Obj:
 class ObjFoo(Obj): pass
 
 class TestSubClassDecorators(unittest.TestCase):
+
+    def test_gen_args(self):
+        args = gen_args(3)
+        assert args[0] == 0
+        assert args[1] == 1
+        assert args[2] == 2
+
+    def test_gen_int_float(self):
+        ex = [0.3, 1.7, 2, 3.3, 4, 5.7, 6.3, 7.7, 8, 9.3, 10,
+              11.7, 12.3, 13.7, 14, 15.3, 16, 17.7, 18.3, 19.7]
+        result = gen_int_float(20)
+        for i, num in enumerate(ex):
+            assert result[i] == num
+        
+
     def test_subclass_gen(self):
         @SubClass((Foo, ObjFoo), Base)
         def req_test(**kwargs):
@@ -49,6 +79,41 @@ class TestSubClassDecorators(unittest.TestCase):
             result = req_test(two=Bar())
         with self.assertRaises(TypeError):
             result = req_test(one=Obj(), two=Bar())
+    
+    def test_subclass_opt_all_args(self):
+        @SubClass((float, int), opt_all_args=True)
+        def sum_num(*args):
+            return sum(args)
+
+        args = gen_int_float(20)
+        result = sum_num(*args)
+        assert result == 197.0
+        args.append(Foo())
+        with self.assertRaises(TypeError):
+            sum_num(*args)
+        with self.assertRaises(TypeError):
+            sum_num(self)
+
+    def test_subclass_opt_all_args_multi(self):
+        # first arg must be float, all othe must be int
+        @SubClass(float, int, opt_all_args=True)
+        def sum_num(*args):
+            return sum(args)
+
+        result = sum_num(1.2, 1)
+        assert result == 2.2
+        int_args = gen_args(20)
+        args = [12.3] + int_args
+        result = sum_num(*args)
+        assert result == 202.3
+        args.append(12.4)
+        with self.assertRaises(TypeError):
+            sum_num(*args)
+        args = [12,3, 2.1] + int_args
+        with self.assertRaises(TypeError):
+            sum_num(*args)
+        with self.assertRaises(TypeError):
+            sum_num(self)
 
     def test_subclass_instance_only_true(self):
         @SubClass((Foo, ObjFoo), Base, instance_only=True)
@@ -69,7 +134,7 @@ class TestSubClassDecorators(unittest.TestCase):
             result = req_test(one=Obj(), two=Bar())
     
     def test_subclass_instance_only_false(self):
-        @SubClass((Foo, ObjFoo), Base, instance_only=False)
+        @SubClass((Foo, ObjFoo), Base, opt_inst_only=False)
         def req_test(**kwargs):
             return (kwargs.get("one"), kwargs.get("two"))
 
@@ -316,6 +381,44 @@ class TestSubClassDecoratorsClass(unittest.TestCase):
         with self.assertRaises(TypeError):
             result = r.req_test(one=Obj(), two=Bar())
 
+    def test_subclass_opt_all_args(self):
+        class Runner:
+            @SubClass((float, int), opt_all_args=True, ftype=DecFuncEnum.METHOD)
+            def sum_num(self, *args):
+                return sum(args)
+        r = Runner()
+        args = gen_int_float(20)
+        result = r.sum_num(*args)
+        assert result == 197.0
+        args.append(Foo())
+        with self.assertRaises(TypeError):
+            r.sum_num(*args)
+        with self.assertRaises(TypeError):
+            r.sum_num(self)
+
+    def test_subclass_opt_all_args_multi(self):
+        # first arg must be float, all othe must be int
+        class Runner:
+            @SubClass(float, int, opt_all_args=True, ftype=DecFuncEnum.METHOD)
+            def sum_num(self, *args):
+                return sum(args)
+
+        r = Runner()
+        result = r.sum_num(1.2, 1)
+        assert result == 2.2
+        int_args = gen_args(20)
+        args = [12.3] + int_args
+        result = r.sum_num(*args)
+        assert result == 202.3
+        args.append(12.4)
+        with self.assertRaises(TypeError):
+            r.sum_num(*args)
+        args = [12, 3, 2.1] + int_args
+        with self.assertRaises(TypeError):
+            r.sum_num(*args)
+        with self.assertRaises(TypeError):
+            r.sum_num(self)
+
     def test_subclass_instance_only_true(self):
         class Runner:
             @SubClass((Foo, ObjFoo), Base, instance_only=True, ftype=DecFuncEnum.METHOD)
@@ -337,7 +440,7 @@ class TestSubClassDecoratorsClass(unittest.TestCase):
 
     def test_subclass_instance_only_false(self):
         class Runner:
-            @SubClass((Foo, ObjFoo), Base, instance_only=False, ftype=DecFuncEnum.METHOD)
+            @SubClass((Foo, ObjFoo), Base, opt_inst_only=False, ftype=DecFuncEnum.METHOD)
             def req_test(self, **kwargs):
                 return (kwargs.get("one"), kwargs.get("two"))
         r = Runner()
