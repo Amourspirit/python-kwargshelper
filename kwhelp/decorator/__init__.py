@@ -364,8 +364,9 @@ class AcceptedTypes(_DecBase):
         super().__init__(**kwargs)
         self._tc = None
         self._types = []
+        ex_iterable_types = (Enum, str)
         for arg in args:
-            if is_iterable(arg):
+            if is_iterable(arg=arg, excluded_types=ex_iterable_types):
                 self._types.append(arg)
             else:
                 self._types.append(tuple([arg]))
@@ -1446,7 +1447,7 @@ class SubClass(_DecBase):
         """
         super().__init__(**kwargs)
         self._types = []
-        ex_iterable_types = (Enum,)
+        ex_iterable_types = (Enum, str)
         for arg in args:
             if is_iterable(arg=arg, excluded_types=ex_iterable_types):
                 self._types.append(arg)

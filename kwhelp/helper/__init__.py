@@ -54,7 +54,7 @@ def _is_iterable_excluded(arg: object, excluded_types: Iterable) -> bool:
     return arg in ex_types
  
     
-def is_iterable(arg: object, excluded_types: Iterable[type]=()) -> bool:
+def is_iterable(arg: object, excluded_types: Iterable[type]=(str,)) -> bool:
     """
     Gets if ``arg`` is iterable.
 
@@ -62,6 +62,7 @@ def is_iterable(arg: object, excluded_types: Iterable[type]=()) -> bool:
         arg (object): object to test
         excluded_types (Iterable[type], optional): Iterable of type to exlcude.
             If ``arg`` matches any type in ``excluded_types`` then ``False`` will be returned.
+            Default ``(str,)``
 
     Returns:
         bool: ``True`` if ``arg`` is an iterable object and not of a type in ``excluded_types``;
@@ -98,8 +99,8 @@ def is_iterable(arg: object, excluded_types: Iterable[type]=()) -> bool:
             assert is_iterable(arg=Color)             # Enum
             assert not is_iterable(arg=Color, excluded_types=(Enum,))    # Enum
     """
-    if isinstance(arg, str):
-        return False
+    # if isinstance(arg, str):
+    #     return False
     result = False
     try:
         result = isinstance(iter(arg), Iterator)

@@ -166,7 +166,7 @@ class TestAcceptedTypesDecorators(unittest.TestCase):
         # and becomes [<Color.RED: 1>, <Color.BLUE: 2>, <Color.GREEN: 3>]
         # for this reason when passing enum types they must be in an itterable
         # such as a list or tuple
-        @AcceptedTypes([Color], int, [Color])
+        @AcceptedTypes(Color, int, Color)
         def foo(e, length, oth):
             return e, length, oth
         result = foo(Color.BLUE, 2, Color.RED)
