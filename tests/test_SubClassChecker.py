@@ -80,7 +80,7 @@ class TestSubClassChecker(unittest.TestCase):
             sc.validate(Foo(), ObjFoo(), '')
 
     def test_instance_only(self):
-        sc = SubClassChecker(Color, int, Base, instance_only=False)
+        sc = SubClassChecker(Color, int, Base, opt_inst_only=False)
         sc.raise_error = False
         assert sc.raise_error == False
         assert sc.instance_only == False

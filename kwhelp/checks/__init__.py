@@ -387,7 +387,7 @@ class SubClassChecker(_CheckBase):
             raise_error (bool, optional): If ``True`` then an error will be raised if a :py:meth:`~.SubClassChecker.validate` fails:
                 Othwewise :py:meth:`~.SubClassChecker.validate` will return a boolean value indicationg success or failure.
                 Default ``True``
-            instance_only (bool, optional): If ``True`` then validation will requires all values being tested to be an
+            opt_inst_only (bool, optional): If ``True`` then validation will requires all values being tested to be an
                 instance of a class. If ``False`` valadition will test class instance and class type.
                 Default ``True``
         """
@@ -398,7 +398,7 @@ class SubClassChecker(_CheckBase):
 
         self._types: Tuple[type] = tuple(_types)
         self._raise_error: bool = bool(kwargs.get('raise_error', True))
-        self._instance_only: bool = bool(kwargs.get('instance_only', True))
+        self._instance_only: bool = bool(kwargs.get('opt_inst_only', True))
 
     def _get_formated_types(self) -> str:
         result = ''

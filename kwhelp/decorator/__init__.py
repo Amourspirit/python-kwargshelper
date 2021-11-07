@@ -1441,9 +1441,13 @@ class SubClass(_DecBase):
             opt_return (object, optional): Return value when decorator is invalid.
                 By default an error is rasied when validation fails. If ``opt_return`` is
                 supplied then it will be return when validation fails and no error will be raised.
-            instance_only (bool, optional): If ``True`` then validation will requires all values being tested to be an
+            opt_inst_only (bool, optional): If ``True`` then validation will requires all values being tested to be an
                 instance of a class. If ``False`` valadition will test class instance and class type.
                 Default ``True``
+            opt_all_args (bool, optional): If ``True`` then the last subclass type passed into constructor will
+                define any remaining args. This allows for one subclass to define required match of all arguments
+                that decorator is applied to.
+                Default ``False``
         """
         super().__init__(**kwargs)
         self._types = []
@@ -1467,9 +1471,14 @@ class SubClass(_DecBase):
                 result = result + ' | '
             result = f"{result}{t}"
         return result
+    def _get_inst(self, types: Iterable[type]):
+        return SubClassChecker(*types, **self._kwargs)
 
-    def _validate(self, func: callable, key: str, value: object, types: List[type], arg_index: int):
-        sc = SubClassChecker(*types, **self._kwargs)
+    def _validate(self, func: callable, key: str, value: object, types: Iterable[type], arg_index: int, inst: SubClassChecker = None):
+        if inst is None:
+            sc = self._get_inst(types=types)
+        else:
+            sc = inst
         # ensure errors are raised if not valid
         sc.raise_error = True
         if self._is_placeholder_arg(key):
@@ -1496,7 +1505,7 @@ class SubClass(_DecBase):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             arg_name_values = self._get_args_dict(func, args, kwargs)
-            arg_keys = arg_name_values.keys()
+            arg_keys = list(arg_name_values.keys())
             arg_keys_len = arg_keys.__len__()
             if self._all_args is False:
                 if arg_keys_len is not len(self._types):
@@ -1508,12 +1517,28 @@ class SubClass(_DecBase):
             i = 0
             for arg_info in arg_type:
                 key = arg_info[0]
-                value = arg_name_values[key]
                 result = self._validate(func=func, key=key,
-                               value=value, types=arg_info[1], arg_index=i)
+                                        value=arg_name_values[key],
+                                        types=arg_info[1], arg_index=i)
                 if not result is NO_THING:
                     return result
                 i += 1
+            if arg_keys_len > i:
+                # this only happens when _all_args is false
+                # at this point remain args should match last last type in self._types
+                r_args = arg_keys[i:]
+                types = []
+                types.append(self._types[len(self._types) - 1])
+                sc = self._get_inst(types=types)
+                for r_arg in r_args:
+                    result = self._validate(func=func, key=r_arg,
+                                            value=arg_name_values[r_arg],
+                                            types=types, arg_index=i,
+                                            inst=sc)
+                    if not result is NO_THING:
+                        return result
+                    i += 1
+
             return func(*args, **kwargs)
         return wrapper
 
