@@ -9,7 +9,7 @@ from ..rules import IRule
 from ..helper import is_iterable
 from ..exceptions import RuleError
 from ..helper import NO_THING
-from enum import IntEnum
+from enum import Enum, IntEnum
 # import wrapt
 
 
@@ -1446,8 +1446,9 @@ class SubClass(_DecBase):
         """
         super().__init__(**kwargs)
         self._types = []
+        ex_iterable_types = (Enum,)
         for arg in args:
-            if is_iterable(arg):
+            if is_iterable(arg=arg, excluded_types=ex_iterable_types):
                 self._types.append(arg)
             else:
                 self._types.append(tuple([arg]))
@@ -1514,5 +1515,5 @@ class SubClass(_DecBase):
         if name:
             msg = f"Arg '{name}' in {str_ord} position is expected be a subclass of '{str_types}'."
         else:
-            msg = f"Arg in {str_ord} position of is expected to be of a subclass of '{str_types}'."
+            msg = f"Arg in {str_ord} position is expected to be of a subclass of '{str_types}'."
         return msg
