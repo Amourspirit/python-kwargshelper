@@ -73,8 +73,9 @@ If not the same count then a ``ValueError`` is rasied.
 
 .. code-block:: python
 
-    >>> do_something(Foo(), ObjFoo, Bar())
+    >>> do_something(Foo(), ObjFoo(), Bar())
     ValueError: Invalid number of arguments for do_something()
+    SubClass decorator error.
 
 Multi Choice
 ++++++++++++

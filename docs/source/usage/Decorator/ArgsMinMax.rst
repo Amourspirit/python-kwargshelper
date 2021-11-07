@@ -37,7 +37,7 @@ Passing in two args when three are expected raises a ``ValueError``
     >>> result = foo("a", "b")
     ValueError: Invalid number of args pass into 'foo'.
     Expected min of 3. Got '2' args.
-    ArgsMinMax decorator Error.
+    ArgsMinMax decorator error.
 
 Min and Max
 ----------------
@@ -75,7 +75,7 @@ Passing in ``6`` args result in a ``ValueError``.
     >>> result = foo("a", "b", "c", "d", "e", "f")
     ValueError: Invalid number of args pass into 'foo'.
     Expected min of 3. Expected max of 5. Got '6' args.
-    ArgsMinMax decorator Error.
+    ArgsMinMax decorator error.
 
 Class
 -----

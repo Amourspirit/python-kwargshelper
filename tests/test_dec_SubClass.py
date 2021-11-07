@@ -70,6 +70,9 @@ class TestSubClassDecorators(unittest.TestCase):
         result = req_test(one=Foo(), two=Bar())
         assert str(result[0]) == "Foo"
         assert str(result[1]) == "Bar"
+        # note the order here. two comes before one but
+        # first is still two and second is one because it is being
+        # argsuments are being passed to **kwargs
         result = req_test(two=ObjFoo(), one=FooBar())
         assert str(result[0]) == "FooBar"
         assert str(result[1]) == "ObjFoo"
@@ -79,7 +82,30 @@ class TestSubClassDecorators(unittest.TestCase):
             result = req_test(two=Bar())
         with self.assertRaises(TypeError):
             result = req_test(one=Obj(), two=Bar())
-    
+        with self.assertRaises(ValueError):
+            result = req_test(one=Obj(), two=Bar(), three=Bar())
+
+    def test_subclass_named_args(self):
+        @SubClass((Foo, ObjFoo), Base)
+        def req_test(one, two):
+            return (one, two)
+
+        result = req_test(one=Foo(), two=Bar())
+        assert str(result[0]) == "Foo"
+        assert str(result[1]) == "Bar"
+        result = req_test(two=FooBar(), one=ObjFoo())
+        assert str(result[0]) == "ObjFoo"
+        assert str(result[1]) == "FooBar"
+        with self.assertRaises(TypeError):
+            result = req_test(one=Foo())
+        with self.assertRaises(TypeError):
+            result = req_test(two=Bar())
+        with self.assertRaises(TypeError):
+            result = req_test(one=Obj(), two=Bar())
+        with self.assertRaises(ValueError):
+            result = req_test(one=Obj(), two=Bar(), three=Bar())
+
+
     def test_subclass_opt_all_args(self):
         @SubClass((float, int), opt_all_args=True)
         def sum_num(*args):
@@ -194,6 +220,9 @@ class TestSubClassDecorators(unittest.TestCase):
         result == None
         result = req_test(Obj(), Bar())
         assert result == False
+        result == None
+        result = req_test(Obj(), Bar(), Foo())
+        assert result == False
 
     def test_subclass_optional_args(self):
         @SubClass(Foo,FooBar, Obj)
@@ -274,6 +303,8 @@ class TestSubClassDecorators(unittest.TestCase):
             req_test(Base(), FooBar(), one=ObjFoo(), two=Base())
         with self.assertRaises(TypeError):
             req_test(Base(), "", one=ObjFoo(), two=Bar())
+        with self.assertRaises(ValueError):
+            req_test(*gen_args(5))
 
     def test_accept_required_with_args(self):
         @RequireArgs("one", "two")
