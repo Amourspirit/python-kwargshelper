@@ -64,8 +64,9 @@ first arg is not a subclass of ``ObjFoo`` then an error will be raised.
 
 .. code-block:: python
 
-    >>> result = do_something(Foo(), Obj())
+    >>> print(do_something(Foo(), Obj()))
     TypeError: Arg in 2nd position is expected to be of a subclass of '<class '__main__.ObjFoo'>'.
+    SubClass decorator error.
 
 Arguments passed into function must match the same number of SubClass Types.
 If not the same count then a ``ValueError`` is rasied.
@@ -100,6 +101,7 @@ not being a subclass of ``FooBar`` or ``ObjFoo``.
 
     >>> print(do_something(Foo(), Color.RED))
     TypeError: Arg in 1st position is expected to be of a subclass of '<class '__main__.FooBar'> | <class '__main__.ObjFoo'>'.
+    SubClass decorator error.
 
 
 Decorating with Key, Value
@@ -113,7 +115,7 @@ SubClass type two matches postiion two of function etc...
 
     from kwhelp.decorator import SubClass
 
-    @SubClass(Foo, ObjFoo, [Color])
+    @SubClass(Foo, ObjFoo, Color)
     def do_something(first, last, color=Color.GREEN):
         return str(first), str(last) , str(color)
 
@@ -125,13 +127,83 @@ SubClass type two matches postiion two of function etc...
 
 .. code-block:: python
 
-    >>> result = speed_msg(speed=66, limit=60, hours=4.7)
-    >>> print(result)
-    Please slow down limit is '60' and you are currenlty going '66'. Current driving hours is '4.7
+    >>> print(do_something(last=ObjFoo(), first=1))
+    TypeError: Arg 'first' is expected be a subclass of '<class '__main__.Foo'>'.
+    SubClass decorator error
 
-Types dictate that if a type is not ``int`` or ``float`` then an error will be raised.
+Primitive Types
+---------------
+
+In python numbers and str instances are classes. SubClass can also be used to test for numbers and strings.
 
 .. code-block:: python
 
-    >>> result = speed_msg(speed=45, limit="Fast")
-    TypeError: Arg 'limit' is expected to be of '<class 'int'> | <class 'float'>' but got 'str'
+    @SubClass(int, (int, float), str)
+    def do_something(first, last, end):
+        return first, last , end
+
+
+.. code-block:: python
+
+    >>> print(do_something(1, 17, "!!!"))
+    (1, 17, '!!!')
+    >>> do_something(1, 44.556, "!!!")
+    (1, 44.556, '!!!')
+    >>> print(do_something(1, 44.556))
+    ValueError: Invalid number of arguments for do_something()
+    SubClass decorator error.
+    >>> print(do_something(1, 44.556, 10))
+    TypeError: Arg 'end' is expected be a subclass of '<class 'str'>'.
+    SubClass decorator error
+
+Option opt_all_args
+-------------------
+
+``opt_all_args`` argument allows the last class type passed into SubClass to
+validate all remaining arguments of wrapped function.
+
+.. code-block:: python
+
+    @SubClass(float, (float, int), opt_all_args=True)
+    def sum_num(*args):
+        return sum(args)
+
+The first arg of ``sum_num`` must be a ``float``. Remaining args can be ``float`` or ``int``.
+
+.. code-block:: python
+
+    >>> print(sum_num(1.3, 44.556, 10, 22, 45, 7.88))
+    130.736
+    >>> print(sum_num(1, 44.556, 10, 22, 45, 7.88))
+    TypeError: Arg in 1st position is expected to be of a subclass of '<class 'float'>'.
+    SubClass decorator error.
+    >>> print(sum_num(1.3, 44.556, 10, 22, 45, 7.88, "77"))
+    TypeError: Arg in 7th position is expected to be of a subclass of '(<class 'float'>, <class 'int'>)'.
+    SubClass decorator error.
+
+
+Combined Decorators
+-------------------
+
+:py:class:`~.decorator.SubClass` can be combined with other decorators.
+
+The following example limits how many args are allowed by applying
+:py:class:`~.decorator.ArgsMinMax` decorator.
+
+.. code-block:: python
+
+    from kwhelp.decorator import SubClass, ArgsMinMax
+
+    @ArgsMinMax(max=6)
+    @SubClass(float, (float, int), opt_all_args=True)
+    def sum_num(*args):
+        return sum(args)
+
+.. code-block:: python
+
+    >>> print(sum_num(1.3, 44.556, 10, 22, 45, 7.88))
+    130.736
+    >>> print(sum_num(1, 44.556, 10, 22, 45, 7.88, 100))
+    ValueError: Invalid number of args pass into 'sum_num'.
+    Expected max of 6. Got '7' args.
+    ArgsMinMax decorator error.
