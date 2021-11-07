@@ -2,7 +2,7 @@ import enum
 import functools
 import inspect
 import re
-from typing import Dict, Iterable, Iterator, Optional, Set, Tuple, Union
+from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple, Union
 from inspect import _ParameterKind, signature, isclass, Parameter, Signature
 from ..checks import TypeChecker, RuleChecker, SubClassChecker
 from ..rules import IRule
@@ -1458,6 +1458,7 @@ class SubClass(_DecBase):
             self._kwargs = {**kwargs}
         else:
             self._kwargs = {}
+        self._all_args = bool(kwargs.get("opt_all_args", False))
 
     def _get_formated_types(self, types: Iterator[type]) -> str:
         result = ''
@@ -1467,42 +1468,51 @@ class SubClass(_DecBase):
             result = f"{result}{t}"
         return result
 
+    def _validate(self, func: callable, key: str, value: object, types: List[type], arg_index: int):
+        sc = SubClassChecker(*types, **self._kwargs)
+        # ensure errors are raised if not valid
+        sc.raise_error = True
+        if self._is_placeholder_arg(key):
+            try:
+                sc.validate(value)
+            except TypeError:
+                if self._is_opt_return():
+                    return self._opt_return
+                raise TypeError(self._get_err_msg(name=None, value=value,
+                                                  types=types, arg_index=arg_index,
+                                                  fn=func))
+        else:
+            try:
+                sc.validate(**{key: value})
+            except TypeError:
+                if self._is_opt_return():
+                    return self._opt_return
+                raise TypeError(self._get_err_msg(name=key, value=value,
+                                                  types=types, arg_index=arg_index,
+                                                  fn=func))
+        return NO_THING
+
     def __call__(self, func: callable):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             arg_name_values = self._get_args_dict(func, args, kwargs)
             arg_keys = arg_name_values.keys()
-            if len(arg_keys) is not len(self._types):
-                if self._is_opt_return():
-                    return self._opt_return
-                raise ValueError(
-                    'Invalid number of arguments for {0}()'.format(func.__name__))
+            arg_keys_len = arg_keys.__len__()
+            if self._all_args is False:
+                if arg_keys_len is not len(self._types):
+                    if self._is_opt_return():
+                        return self._opt_return
+                    raise ValueError(
+                        'Invalid number of arguments for {0}()'.format(func.__name__))
             arg_type = zip(arg_keys, self._types)
             i = 0
             for arg_info in arg_type:
                 key = arg_info[0]
                 value = arg_name_values[key]
-                sc = SubClassChecker(*arg_info[1], **self._kwargs)
-                # ensure errors are raised if not valid
-                sc.raise_error = True
-                if self._is_placeholder_arg(key):
-                    try:
-                        sc.validate(value)
-                    except TypeError:
-                        if self._is_opt_return():
-                            return self._opt_return
-                        raise TypeError(self._get_err_msg(name=None, value=value,
-                                                          types=arg_info[1], arg_index=i,
-                                                          fn=func))
-                else:
-                    try:
-                        sc.validate(**{key: value})
-                    except TypeError:
-                        if self._is_opt_return():
-                            return self._opt_return
-                        raise TypeError(self._get_err_msg(name=key, value=value,
-                                                          types=arg_info[1], arg_index=i,
-                                                          fn=func))
+                result = self._validate(func=func, key=key,
+                               value=value, types=arg_info[1], arg_index=i)
+                if not result is NO_THING:
+                    return result
                 i += 1
             return func(*args, **kwargs)
         return wrapper
