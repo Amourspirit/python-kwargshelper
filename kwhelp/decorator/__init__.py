@@ -254,7 +254,7 @@ class _DecBase(_CommonBase):
             names (List[str]): List of names
 
         Returns:
-            str: formated such as ``'fineal' and 'end'`` or ``'one', 'final', and 'end'``
+            str: formated such as ``'final' and 'end'`` or ``'one', 'final', and 'end'``
         """
         s = ""
         names_len = len(names)

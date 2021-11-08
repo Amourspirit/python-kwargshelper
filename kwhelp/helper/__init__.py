@@ -97,7 +97,7 @@ def is_iterable(arg: object, excluded_types: Iterable[type]=(str,)) -> bool:
                 BLUE = auto()
             
             assert is_iterable(arg=Color)             # Enum
-            assert not is_iterable(arg=Color, excluded_types=(Enum,))    # Enum
+            assert not is_iterable(arg=Color, excluded_types=(Enum, str)) # Enum
     """
     # if isinstance(arg, str):
     #     return False

@@ -90,5 +90,15 @@ class TestDecBase(unittest.TestCase):
         result = rt._get_ordinal(33)
         self.assertEqual(result, "33rd")
 
+    def test_get_formated_names(self):
+        rt = _DecBase()
+        result = rt._get_formated_names(names=['first'])
+        assert result == "'first'"
+        result = rt._get_formated_names(names=['first', 'second'])
+        assert result == "'first' and 'second'"
+        result = rt._get_formated_names(names=['first', 'second', 'third'])
+        assert result == "'first', 'second', and 'third'"
+
+
 if __name__ == '__main__':
     unittest.main()

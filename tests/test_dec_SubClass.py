@@ -120,6 +120,22 @@ class TestSubClassDecorators(unittest.TestCase):
         with self.assertRaises(TypeError):
             sum_num(self)
 
+    def test_subclass_opt_all_args_opt_return(self):
+        @SubClass((float, int), opt_all_args=True, opt_return=None)
+        def sum_num(*args):
+            return sum(args)
+
+        args = gen_int_float(20)
+        result = sum_num(*args)
+        assert result == 197.0
+        args.append(Foo())
+        result = False
+        result = sum_num(*args)
+        assert result == None
+        result = False
+        result = sum_num(self)
+        assert result == None
+
     def test_subclass_opt_all_args_multi(self):
         # first arg must be float, all othe must be int
         @SubClass(float, int, opt_all_args=True)
