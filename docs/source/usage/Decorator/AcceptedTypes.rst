@@ -42,37 +42,6 @@ The following example requres:
     >>> print(result)
     TypeError: Arg 'two' is expected to be of '<class 'float'> | <class 'int'>' but got 'str'
 
-``Enum``
-++++++++
-
-Enums are iterable. For this reason when passing an enum type to :py:class:`~.decorator.AcceptedTypes`
-it must be passed inside of a iterable object such as a list or a tuple.
-
-.. code-block:: python
-
-    from enum import IntEnum, auto
-
-    class Color(IntEnum):
-        RED = auto()
-        GREEN = auto()
-        BLUE = auto()
-
-        def __str__(self) -> str:
-            return self._name_
-
-.. code-block:: python
-
-    from kwhelp.decorator import AcceptedTypes
-
-    @AcceptedTypes([Color])
-    def foo(color):
-        return str(color)
-
-.. code-block:: python
-
-    >>> print(foo(Color.RED))
-    RED
-
 ``*args``
 +++++++++
 

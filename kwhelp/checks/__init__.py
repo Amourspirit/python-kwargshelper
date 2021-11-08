@@ -1,13 +1,40 @@
 # coding: utf-8
 from inspect import isclass
-from typing import Iterable, Optional, Union
+from typing import Iterable, Optional, Tuple, Type, Union
 from ..rules import IRule
 from ..helper import is_iterable
 from ..exceptions import RuleError
-class TypeChecker:
-    """Class that validates args match a give type"""
 
-    def __init__(self, *args: type, **kwargs): 
+
+class _CheckBase:
+    def __init__(self, **kwargs):
+        """Constructor"""
+
+    def _is_instance(self, obj: object) -> bool:
+        # when obj is instance then isinstance(obj, obj) raises TypeError
+        # when obj is not instance then isinstance(obj, obj) return False
+        try:
+            if not isinstance(obj, obj):
+                return False
+        except TypeError:
+            pass
+        return True
+
+    def _get_type(self, obj: object):
+        # when obj is instance then isinstance(obj, obj) raises TypeError
+        # when obj is not instance then isinstance(obj, obj) return False
+        try:
+            if not isinstance(obj, obj):
+                return obj
+        except TypeError:
+            pass
+        return type(obj)
+
+
+class TypeChecker(_CheckBase):
+    """Class that validates args match a given type"""
+
+    def __init__(self, *args: type, **kwargs):
         """
         Constructor
 
@@ -15,26 +42,23 @@ class TypeChecker:
             args (type): One or more types used for Validation purposes.
 
         Keyword Arguments:
-            raise_error: (bool, optional): If ``True`` then an error will be raised if a :py:meth:`~.TypeChecker.validate` fails:
+            raise_error (bool, optional): If ``True`` then an error will be raised if a :py:meth:`~.TypeChecker.validate` fails:
                 Othwewise :py:meth:`~.TypeChecker.validate` will return a boolean value indicationg success or failure.
+                Default ``True``
             type_instance_check (bool, optional): If ``True`` then :py:meth:`~.TypeChecker.validate` args
                 are tested also for isinstance if type does not match, rather then just type check if type is a match.
                 If ``False`` then values willl only be tested as type.
                 Default ``True``
         """
-        self._types = [arg for arg in args]
-
-        key = 'raise_error'
-        if key in kwargs:
-            self._raise_error: bool = bool(kwargs[key])
-        else:
-            self._raise_error: bool = True
-
-        key = 'type_instance_check'
-        if key in kwargs:
-            self._type_instance_check: bool = bool(kwargs[key])
-        else:
-            self._type_instance_check: bool = True
+        super().__init__(**kwargs)
+        # self._types = [arg for arg in args]
+        _types = set()
+        for arg in args:
+            _types.add(self._get_type(arg))
+        self._types: Tuple[type] = tuple(_types)
+        self._raise_error: bool = bool(kwargs.get('raise_error', True))
+        self._type_instance_check: bool = bool(
+            kwargs.get('type_instance_check', True))
 
     def _get_formated_types(self) -> str:
         result = ''
@@ -134,9 +158,9 @@ class TypeChecker:
     @raise_error.setter
     def raise_error(self, value: bool) -> bool:
         self._raise_error = bool(value)
-    
+
     @property
-    def types(self) -> Iterable[type]:
+    def types(self) -> Tuple[type]:
         """
         Gets the types passed into constructor that are used for validating args
         """
@@ -144,7 +168,7 @@ class TypeChecker:
     # endregion Properties
 
 
-class RuleChecker:
+class RuleChecker(_CheckBase):
     """Class that validates args match a given rule"""
 
     def __init__(self, rules_all: Optional[Iterable[IRule]] = None, rules_any: Optional[Iterable[IRule]] = None, ** kwargs):
@@ -163,6 +187,7 @@ class RuleChecker:
             TypeError: If ``rule_all`` is not an iterable object
             TypeError: If ``rule_any`` is not an iterable object
         """
+        super().__init__(**kwargs)
         if rules_all is None:
             self._rules_all = []
             self._len_all = 0
@@ -181,8 +206,7 @@ class RuleChecker:
                     "rules_aany arg must be an iterable object such as list or tuple.")
             self._rules_any = rules_any
             self._len_any = len(self._rules_any)
-            
-        
+
         key = 'raise_error'
         if key in kwargs:
             self._raise_error: bool = bool(kwargs[key])
@@ -200,7 +224,7 @@ class RuleChecker:
         else:
             _key = 'arg'
             _field = 'arg'
-           
+
         result = True
         if self._len_all > 0:
             for rule in self._rules_all:
@@ -251,12 +275,12 @@ class RuleChecker:
             arg_name = _key if valid_arg else None
             raise RuleError(rules_any=self._rules_any,
                             err_rule=failed_rules[0], arg_name=arg_name, errors=error_lst) from error_lst[0]
-            
+
         return result
 
-    def _is_valid_arg(self, arg:str) -> bool:
+    def _is_valid_arg(self, arg: str) -> bool:
         return arg != '..arg'
-    
+
     # endregion internal validation methods
 
     def validate_all(self, *args, **kwargs) -> bool:
@@ -346,4 +370,126 @@ class RuleChecker:
     @raise_error.setter
     def raise_error(self, value: bool) -> bool:
         self._raise_error = bool(value)
+    # endregion Properties
+
+
+class SubClassChecker(_CheckBase):
+    """Class that validates args is a subclass of a give type"""
+
+    def __init__(self, *args: type, **kwargs):
+        """
+        Constructor
+
+        Other Arguments:
+            args (type): One or more types used for Validation purposes.
+
+        Keyword Arguments:
+            raise_error (bool, optional): If ``True`` then an error will be raised if a :py:meth:`~.SubClassChecker.validate` fails:
+                Othwewise :py:meth:`~.SubClassChecker.validate` will return a boolean value indicationg success or failure.
+                Default ``True``
+            opt_inst_only (bool, optional): If ``True`` then validation will requires all values being tested to be an
+                instance of a class. If ``False`` valadition will test class instance and class type.
+                Default ``True``
+        """
+        super().__init__(**kwargs)
+        _types = set()
+        for arg in args:
+            _types.add(self._get_type(arg))
+
+        self._types: Tuple[type] = tuple(_types)
+        self._raise_error: bool = bool(kwargs.get('raise_error', True))
+        self._instance_only: bool = bool(kwargs.get('opt_inst_only', True))
+
+    def _get_formated_types(self) -> str:
+        result = ''
+        for i, t in enumerate(self._types):
+            if i > 0:
+                result = result + ' | '
+            result = f"{result}{t}"
+        return result
+
+    def _validate_subclass(self, value: object,  key: Union[str, None] = None):
+        result = True
+        if self._instance_only is True:
+            result = self._is_instance(value)
+        if result is True:
+            t = self._get_type(value)
+            if not isclass(t) or not issubclass(t, self._types):
+                result = False
+        if result is False and self._raise_error is True:
+            if key is None:
+                msg = f"Arg Value is expected to be of a subclass of '{self._get_formated_types()}'."
+            else:
+                msg = f"Arg '{key}' is expected to be of a subclass of '{self._get_formated_types()}'."
+            raise TypeError(msg)
+        return result
+
+    def validate(self, *args, **kwargs) -> bool:
+        """
+        Validates all ``*args`` and all ``**kwargs`` against ``types`` that are passed
+        into constructor.
+
+        Returns:
+            bool: ``True`` if all ``*args`` and all ``**kwarg`` match a valid class; Otherwise;
+            ``False``.
+
+        Raises:
+            TypeError: if ``raise_error`` is ``True`` and validation fails.
+        """
+        if len(self._types) == 0:
+            return True
+        result = True
+        for arg in args:
+            result = result & self._validate_subclass(value=arg)
+            if result is False:
+                break
+        if result is False:
+            return result
+        for k, v in kwargs.items():
+            result = result & self._validate_subclass(value=v, key=k)
+            if result is False:
+                break
+        return result
+
+    # region Properties
+
+    @property
+    def raise_error(self) -> bool:
+        """
+        Determines if errors will be raised during validation
+
+        If ``True`` then errors will be raised when validation fails.
+
+        :getter: Gets if errors can be raised.
+        :setter: Sets if errors can be raised.
+        """
+        return self._raise_error
+
+    @raise_error.setter
+    def raise_error(self, value: bool) -> bool:
+        self._raise_error = bool(value)
+
+    @property
+    def instance_only(self) -> bool:
+        """
+        Determines if validation requires instance of class
+
+        If ``True`` then validation will fail when a type is validated,
+        rather then an instance of a class.
+
+        :getter: Gets instance_only.
+        :setter: Sets instance_only.
+        """
+        return self._instance_only
+
+    @instance_only.setter
+    def instance_only(self, value: bool) -> bool:
+        self._instance_only = bool(value)
+
+    @property
+    def types(self) -> Tuple[type]:
+        """
+        Gets the types passed into constructor that are used for validating args
+        """
+        return self._types
     # endregion Properties

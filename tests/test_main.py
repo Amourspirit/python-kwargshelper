@@ -1589,20 +1589,6 @@ class TestAssignAllRules(unittest.TestCase):
                           rules_any=[rules.RuleIntNegativeOrZero, rules.RuleFloatNegativeOrZero])
 
 
-class TestIsIterable(unittest.TestCase):
-    def test_is_iterable(self):
-        assert is_iterable(("f", "f"))    # tuple
-        assert is_iterable(["f", "f"])    # list
-        assert is_iterable(iter("ff"))    # iterator
-        assert is_iterable(range(44))     # generator
-        # bytes (Python 2 calls this a string)
-        assert is_iterable(b"ff")
-
-        # strings or non-iterables
-        assert not is_iterable(u"ff")     # string
-        assert not is_iterable(44)        # integer
-        assert not is_iterable(is_iterable)  # function
-
 
 if __name__ == '__main__':
     unittest.main()
