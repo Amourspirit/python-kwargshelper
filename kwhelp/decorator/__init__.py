@@ -254,12 +254,14 @@ class _DecBase(_CommonBase):
             names (List[str]): List of names
 
         Keyword Args:
-            conj (str, optional): Conjunction used to join list. Default ``and``
+            conj (str, optional): Conjunction used to join list. Default ``and``.
+            wrapper (str, optional): String to prepend and append to each value. Default ``'``.
 
         Returns:
             str: formated such as ``'final' and 'end'`` or ``'one', 'final', and 'end'``
         """
         conj = kwargs.get("conj", "and")
+        wrapper = kwargs.get("wrapper","'")
         s = ""
         names_len = len(names)
         last_index = names_len - 1
@@ -272,7 +274,7 @@ class _DecBase(_CommonBase):
                 if names_len > 1 and i == last_index:
                     s = s + conj + ' '
 
-            s = s + "'{0}'".format(name)
+            s = s + "{0}{1}{0}".format(wrapper, name)
         return s
                 
     def _get_formated_types(self, types: Iterator[type]) -> str:
@@ -593,26 +595,23 @@ class ArgsLen(_DecBase):
 
     def _get_valid_counts(self) -> str:
         str_len = ""
-        lengths = sorted(self._lengths)
-        ranges = sorted(self._ranges)
-        for i, length in enumerate(lengths):
-            if i > 0:
-                str_len = str_len + ", "
-            str_len = str_len + str(length)
         str_rng = ""
-        for i, rng in enumerate(ranges):
-            if i > 0:
-                str_rng = str_rng + ", "
-            str_rng = str_rng + f"({rng[0]}, {rng[1]})"
+        len_lengths = len(self._lengths)
+        len_ranges = len(self._ranges)
+        if len_lengths > 0:
+            lengths = sorted(self._lengths)
+            str_len = self._get_formated_names(names=lengths, conj='or')
+        if len_ranges > 0:
+            ranges = sorted(self._ranges)
+            str_rng = self._get_formated_names(names=ranges, conj='or', wrapper="")
         result = ""
-        len_lengths = len(lengths)
-        len_ranges = len(ranges)
+        
         if len_lengths > 0:
             if len_lengths == 1:
                 result = result + "Expected Length: "
             else:
                 result = result + "Expected Lengths: "
-            result = result + f"'{str_len}'."
+            result = result + f"{str_len}."
         if len_ranges > 0:
             if len_lengths > 0:
                 result = result + " "
