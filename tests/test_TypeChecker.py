@@ -22,6 +22,17 @@ class TestTypeChecker(unittest.TestCase):
         with self.assertRaises(TypeError):
             tc.validate(4.6, 5, 5.8, '')
 
+    def test_multi(self):
+        tc = TypeChecker(int, float, str)
+        assert len(tc.types) == 3
+        assert tc.validate(one=2, two=2.0) == True
+        with self.assertRaises(TypeError):
+            tc.validate(one=2, two=1, three=self)
+
+        assert tc.validate(1, 3, 4.6, 5, 5.8) == True
+        with self.assertRaises(TypeError):
+            tc.validate(4.6, 5, 5.8, self)
+
     def test_types_none(self):
         tc = TypeChecker()
         # no checking takes place with types is None

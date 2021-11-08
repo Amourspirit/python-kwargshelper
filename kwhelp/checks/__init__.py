@@ -75,8 +75,6 @@ class _CheckBase:
         Returns:
             str: Formated String
         """
-        if len(types) == 0:
-            return ""
         t_names = [t.__name__ for t in types]
         result = self._get_formated_names(names=t_names, **kwargs)
         return result
