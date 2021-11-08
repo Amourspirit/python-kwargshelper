@@ -39,7 +39,8 @@ Types dictate that if a type is not ``int`` or ``float`` then an error will be r
 .. code-block:: python
 
     >>> result = add_numbers(2, 1.2, "4")
-    TypeError: Arg Value is expected to be of '<class 'int'> | <class 'float'>' but got 'str'
+    TypeError: Arg Value is expected to be of 'float' or 'int' but got 'str'.
+    TypeCheck decorator error.
 
 Decorating with Key, Value
 --------------------------
@@ -81,4 +82,5 @@ Types dictate that if a type is not ``int`` or ``float`` then an error will be r
 .. code-block:: python
 
     >>> result = speed_msg(speed=45, limit="Fast")
-    TypeError: Arg 'limit' is expected to be of '<class 'int'> | <class 'float'>' but got 'str'
+    TypeError: Arg 'limit' is expected to be of 'float' or 'int' but got 'str'.
+    TypeCheck decorator error.

@@ -36,10 +36,5 @@ class TestRequiredDecorators(unittest.TestCase):
             result = logger2.log("  ")
 
 
-
-
-
-
-
 if __name__ == '__main__':
     unittest.main()

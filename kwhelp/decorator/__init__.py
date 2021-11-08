@@ -2,14 +2,14 @@ import enum
 import functools
 import inspect
 import re
-from typing import Dict, Iterable, Iterator, Optional, Set, Tuple, Union
+from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple, Union
 from inspect import _ParameterKind, signature, isclass, Parameter, Signature
-from ..checks import TypeChecker, RuleChecker
+from ..checks import TypeChecker, RuleChecker, SubClassChecker
 from ..rules import IRule
 from ..helper import is_iterable
 from ..exceptions import RuleError
 from ..helper import NO_THING
-from enum import IntEnum
+from enum import Enum, IntEnum
 # import wrapt
 
 
@@ -112,13 +112,30 @@ class _DecBase(_CommonBase):
         self._cache["signature"] = signature(func)
         return self._cache["signature"]
 
-    def _get_args_dict(self, func: callable, args: Iterable[object], kwargs: Dict[str, object]) -> Dict[str, object]:
+    def _get_args_dict(self, func: callable, fn_args: Iterable[object], fn_kwargs: Dict[str, object], **kwargs) -> Dict[str, object]:
+        """
+        [summary]
+
+        Args:
+            func (callable): Wrapped Function
+            fn_args (Iterable[object]): Wrapped function *args
+            fn_kwargs (Dict[str, object]): Wrapped function **kwargs
+
+        Keyword Arguments:
+            error_check (bool, optional): Determinse if errors are raise if there are missing
+                keywords. This is the case when function has keywords without defaults assigned
+                and no value is passed into function.
+
+        Returns:
+            Dict[str, object]: Dictionary of keys and values representing ``func`` keywords and values.
+        """
         # Positional argument cannot appear after keyword arguments
         # no *args after **kwargs def foo(**kwargs, *args) not valid
         # def foo(name, age, *args) not valid
         #
         # When only args are passed in (no **kwargs present) with named args then
         # the last named args with defaults are like additional args
+        error_check = kwargs.get("error_check", True)
         sig = self._get_signature(func)
         name_values = []
         i = 0
@@ -138,10 +155,10 @@ class _DecBase(_CommonBase):
                 name_values.append((k, NO_THING))
             i += 1
         arg_offset = 0 if args_pos == -1 else args_pos
-        if drop_first and len(args) > arg_offset:
-            _args = args[(arg_offset + 1):]
+        if drop_first and len(fn_args) > arg_offset:
+            _args = fn_args[(arg_offset + 1):]
         else:
-            _args = args[arg_offset:]
+            _args = fn_args[arg_offset:]
         arg_len = len(_args)
         name_values_len = len(name_values)
         if drop_first and name_values_len > 0:
@@ -195,24 +212,87 @@ class _DecBase(_CommonBase):
                 el = name_values[j]
                 argnames.append(el[0])
             if drop_first:
-                _zip_args = args[1:]
+                _zip_args = fn_args[1:]
             else:
-                _zip_args = args
+                _zip_args = fn_args
             d = {**dict(zip(argnames, _zip_args[:len(argnames)]))}
             name_defaults.update(d)
-        if len(kwargs) > 0:
+        if len(fn_kwargs) > 0:
             # update name_default with any kwargs that are passed in.
             # this will update any default values with the values passed
             # into function at call time.
-            name_defaults.update(kwargs)
+            name_defaults.update(fn_kwargs)
+        if error_check is True:
+            # if any arg has a value of NO_THING then it is a missing arg.
+            # if no error is raise here then python will raise TypeError such as:
+            # TypeError: foo() missing 1 required positional argument: 'end'
+            missing_args = []
+            for k, v in name_defaults.items():
+                if v is NO_THING:
+                    missing_args.append(k)
+            self._missing_args_error(func=func, missing_names=missing_args)
         return name_defaults
 
-    def _get_formated_types(self, types: Iterator[type]) -> str:
-        result = ''
-        for i, t in enumerate(types):
+    def _missing_args_error(self, func: callable, missing_names: List[str]):
+        missing_names_len = len(missing_names)
+        if missing_names_len == 0:
+            return
+        msg = f"{func.__name__}() missing {missing_names_len} required positional"
+        if missing_names_len == 1:
+            msg = msg + " argument: "
+        else:
+            msg = msg + " arguments: "
+        msg = msg +  self._get_formated_names(names=missing_names)
+        msg = msg + self._get_class_dec_err()
+        raise TypeError(msg)
+
+    def _get_formated_names(self, names: List[str], **kwargs) -> str:
+        """
+        Gets a formated string of a list of names
+
+        Args:
+            names (List[str]): List of names
+
+        Keyword Args:
+            conj (str, optional): Conjunction used to join list. Default ``and``.
+            wrapper (str, optional): String to prepend and append to each value. Default ``'``.
+
+        Returns:
+            str: formated such as ``'final' and 'end'`` or ``'one', 'final', and 'end'``
+        """
+        conj = kwargs.get("conj", "and")
+        wrapper = kwargs.get("wrapper","'")
+        s = ""
+        names_len = len(names)
+        last_index = names_len - 1
+        for i, name in enumerate(names):
             if i > 0:
-                result = result + ' | '
-            result = f"{result}{t}"
+                if names_len > 2:
+                    s = s + ', '
+                else:
+                    s = s + ' '
+                if names_len > 1 and i == last_index:
+                    s = s + conj + ' '
+
+            s = s + "{0}{1}{0}".format(wrapper, name)
+        return s
+                
+    def _get_formated_types(self, types: Iterator[type], **kwargs) -> str:
+        """
+        Gets a formated string from a list of types.
+
+        Args:
+            types (Iterator[type]): Types to create fromated string.
+
+        Keyword Args:
+            conj (str, optional): Conjunction used to join list. Default ``and``.
+            wrapper (str, optional): String to prepend and append to each value. Default ``'``.
+
+        Returns:
+            str: Formated String
+        """
+        t_names = [t.__name__ for t in types]
+        result = self._get_formated_names(names=t_names, **kwargs)
         return result
 
     def _get_ordinal(self, num: int) -> str:
@@ -258,10 +338,26 @@ class _DecBase(_CommonBase):
         self._cache["star_args_pos"] = args_pos
         return self._cache["star_args_pos"]
 
+    def _get_class_dec_err(self, **kwargs) -> str:
+        """
+        Gets a string representing class decorator error.
+
+        Keyword Args:
+            nl (bool, optional): Determines if new line is prepended to return value. Default ``True``
+
+        Returns:
+            str: Formated string similar to ``SubClass decorator error.``
+        """
+        nl = kwargs.get('nl', True)
+        result = ""
+        if nl:
+            result = result + '\n'
+        result = result + f"{self.__class__.__name__} decorator error."
+        return result
 
 class _RuleBase(_DecBase):
     def _get_err(self, fn: callable, e: RuleError):
-        err = RuleError.from_rule_error(e, fn_name=fn.__name__)
+        err = RuleError.from_rule_error(e, fn_name=fn.__name__, msg=self._get_class_dec_err(nl=False))
         return err
 
 
@@ -322,7 +418,9 @@ class TypeCheck(_DecBase):
             except TypeError as e:
                 if self._is_opt_return():
                     return self._opt_return
-                raise e
+                msg = str(e)
+                msg = msg + self._get_class_dec_err()
+                raise TypeError(msg)
             return func(*args, **kwargs)
         if self._typechecker.raise_error is False:
             wrapper.is_types_valid = True
@@ -360,13 +458,21 @@ class AcceptedTypes(_DecBase):
             opt_return (object, optional): Return value when decorator is invalid.
                 By default an error is rasied when validation fails. If ``opt_return`` is
                 supplied then it will be return when validation fails and no error will be raised.
+            opt_all_args (bool, optional): If ``True`` then the last subclass type passed into constructor will
+                define any remaining args. This allows for one subclass to define required match of all arguments
+                that decorator is applied to.
+                Default ``False``
         """
         super().__init__(**kwargs)
         self._tc = None
         self._types = []
+        ex_iterable_types = (Enum, str)
         for arg in args:
-            if is_iterable(arg):
-                self._types.append(arg)
+            if is_iterable(arg=arg, excluded_types=ex_iterable_types):
+                arg_set = set()
+                for arg_itm in arg:
+                    arg_set.add(arg_itm)
+                self._types.append(arg_set)
             else:
                 self._types.append(tuple([arg]))
         if kwargs:
@@ -374,52 +480,86 @@ class AcceptedTypes(_DecBase):
             self._kwargs = {**kwargs}
         else:
             self._kwargs = {}
+        self._all_args = bool(kwargs.get("opt_all_args", False))
 
-    def _get_formated_types(self, types: Iterator[type]) -> str:
-        result = ''
-        for i, t in enumerate(types):
-            if i > 0:
-                result = result + ' | '
-            result = f"{result}{t}"
+    def _get_formated_types(self, types: Union[Tuple[type], Set[type]]) -> str:
+        # multi is list of set, actually one set in a list
+        # single is a tuple of a single type.
+        # these types are set in constructor.
+        if isinstance(types, tuple):
+            return f"'{types[0].__name__}'"
+        lst_multi = [t.__name__ for t in types]
+        result = self._get_formated_names(names=lst_multi,
+                                          conj='or')
         return result
+
+    def _get_inst(self, types: Iterable[type]):
+        return TypeChecker(*types, **self._kwargs)
+
+    def _validate(self, func: callable, key: str, value: object, types: Iterable[type], arg_index: int, inst: SubClassChecker = None):
+        if inst is None:
+            tc = self._get_inst(types=types)
+        else:
+            tc = inst
+        if self._is_placeholder_arg(key):
+            try:
+                tc.validate(value)
+            except TypeError:
+                if self._is_opt_return():
+                    return self._opt_return
+                raise TypeError(self._get_err_msg(name=None, value=value,
+                                                    types=types, arg_index=arg_index,
+                                                    fn=func))
+        else:
+            try:
+                tc.validate(**{key: value})
+            except TypeError:
+                if self._is_opt_return():
+                    return self._opt_return
+                raise TypeError(self._get_err_msg(name=key, value=value,
+                                                    types=types, arg_index=arg_index,
+                                                    fn=func))
+        return NO_THING
 
     def __call__(self, func: callable):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            arg_name_values = self._get_args_dict(func, args, kwargs)
-            arg_keys = arg_name_values.keys()
-            if len(arg_keys) is not len(self._types):
-                if self._is_opt_return():
-                    return self._opt_return
-                raise ValueError(
-                    'Invalid number of arguments for {0}()'.format(func.__name__))
+            arg_name_values = self._get_args_dict(
+                func=func, fn_args=args, fn_kwargs=kwargs)
+            arg_keys = list(arg_name_values.keys())
+            arg_keys_len = arg_keys.__len__()
+            if arg_keys_len is not len(self._types):
+                if self._all_args is False:
+                    if self._is_opt_return():
+                        return self._opt_return
+                    msg = 'Invalid number of arguments for {0}()'.format(
+                        func.__name__)
+                    msg = msg + self._get_class_dec_err()
+                    raise ValueError(msg)
             arg_type = zip(arg_keys, self._types)
             i = 0
             for arg_info in arg_type:
                 key = arg_info[0]
-                value = arg_name_values[key]
-                tc = TypeChecker(*arg_info[1], **self._kwargs)
-                # ensure errors are raised if not valid
-                tc.raise_error = True
-                if self._is_placeholder_arg(key):
-                    try:
-                        tc.validate(value)
-                    except TypeError:
-                        if self._is_opt_return():
-                            return self._opt_return
-                        raise TypeError(self._get_err_msg(name=None, value=value,
-                                                          types=arg_info[1], arg_index=i,
-                                                          fn=func))
-                else:
-                    try:
-                        tc.validate(**{key: value})
-                    except TypeError:
-                        if self._is_opt_return():
-                            return self._opt_return
-                        raise TypeError(self._get_err_msg(name=key, value=value,
-                                                          types=arg_info[1], arg_index=i,
-                                                          fn=func))
+                result = self._validate(func=func, key=key,
+                                        value=arg_name_values[key],
+                                        types=arg_info[1], arg_index=i)
+                if not result is NO_THING:
+                    return result
                 i += 1
+            if arg_keys_len > i:
+                # this only happens when _all_args is True
+                # at this point remain args should match last last type in self._types
+                r_args = arg_keys[i:]
+                types = self._types[len(self._types) - 1] # tuple or set
+                sc = self._get_inst(types=types)
+                for r_arg in r_args:
+                    result = self._validate(func=func, key=r_arg,
+                                            value=arg_name_values[r_arg],
+                                            types=types, arg_index=i,
+                                            inst=sc)
+                    if not result is NO_THING:
+                        return result
+                    i += 1
             return func(*args, **kwargs)
         return wrapper
 
@@ -427,12 +567,13 @@ class AcceptedTypes(_DecBase):
         str_types = self._get_formated_types(types=types)
         str_ord = self._get_ordinal(arg_index + 1)
         if self._ftype == DecFuncEnum.PROPERTY_CLASS:
-            msg = f"'{fn.__name__}' property error. Arg '{name}' expected type of '{str_types}' but got '{type(value).__name__}'"
+            msg = f"'{fn.__name__}' property error. Arg '{name}' expected type of {str_types} but got '{type(value).__name__}'."
             return msg
         if name:
-            msg = f"Arg '{name}' in {str_ord} position is expected to be of '{str_types}' but got '{type(value).__name__}'"
+            msg = f"Arg '{name}' in {str_ord} position is expected to be of {str_types} but got '{type(value).__name__}'."
         else:
-            msg = f"Arg in {str_ord} position of is expected to be of '{str_types}' but got '{type(value).__name__}'"
+            msg = f"Arg in {str_ord} position of is expected to be of {str_types} but got '{type(value).__name__}'."
+        msg = msg + self._get_class_dec_err()
         return msg
 
 
@@ -481,30 +622,28 @@ class ArgsLen(_DecBase):
         valid = len(self._lengths) > 0 or len(self._ranges) > 0
         if not valid:
             msg = f"{self.__class__.__name__} error. constructor must have valid args of of postive int and/or postive pairs of int."
+            msg = msg + self._get_class_dec_err()
             raise ValueError(msg)
 
     def _get_valid_counts(self) -> str:
         str_len = ""
-        lengths = sorted(self._lengths)
-        ranges = sorted(self._ranges)
-        for i, length in enumerate(lengths):
-            if i > 0:
-                str_len = str_len + ", "
-            str_len = str_len + str(length)
         str_rng = ""
-        for i, rng in enumerate(ranges):
-            if i > 0:
-                str_rng = str_rng + ", "
-            str_rng = str_rng + f"({rng[0]}, {rng[1]})"
+        len_lengths = len(self._lengths)
+        len_ranges = len(self._ranges)
+        if len_lengths > 0:
+            str_len = self._get_formated_names(
+                names=sorted(self._lengths), conj='or')
+        if len_ranges > 0:
+            str_rng = self._get_formated_names(
+                names=sorted(self._ranges), conj='or', wrapper="")
         result = ""
-        len_lengths = len(lengths)
-        len_ranges = len(ranges)
+        
         if len_lengths > 0:
             if len_lengths == 1:
                 result = result + "Expected Length: "
             else:
                 result = result + "Expected Lengths: "
-            result = result + str_len + "."
+            result = result + f"{str_len}."
         if len_ranges > 0:
             if len_lengths > 0:
                 result = result + " "
@@ -537,7 +676,7 @@ class ArgsLen(_DecBase):
                     return self._opt_return
                 msg = f"Invalid number of args pass into '{func.__name__}'.\n{self._get_valid_counts()}"
                 msg = msg + f" Got '{_args_len}' args."
-                msg = msg + f"\n{self.__class__.__name__} decorator Error."
+                msg = msg + self._get_class_dec_err()
                 raise ValueError(msg)
             return func(*args, **kwargs)
         # wrapper.is_types_valid = self.is_valid
@@ -553,7 +692,7 @@ class ArgsMinMax(_DecBase):
         :doc:`../../usage/Decorator/ArgsMinMax`
     """
 
-    def __init__(self, min: Optional[int]=0, max: Optional[int] = None, **kwargs):
+    def __init__(self, min: Optional[int] = 0, max: Optional[int] = None, **kwargs):
         """
         Constructor
 
@@ -574,30 +713,30 @@ class ArgsMinMax(_DecBase):
             self._max = max
         else:
             self._max = None
-    
+
     def _get_min_max(self) -> Tuple[int, int]:
         _max = -1 if self._max is None else self._max
         _min = self._min
         return _min, _max
-    
+
     def _get_valid_counts(self) -> str:
 
-        _min, _max  = self._get_min_max()
+        _min, _max = self._get_min_max()
         msg = ""
         if _min > 0:
-            msg = msg + "Expected min of " + str(_min) + "."
+            msg = msg + "Expected min of '" + str(_min) + "'."
         if _max >= 0:
             if _min > 0:
                 msg = msg + " "
-            msg = msg + "Expected max of " + str(_max) + "."
+            msg = msg + "Expected max of '" + str(_max) + "'."
         return msg
 
     def _get_error_msg(self, func: callable, args_len: int) -> str:
         msg = f"Invalid number of args pass into '{func.__name__}'.\n{self._get_valid_counts()}"
         msg = msg + f" Got '{args_len}' args."
-        msg = msg + f"\n{self.__class__.__name__} decorator Error."
+        msg = msg + self._get_class_dec_err()
         return msg
-    
+
     def __call__(self, func: callable):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -616,10 +755,12 @@ class ArgsMinMax(_DecBase):
                 if is_valid is False:
                     if self._is_opt_return():
                         return self._opt_return
-                    raise ValueError(self._get_error_msg(func=func,args_len=_args_len))
+                    raise ValueError(self._get_error_msg(
+                        func=func, args_len=_args_len))
             return func(*args, **kwargs)
         # wrapper.is_types_valid = self.is_valid
         return wrapper
+
 
 class ReturnRuleAll(_RuleBase):
     """
@@ -775,8 +916,9 @@ class ReturnType(_DecBase):
         return wrapper
 
     def _get_err_msg(self, value: object):
-        str_types = self._get_formated_types(self._types)
-        msg = f"Return Value is expected to be of '{str_types}' but got '{type(value).__name__}'"
+        str_types = self._get_formated_types(self._types, conj='or')
+        msg = f"Return Value is expected to be of {str_types} but got '{type(value).__name__}'."
+        msg = msg + self._get_class_dec_err()
         return msg
 
     @property
@@ -850,7 +992,8 @@ class TypeCheckKw(_DecBase):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             is_valid = True
-            arg_name_values = self._get_args_dict(func, args, kwargs)
+            arg_name_values = self._get_args_dict(
+                func=func, fn_args=args, fn_kwargs=kwargs)
             arg_keys = arg_name_values.keys()
             tc = False
             for key in self._arg_index.keys():
@@ -868,7 +1011,9 @@ class TypeCheckKw(_DecBase):
                     except TypeError as e:
                         if self._is_opt_return():
                             return self._opt_return
-                        raise e
+                        msg = str(e)
+                        msg = msg + self._get_class_dec_err()
+                        raise TypeError(msg)
             if tc and tc.raise_error is False:
                 wrapper.is_types_kw_valid = is_valid
                 if is_valid == False and self._is_opt_return() == True:
@@ -1078,7 +1223,8 @@ class RuleCheckAllKw(_RuleBase):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             is_valid = True
-            arg_name_values = self._get_args_dict(func, args, kwargs)
+            arg_name_values = self._get_args_dict(
+                func=func, fn_args=args, fn_kwargs=kwargs)
             arg_keys = arg_name_values.keys()
             add_attrib = None
             for key in self._arg_index.keys():
@@ -1124,7 +1270,8 @@ class RuleCheckAnyKw(RuleCheckAllKw):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             is_valid = True
-            arg_name_values = self._get_args_dict(func, args, kwargs)
+            arg_name_values = self._get_args_dict(
+                func=func, fn_args=args, fn_kwargs=kwargs)
             arg_keys = arg_name_values.keys()
             add_attrib = None
             for key in self._arg_index.keys():
@@ -1187,7 +1334,8 @@ class RequireArgs(_DecBase):
     def __call__(self, func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            arg_name_values = self._get_args_dict(func, args, kwargs)
+            arg_name_values = self._get_args_dict(
+                func=func, fn_args=args, fn_kwargs=kwargs)
             arg_keys = arg_name_values.keys()
             for key in self._args:
                 if not key in arg_keys:
@@ -1411,3 +1559,237 @@ class AutoFillKw:
 
         self._cls.__init__ = init
         return self._cls(*args, **kwargs)
+
+
+class SubClass(_DecBase):
+    """
+    Decorator that requires args of a function to match or be a subclass of types specificed in constructor.
+
+    See Also:
+        :doc:`../../usage/Decorator/SubClass`
+    """
+
+    def __init__(self, *args: Union[type, Iterable[type]], **kwargs):
+        """
+        Constructor
+
+        Other Parameters:
+            args (Union[type, Iterable[type]]): One or more types or Iterator[type] for validation.
+
+        Keyword Arguments:
+            type_instance_check (bool, optional): If ``True`` then args are tested also for ``isinstance()``
+                if type does not match, rather then just type check. If ``False`` then values willl only be
+                tested as type.
+                Default ``True``
+            ftype (DecFuncType, optional): Type of function that decorator is applied on.
+                Default ``DecFuncType.FUNCTION``
+            opt_return (object, optional): Return value when decorator is invalid.
+                By default an error is rasied when validation fails. If ``opt_return`` is
+                supplied then it will be return when validation fails and no error will be raised.
+            opt_inst_only (bool, optional): If ``True`` then validation will requires all values being tested to be an
+                instance of a class. If ``False`` valadition will test class instance and class type.
+                Default ``True``
+            opt_all_args (bool, optional): If ``True`` then the last subclass type passed into constructor will
+                define any remaining args. This allows for one subclass to define required match of all arguments
+                that decorator is applied to.
+                Default ``False``
+        """
+        super().__init__(**kwargs)
+        self._types = []
+        ex_iterable_types = (Enum, str)
+        for arg in args:
+            if is_iterable(arg=arg, excluded_types=ex_iterable_types):
+                arg_set = set()
+                for arg_itm in arg:
+                    arg_set.add(arg_itm)
+                self._types.append(arg_set)
+            else:
+                self._types.append(tuple([arg]))
+        if kwargs:
+            # keyword args are passed to TypeChecker
+            self._kwargs = {**kwargs}
+        else:
+            self._kwargs = {}
+        self._all_args = bool(kwargs.get("opt_all_args", False))
+
+    def _get_formated_types(self, types: Union[Tuple[type], Set[type]]) -> str:
+        # multi is list of set, actually one set in a list
+        # single is a tuple of a single type.
+        # these types are set in constructor.
+        if isinstance(types, tuple):
+            return f"'{types[0].__name__}'"
+        lst_multi = [t.__name__ for t in types]
+        result = self._get_formated_names(names=lst_multi,
+                                          conj='or')
+        return result
+
+    def _get_inst(self, types: Iterable[type]):
+        return SubClassChecker(*types, **self._kwargs)
+
+    def _validate(self, func: callable, key: str, value: object, types: Iterable[type], arg_index: int, inst: SubClassChecker = None):
+        if inst is None:
+            sc = self._get_inst(types=types)
+        else:
+            sc = inst
+        # ensure errors are raised if not valid
+        sc.raise_error = True
+        if self._is_placeholder_arg(key):
+            try:
+                sc.validate(value)
+            except TypeError:
+                if self._is_opt_return():
+                    return self._opt_return
+                raise TypeError(self._get_err_msg(name=None, value=value,
+                                                  types=types, arg_index=arg_index,
+                                                  fn=func))
+        else:
+            try:
+                sc.validate(**{key: value})
+            except TypeError:
+                if self._is_opt_return():
+                    return self._opt_return
+                raise TypeError(self._get_err_msg(name=key, value=value,
+                                                  types=types, arg_index=arg_index,
+                                                  fn=func))
+        return NO_THING
+
+    def __call__(self, func: callable):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            arg_name_values = self._get_args_dict(
+                func=func, fn_args=args, fn_kwargs=kwargs)
+            arg_keys = list(arg_name_values.keys())
+            arg_keys_len = arg_keys.__len__()
+            if self._all_args is False:
+                if arg_keys_len is not len(self._types):
+                    if self._is_opt_return():
+                        return self._opt_return
+                    msg = 'Invalid number of arguments for {0}()'.format(
+                        func.__name__)
+                    msg = msg + self._get_class_dec_err()
+                    raise ValueError(msg)
+            arg_type = zip(arg_keys, self._types)
+            i = 0
+            for arg_info in arg_type:
+                key = arg_info[0]
+                result = self._validate(func=func, key=key,
+                                        value=arg_name_values[key],
+                                        types=arg_info[1], arg_index=i)
+                if not result is NO_THING:
+                    return result
+                i += 1
+            if arg_keys_len > i:
+                # this only happens when _all_args is True
+                # at this point remain args should match last last type in self._types
+                r_args = arg_keys[i:]
+                types = self._types[len(self._types) - 1]  # tuple or set
+                sc = self._get_inst(types=types)
+                for r_arg in r_args:
+                    result = self._validate(func=func, key=r_arg,
+                                            value=arg_name_values[r_arg],
+                                            types=types, arg_index=i,
+                                            inst=sc)
+                    if not result is NO_THING:
+                        return result
+                    i += 1
+
+            return func(*args, **kwargs)
+        return wrapper
+
+    def _get_err_msg(self, name: Union[str, None], value: object, types: Iterator[type], arg_index: int, fn: callable):
+        str_types = self._get_formated_types(types=types)
+        str_ord = self._get_ordinal(arg_index + 1)
+        if self._ftype == DecFuncEnum.PROPERTY_CLASS:
+            msg = f"'{fn.__name__}' property error. Arg '{name}' expected is expected be a subclass of {str_types}."
+            return msg
+        if name:
+            msg = f"Arg '{name}' is expected be a subclass of {str_types}."
+        else:
+            msg = f"Arg in {str_ord} position is expected to be of a subclass of {str_types}."
+        msg = msg + self._get_class_dec_err()
+        return msg
+
+
+class SubClasskKw(_DecBase):
+    """
+    Decorator that requires args of a function to match or be a subclass of types specificed in constructor.
+
+    See Also:
+        :doc:`../../usage/Decorator/SubClasskKw`
+    """
+
+    def __init__(self, arg_info: Dict[str, Union[int, type, Iterable[type]]], types: Optional[Iterable[Union[type, Iterable[type]]]] = None, **kwargs):
+        """
+        Constructor
+
+        Args:
+            arg_info (Dict[str, Union[int, type, Iterable[type]]]): Dictionary of Key and int, type, or Iterable[type].
+                Each Key represents that name of an arg to match one or more types(s).
+                If value is int then value is an index that corresponds to an item in ``types``.
+            types (Iterable[Union[type, Iterable[type]]], optional): List of types for arg_info entries to match.
+                Default ``None``
+
+        Keyword Arguments:
+            type_instance_check (bool, optional): If ``True`` then args are tested also for ``isinstance()``
+                if type does not match, rather then just type check. If ``False`` then values willl only be
+                tested as type. Default ``True``
+            ftype (DecFuncType, optional): Type of function that decorator is applied on.
+                Default ``DecFuncType.FUNCTION``
+            opt_return (object, optional): Return value when decorator is invalid.
+                By default an error is rasied when validation fails. If ``opt_return`` is
+                supplied then it will be return when validation fails and no error will be raised.
+        """
+        super().__init__(**kwargs)
+        self._arg_index = arg_info
+        if types is None:
+            self._types = []
+        else:
+            self._types = types
+        if kwargs:
+            self._kwargs = {**kwargs}
+        else:
+            self._kwargs = {}
+        # set rais_error for SubClassChecker as this class does not support this option.
+        self._kwargs['raise_error'] = True
+
+    def _get_types(self, key: str) -> Iterable:
+        value = self._arg_index[key]
+        if isinstance(value, int):
+            t = self._types[value]
+            if isinstance(t, Iterable):
+                return t
+            return [t]
+        if is_iterable(value):
+            return value
+        else:
+            # make iterable
+            return (value,)
+
+    def __call__(self, func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            is_valid = True
+            arg_name_values = self._get_args_dict(
+                func=func, fn_args=args, fn_kwargs=kwargs)
+            arg_keys = arg_name_values.keys()
+            sc = False
+            for key in self._arg_index.keys():
+                if key in arg_keys:
+                    is_valid = False
+                    types = self._get_types(key=key)
+                    if len(types) == 0:
+                        continue
+                    value = arg_name_values[key]
+                    sc = SubClassChecker(*types, **self._kwargs)
+                    try:
+                        # error_raise is always True for sc.
+                        # for this reason no need to capture results of validate.
+                        sc.validate(**{key: value})
+                    except TypeError as e:
+                        if self._is_opt_return():
+                            return self._opt_return
+                        msg = str(e)
+                        msg = msg + self._get_class_dec_err()
+                        raise TypeError(msg)
+            return func(*args, **kwargs)
+        return wrapper

@@ -6,6 +6,21 @@ if __name__ == '__main__':
 
 from enum import IntEnum, auto
 from kwhelp.decorator import AcceptedTypes, DecFuncEnum, RequireArgs, ReturnType
+
+
+def gen_int_float(length: int) -> list:
+    r = []
+    for i in range(length):
+        if (i % 3) == 0:
+            r.append(i + 0.3)
+            continue
+        if (i % 2) == 0:  # even
+            r.append(i)
+            continue
+        r.append(i + 0.7)
+    return r
+
+
 class Color(IntEnum):
     RED = auto()
     GREEN = auto()
@@ -13,7 +28,16 @@ class Color(IntEnum):
 
     def __str__(self) -> str:
         return self._name_
+
+
 class TestAcceptedTypesDecorators(unittest.TestCase):
+    def test_gen_int_float(self):
+        ex = [0.3, 1.7, 2, 3.3, 4, 5.7, 6.3, 7.7, 8, 9.3, 10,
+              11.7, 12.3, 13.7, 14, 15.3, 16, 17.7, 18.3, 19.7]
+        result = gen_int_float(20)
+        for i, num in enumerate(ex):
+            assert result[i] == num
+
     def test_accepted_gen(self):
         @AcceptedTypes((int, str), (int, str))
         def req_test(**kwargs):
@@ -31,7 +55,37 @@ class TestAcceptedTypesDecorators(unittest.TestCase):
             result = req_test(two=2)
         with self.assertRaises(TypeError):
             result = req_test(one=4.5, two=2)
-    
+
+    def test_accepted_all_args(self):
+        @AcceptedTypes((float, int), opt_all_args=True)
+        def sum_num(*args):
+            return sum(args)
+
+        args = gen_int_float(20)
+        result = sum_num(*args)
+        assert result == 197.0
+        args.append("33")
+        with self.assertRaises(TypeError):
+            sum_num(*args)
+        with self.assertRaises(TypeError):
+            sum_num(self)
+
+    def test_accepted_all_args_opt_return(self):
+        @AcceptedTypes((float, int), opt_all_args=True, opt_return=False)
+        def sum_num(*args):
+            return sum(args)
+
+        args = gen_int_float(20)
+        result = sum_num(*args)
+        assert result == 197.0
+        args.append("33")
+        result = None
+        result = sum_num(*args)
+        assert result == False
+        result = None
+        result = sum_num(self)
+        assert result == False
+
     def test_accepted_opt_return(self):
         @AcceptedTypes((int, str), (int, str), opt_return=False)
         def req_test(**kwargs):
@@ -166,7 +220,7 @@ class TestAcceptedTypesDecorators(unittest.TestCase):
         # and becomes [<Color.RED: 1>, <Color.BLUE: 2>, <Color.GREEN: 3>]
         # for this reason when passing enum types they must be in an itterable
         # such as a list or tuple
-        @AcceptedTypes([Color], int, [Color])
+        @AcceptedTypes(Color, int, Color)
         def foo(e, length, oth):
             return e, length, oth
         result = foo(Color.BLUE, 2, Color.RED)
@@ -200,7 +254,7 @@ class TestAcceptedTypesDecorators(unittest.TestCase):
         # myfunc(1.33, "two", 3, Color.BLUE, 5) is allow
         # myfunc(arg1=1.33, arg2="two", 3, Color.BLUE, 5,  kwonlyarg=True) not allowed
         # result = myfunc(3, Color.BLUE, 5, arg1=1.33, arg2="two", kwonlyarg=True) not allowed
-        
+
         @AcceptedTypes(float, str, int, [Color], int, bool)
         def myfunc(arg1, arg2, *args, kwonlyarg=True):
             return [arg1, arg2] + [*args] + [kwonlyarg]
@@ -230,7 +284,8 @@ class TestAcceptedTypesDecorators(unittest.TestCase):
             myfunc(1.33, "two", 3, 22, 5)
         with self.assertRaises(TypeError):
             myfunc(1.33, "two", 3, Color.BLUE, 5.5)
-            
+
+
 class TestAcceptedTypesClassDecorators(unittest.TestCase):
 
     def test_accept_class(self):
@@ -259,6 +314,40 @@ class TestAcceptedTypesClassDecorators(unittest.TestCase):
         assert f.stop == 99.9
         with self.assertRaises(TypeError):
             f = Foo("yes", 99.9)
+
+    def test_accepted_all_args(self):
+        class Runner:
+            @AcceptedTypes((float, int), opt_all_args=True, ftype=DecFuncEnum.METHOD)
+            def sum_num(self, *args):
+                return sum(args)
+        r = Runner()
+        args = gen_int_float(20)
+        result = r.sum_num(*args)
+        assert result == 197.0
+        args.append("33")
+        with self.assertRaises(TypeError):
+            r.sum_num(*args)
+        with self.assertRaises(TypeError):
+            r.sum_num(self)
+
+    def test_accepted_all_args_opt_return(self):
+        class Runner:
+            @AcceptedTypes((float, int), opt_all_args=True,
+                           opt_return=False,
+                           ftype=DecFuncEnum.METHOD)
+            def sum_num(self, *args):
+                return sum(args)
+        r = Runner()
+        args = gen_int_float(20)
+        result = r.sum_num(*args)
+        assert result == 197.0
+        args.append("33")
+        result = None
+        result = r.sum_num(*args)
+        assert result == False
+        result = None
+        result = r.sum_num(self)
+        assert result == False
 
     def test_accept_class_args_optional(self):
         class Foo:
@@ -310,9 +399,9 @@ class TestAcceptedTypesClassDecorators(unittest.TestCase):
         with self.assertRaises(TypeError):
             f = Foo(1, 99.9, third=3, fourth=44, fifth=5, sixth=55.77)
 
-    def test_accept_class_args_kwargs(self):
+    def test_accept_class_args_kwargs_opt_all(self):
         class Foo:
-            @AcceptedTypes((int, float), (int, float), int, int, int, int, ftype=DecFuncEnum.METHOD)
+            @AcceptedTypes((int, float), (int, float), int, ftype=DecFuncEnum.METHOD, opt_all_args=True)
             def __init__(self, *args, **kwargs):
                 self.start = args[0]
                 self.stop = args[1]
@@ -338,7 +427,7 @@ class TestAcceptedTypesClassDecorators(unittest.TestCase):
             def __init__(self, start, stop):
                 self.start = start
                 self.stop = stop
-            
+
             @staticmethod
             @AcceptedTypes(int, int, ftype=DecFuncEnum.METHOD_STATIC)
             @ReturnType(int)
@@ -351,7 +440,6 @@ class TestAcceptedTypesClassDecorators(unittest.TestCase):
         assert result == 5
         with self.assertRaises(TypeError):
             result = Foo.add(1, 99.9)
-
 
     def test_accept_class_cls(self):
         class Foo:
@@ -383,12 +471,12 @@ class TestAcceptedTypesClassDecorators(unittest.TestCase):
             @property
             def start(self):
                 return self._start
-            
+
             @start.setter
             @AcceptedTypes((int, float), ftype=DecFuncEnum.PROPERTY_CLASS)
             def start(self, value):
                 self._start = value
-            
+
             @property
             def stop(self):
                 return self._stop
@@ -397,7 +485,7 @@ class TestAcceptedTypesClassDecorators(unittest.TestCase):
             @AcceptedTypes((int, float), ftype=DecFuncEnum.PROPERTY_CLASS)
             def stop(self, value):
                 self._stop = value
-           
+
         f = Foo(1, 99.9)
         assert f.start == 1
         assert f.stop == 99.9
@@ -482,6 +570,7 @@ class TestAcceptedTypesClassDecorators(unittest.TestCase):
         assert result == False
         result = b.req_test(one=4.5, two=2)
         assert result == False
+
 
 if __name__ == '__main__':
     unittest.main()

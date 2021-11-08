@@ -1,6 +1,18 @@
 Release Notes
 =============
 
+Version 2.4.0
+-------------
+
+Added SubClass, SubClassKw decorators.
+
+Added ``opt_all_args`` feature to ``AcceptedTypes`` decorator. See :doc:`/source/general/dec_feature/opt_all_args`
+
+Update AcceptedTypes decorator. Now passing enum types into constructor no longer
+require enum type to be passed in as iterable object.
+
+Updated many decorator error message. Now they are a little more human readable.
+
 Version 2.3.0
 -------------
 

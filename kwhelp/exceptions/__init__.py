@@ -26,9 +26,10 @@ class RuleError(Exception):
             rules_any (Iterable[Type[IRule]], optional): List of rules that required one or more matches.
                 One of these rules is usually the reason this exception is being raised.
             arg_name (str, optional): Name of the argument for this exception.
-            errors: (Union[Exception, Iterable[Exception]], optional): Exception or Exceptions
+            errors (Union[Exception, Iterable[Exception]], optional): Exception or Exceptions
                 that cause this error.
-            fn_name: (str, optional): Name of function/property that raise error.
+            fn_name (str, optional): Name of function/property that raise error.
+            msg (str, optional): Optional message to append.
         """
         self._fn_name = kwargs.get('fn_name', None)
         self._err_rule = kwargs.get('err_rule', None)
@@ -39,7 +40,7 @@ class RuleError(Exception):
         _rules = None
         self._arg_name = kwargs.get('arg_name', None)
         self._errors = kwargs.get('errors', None)
-
+        self._msg = kwargs.get('msg', None)
         msg = "RuleError:"
         if self._fn_name:
             msg = msg + f" '{self._fn_name}' error."
@@ -59,6 +60,8 @@ class RuleError(Exception):
             else:
                 msg = msg + "\nExpected at least one of the following rules to match: "
             msg = msg + self._get_rules_str(self._rules_any) + "."
+        if self._msg:
+            msg = msg + '\n' + str(self._msg)
         if self._is_errors() is True:
             msg = msg + "\nInner Error Message: " + self._get_inner_error_msg()
         self.message = msg
@@ -112,6 +115,11 @@ class RuleError(Exception):
         return self._arg_name
 
     @property
+    def msg(self) -> Union[str, None]:
+        """Gets any messsage that is appended"""
+        return self._msg
+
+    @property
     def err_rule(self) -> Union[Type[IRule], None]:
         """Gets rule that caused exception."""
         return self._err_rule
@@ -157,7 +165,8 @@ class RuleError(Exception):
             "rules_any": rule_error.rules_any,
             "arg_name": rule_error.arg_name,
             "errors": rule_error.errors,
-            "fn_name": rule_error.fn_name
+            "fn_name": rule_error.fn_name,
+            "msg": rule_error.msg
         }
         rule_dict.update({**kwargs})
         return RuleError(**rule_dict)
