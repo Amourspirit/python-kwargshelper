@@ -277,12 +277,28 @@ class _DecBase(_CommonBase):
             s = s + "{0}{1}{0}".format(wrapper, name)
         return s
                 
-    def _get_formated_types(self, types: Iterator[type]) -> str:
-        result = ''
-        for i, t in enumerate(types):
-            if i > 0:
-                result = result + ' | '
-            result = f"{result}{t}"
+    def _get_formated_types(self, types: Iterator[type], **kwargs) -> str:
+        """
+        Gets a formated string from a list of types.
+
+        Args:
+            types (Iterator[type]): Types to create fromated string.
+
+        Keyword Args:
+            conj (str, optional): Conjunction used to join list. Default ``and``.
+            wrapper (str, optional): String to prepend and append to each value. Default ``'``.
+
+        Returns:
+            str: Formated String
+        """
+        if len(types) == 0:
+            return ""
+        t_names = [t.__name__ for t in types]
+        result = self._get_formated_names(names=t_names, **kwargs)
+        # for i, t in enumerate(types):
+        #     if i > 0:
+        #         result = result + ' | '
+        #     result = f"{result}{t}"
         return result
 
     def _get_ordinal(self, num: int) -> str:
@@ -890,8 +906,8 @@ class ReturnType(_DecBase):
         return wrapper
 
     def _get_err_msg(self, value: object):
-        str_types = self._get_formated_types(self._types)
-        msg = f"Return Value is expected to be of '{str_types}' but got '{type(value).__name__}'."
+        str_types = self._get_formated_types(self._types, conj='or')
+        msg = f"Return Value is expected to be of {str_types} but got '{type(value).__name__}'."
         msg = msg + self._get_class_dec_err()
         return msg
 
