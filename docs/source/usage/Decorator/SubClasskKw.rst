@@ -79,7 +79,7 @@ If types fail validation then a ``TypeError`` is raised.
 .. code-block:: python
 
     >>> result = myfunc(first=Foo(), second=ObjFoo(), color=1, obj=FooBar())
-    TypeError: Arg 'color' is expected to be of a subclass of '<enum 'Color'>'.
+    TypeError: Arg 'color' is expected to be of a subclass of 'Color'.
     SubClasskKw decorator error.
 
 .. _mixed-arg_info:
@@ -107,7 +107,7 @@ Indexes are an index of ``types`` that match function arguments.
 .. code-block:: python
 
     >>> result = myfunc(first=Foo(), second=ObjFoo(), color=1, obj=FooBar())
-    TypeError: Arg 'color' is expected to be of a subclass of '<enum 'Color'>'.
+    TypeError: Arg 'color' is expected to be of a subclass of 'Color'.
     SubClasskKw decorator error.
 
 Primitive Types
@@ -136,5 +136,5 @@ can also be used to test for numbers and strings.
 
     >>> result = myfunc(first=22.55, second=555, obj=None, last="!!!")
     >>> print(result)
-    TypeError: Arg 'obj' is expected to be of a subclass of '<class 'float'> | <class 'int'>'.
+    TypeError: Arg 'obj' is expected to be of a subclass of 'float' or 'int'.
     SubClasskKw decorator error.
