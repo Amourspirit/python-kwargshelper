@@ -52,7 +52,7 @@ In the following example two postional args are expected.
     def do_something(*args):
         return [str(arg) for arg in args]
 
-Expected args pass valadation.
+Expected args pass validatation.
 
 .. code-block:: python
 
