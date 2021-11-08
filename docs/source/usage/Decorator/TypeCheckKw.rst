@@ -1,7 +1,7 @@
 TypeCheckKw Usage
 =================
 
-:py:class:`~.decorator.TypeCheckKw` decorator allows each arg of a function match one of the rules specified.
+:py:class:`~.decorator.TypeCheckKw` decorator allows each arg of a function match one of the **types** specified.
 Each arg can have seperate rules applied.
 
 Includes features:
@@ -67,7 +67,9 @@ If types fail validation then a ``TypeError`` is raised.
 
 .. _mixed-arg_info:
 
-``speed_msg`` decorated with a mixed ``arg_info`` with ``IRule`` instance and index to ``rules``.
+:py:class:`~.decorator.TypeCheckKw` ``arg_info`` contains types and indexes.
+Types of ``arg_info`` are requied to match function arguments directly.
+Indexes are an index of ``types`` that match function arguments.
 
 .. code-block:: python
 

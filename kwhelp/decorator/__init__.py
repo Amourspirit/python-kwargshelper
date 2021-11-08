@@ -1524,7 +1524,7 @@ class AutoFillKw:
 
 class SubClass(_DecBase):
     """
-    Decorator that decorates methods that requires args to match or be a subclass of types specificed in constructor.
+    Decorator that requires args of a function to match or be a subclass of types specificed in constructor.
 
     See Also:
         :doc:`../../usage/Decorator/SubClass`
@@ -1668,7 +1668,7 @@ class SubClass(_DecBase):
 
 class SubClasskKw(_DecBase):
     """
-    Decorator that decorates methods that requires args to match or be a subclass of types specificed in constructor.
+    Decorator that requires args of a function to match or be a subclass of types specificed in constructor.
 
     See Also:
         :doc:`../../usage/Decorator/SubClasskKw`
@@ -1744,6 +1744,8 @@ class SubClasskKw(_DecBase):
                     except TypeError as e:
                         if self._is_opt_return():
                             return self._opt_return
-                        raise e
+                        msg = str(e)
+                        msg = msg + self._get_class_dec_err()
+                        raise TypeError(msg)
             return func(*args, **kwargs)
         return wrapper

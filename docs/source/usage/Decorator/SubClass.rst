@@ -1,7 +1,8 @@
 SubClass Usage
 ===============
 
-:py:class:`~.decorator.SubClass` decorator reqires that each args of a function match a ``type``.
+:py:class:`~.decorator.SubClass` decorator that requires args of a function to match
+or be a subclass of types specificed in constructor.
 
 Includes features:
 
@@ -136,7 +137,8 @@ SubClass type two matches postiion two of function etc...
 Primitive Types
 ---------------
 
-In python numbers and str instances are classes. SubClass can also be used to test for numbers and strings.
+In python numbers and str instances are classes. :py:class:`~.decorator.SubClass`
+can also be used to test for numbers and strings.
 
 .. code-block:: python
 
