@@ -420,7 +420,9 @@ class TypeCheck(_DecBase):
             except TypeError as e:
                 if self._is_opt_return():
                     return self._opt_return
-                raise e
+                msg = str(e)
+                msg = msg + self._get_class_dec_err()
+                raise TypeError(msg)
             return func(*args, **kwargs)
         if self._typechecker.raise_error is False:
             wrapper.is_types_valid = True
