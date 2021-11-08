@@ -91,9 +91,9 @@ class TypeChecker(_CheckBase):
                 result = False
                 if self._raise_error is True:
                     if key is None:
-                        msg = f"Arg Value is expected to be of '{self._get_formated_types()}' but got '{type(value).__name__}'"
+                        msg = f"Arg Value is expected to be of '{self._get_formated_types()}' but got '{type(value).__name__}'."
                     else:
-                        msg = f"Arg '{key}' is expected to be of '{self._get_formated_types()}' but got '{type(value).__name__}'"
+                        msg = f"Arg '{key}' is expected to be of '{self._get_formated_types()}' but got '{type(value).__name__}'."
                     raise TypeError(msg)
         return result
 
