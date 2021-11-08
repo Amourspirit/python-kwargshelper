@@ -529,12 +529,12 @@ class AcceptedTypes(_DecBase):
         str_types = self._get_formated_types(types=types)
         str_ord = self._get_ordinal(arg_index + 1)
         if self._ftype == DecFuncEnum.PROPERTY_CLASS:
-            msg = f"'{fn.__name__}' property error. Arg '{name}' expected type of '{str_types}' but got '{type(value).__name__}'"
+            msg = f"'{fn.__name__}' property error. Arg '{name}' expected type of '{str_types}' but got '{type(value).__name__}'."
             return msg
         if name:
-            msg = f"Arg '{name}' in {str_ord} position is expected to be of '{str_types}' but got '{type(value).__name__}'"
+            msg = f"Arg '{name}' in {str_ord} position is expected to be of '{str_types}' but got '{type(value).__name__}'."
         else:
-            msg = f"Arg in {str_ord} position of is expected to be of '{str_types}' but got '{type(value).__name__}'"
+            msg = f"Arg in {str_ord} position of is expected to be of '{str_types}' but got '{type(value).__name__}'."
         msg = msg + self._get_class_dec_err()
         return msg
 
