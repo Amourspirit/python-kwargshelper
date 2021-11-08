@@ -692,11 +692,11 @@ class ArgsMinMax(_DecBase):
         _min, _max = self._get_min_max()
         msg = ""
         if _min > 0:
-            msg = msg + "Expected min of " + str(_min) + "."
+            msg = msg + "Expected min of '" + str(_min) + "'."
         if _max >= 0:
             if _min > 0:
                 msg = msg + " "
-            msg = msg + "Expected max of " + str(_max) + "."
+            msg = msg + "Expected max of '" + str(_max) + "'."
         return msg
 
     def _get_error_msg(self, func: callable, args_len: int) -> str:
