@@ -426,6 +426,10 @@ class AcceptedTypes(_DecBase):
             opt_return (object, optional): Return value when decorator is invalid.
                 By default an error is rasied when validation fails. If ``opt_return`` is
                 supplied then it will be return when validation fails and no error will be raised.
+            opt_all_args (bool, optional): If ``True`` then the last subclass type passed into constructor will
+                define any remaining args. This allows for one subclass to define required match of all arguments
+                that decorator is applied to.
+                Default ``False``
         """
         super().__init__(**kwargs)
         self._tc = None
@@ -441,6 +445,7 @@ class AcceptedTypes(_DecBase):
             self._kwargs = {**kwargs}
         else:
             self._kwargs = {}
+        self._all_args = bool(kwargs.get("opt_all_args", False))
 
     def _get_formated_types(self, types: Iterator[type]) -> str:
         result = ''
@@ -450,44 +455,73 @@ class AcceptedTypes(_DecBase):
             result = f"{result}{t}"
         return result
 
+    def _get_inst(self, types: Iterable[type]):
+        return TypeChecker(*types, **self._kwargs)
+
+    def _validate(self, func: callable, key: str, value: object, types: Iterable[type], arg_index: int, inst: SubClassChecker = None):
+        if inst is None:
+            tc = self._get_inst(types=types)
+        else:
+            tc = inst
+        if self._is_placeholder_arg(key):
+            try:
+                tc.validate(value)
+            except TypeError:
+                if self._is_opt_return():
+                    return self._opt_return
+                raise TypeError(self._get_err_msg(name=None, value=value,
+                                                    types=types, arg_index=arg_index,
+                                                    fn=func))
+        else:
+            try:
+                tc.validate(**{key: value})
+            except TypeError:
+                if self._is_opt_return():
+                    return self._opt_return
+                raise TypeError(self._get_err_msg(name=key, value=value,
+                                                    types=types, arg_index=arg_index,
+                                                    fn=func))
+        return NO_THING
+
     def __call__(self, func: callable):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             arg_name_values = self._get_args_dict(
                 func=func, fn_args=args, fn_kwargs=kwargs)
-            arg_keys = arg_name_values.keys()
-            if len(arg_keys) is not len(self._types):
-                if self._is_opt_return():
-                    return self._opt_return
-                raise ValueError(
-                    'Invalid number of arguments for {0}()'.format(func.__name__))
+            arg_keys = list(arg_name_values.keys())
+            arg_keys_len = arg_keys.__len__()
+            if arg_keys_len is not len(self._types):
+                if self._all_args is False:
+                    if self._is_opt_return():
+                        return self._opt_return
+                    msg = 'Invalid number of arguments for {0}()'.format(
+                        func.__name__)
+                    msg = msg + self._get_class_dec_err()
+                    raise ValueError(msg)
             arg_type = zip(arg_keys, self._types)
             i = 0
             for arg_info in arg_type:
                 key = arg_info[0]
-                value = arg_name_values[key]
-                tc = TypeChecker(*arg_info[1], **self._kwargs)
-                # ensure errors are raised if not valid
-                tc.raise_error = True
-                if self._is_placeholder_arg(key):
-                    try:
-                        tc.validate(value)
-                    except TypeError:
-                        if self._is_opt_return():
-                            return self._opt_return
-                        raise TypeError(self._get_err_msg(name=None, value=value,
-                                                          types=arg_info[1], arg_index=i,
-                                                          fn=func))
-                else:
-                    try:
-                        tc.validate(**{key: value})
-                    except TypeError:
-                        if self._is_opt_return():
-                            return self._opt_return
-                        raise TypeError(self._get_err_msg(name=key, value=value,
-                                                          types=arg_info[1], arg_index=i,
-                                                          fn=func))
+                result = self._validate(func=func, key=key,
+                                        value=arg_name_values[key],
+                                        types=arg_info[1], arg_index=i)
+                if not result is NO_THING:
+                    return result
                 i += 1
+            if arg_keys_len > i:
+                # this only happens when _all_args is True
+                # at this point remain args should match last last type in self._types
+                r_args = arg_keys[i:]
+                types = []
+                types.append(self._types[len(self._types) - 1])
+                sc = self._get_inst(types=types)
+                for r_arg in r_args:
+                    result = self._validate(func=func, key=r_arg,
+                                            value=arg_name_values[r_arg],
+                                            types=types, arg_index=i,
+                                            inst=sc)
+                    if not result is NO_THING:
+                        return result
             return func(*args, **kwargs)
         return wrapper
 
@@ -501,6 +535,7 @@ class AcceptedTypes(_DecBase):
             msg = f"Arg '{name}' in {str_ord} position is expected to be of '{str_types}' but got '{type(value).__name__}'"
         else:
             msg = f"Arg in {str_ord} position of is expected to be of '{str_types}' but got '{type(value).__name__}'"
+        msg = msg + self._get_class_dec_err()
         return msg
 
 
@@ -1599,7 +1634,7 @@ class SubClass(_DecBase):
                     return result
                 i += 1
             if arg_keys_len > i:
-                # this only happens when _all_args is false
+                # this only happens when _all_args is True
                 # at this point remain args should match last last type in self._types
                 r_args = arg_keys[i:]
                 types = []

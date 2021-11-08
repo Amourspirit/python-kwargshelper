@@ -8,6 +8,7 @@ Includes features:
 
     * :doc:`/source/general/dec_feature/type_instance_check`
     * :doc:`/source/general/dec_feature/ftype`
+    * :doc:`/source/general/dec_feature/opt_all_args`
     * :doc:`/source/general/dec_feature/opt_return`
 
 
@@ -41,6 +42,7 @@ The following example requres:
     >>> result = foo(1, 2.2, "Hello")
     >>> print(result)
     TypeError: Arg 'two' is expected to be of '<class 'float'> | <class 'int'>' but got 'str'
+    AcceptedTypes decorator error.
 
 ``*args``
 +++++++++
@@ -81,6 +83,7 @@ Last arg is not of type ``int`` and raised an error
 
     >>> result = foo(1, 2, 3, 4, 5.766)
    TypeError: Arg Value is expected to be of '<class 'int'>' but got 'float'
+   AcceptedTypes decorator error.
 
 Too many args passed into Function result in an error
 
@@ -88,6 +91,7 @@ Too many args passed into Function result in an error
 
     >>> result = foo(1, 2, 3, 4, 5, 1000)
    ValueError: Invalid number of arguments for foo()
+   AcceptedTypes decorator error.
 
 ``**kwargs``
 ++++++++++++
@@ -116,6 +120,7 @@ All ``int`` values with last arg as key, value.
 
     >>> result = foo(1, 2, 3, 4, last=5, exceeded=None)
     ValueError: Invalid number of arguments for foo()
+    AcceptedTypes decorator error.
 
 Class Method
 ------------
@@ -149,6 +154,7 @@ Class method applying to constructor.
 
     >>> f = Foo(1, None)
     TypeError: Arg 'stop' is expected to be of '<class 'int'> | <class 'float'>' but got 'NoneType'
+    AcceptedTypes decorator error.
 
 Static Class Method
 +++++++++++++++++++
@@ -176,6 +182,7 @@ setting ``ftype`` to :py:class:`~.decorator.DecFuncEnum` ``METHOD_STATIC`` optio
 
     >>> print(Foo.add(7.2, 76))
     TypeError: Arg 'first' is expected to be of '<class 'int'>' but got 'float'
+    AcceptedTypes decorator error.
 
 Class Method
 ++++++++++++
@@ -203,3 +210,56 @@ setting ``ftype`` to :py:class:`~.decorator.DecFuncEnum` ``METHOD_CLASS`` option
 
     >>> print(Foo.add(7.2, 76))
     TypeError: Arg 'first' is expected to be of '<class 'int'>' but got 'float'
+    AcceptedTypes decorator error.
+
+
+Option opt_all_args
+-------------------
+
+``opt_all_args`` argument allows the last class type passed into :py:class:`~.decorator.AcceptedTypes` to
+validate all remaining arguments of wrapped function.
+
+.. code-block:: python
+
+    @AcceptedTypes(float, (float, int), opt_all_args=True)
+    def sum_num(*args):
+        return sum(args)
+
+The first arg of ``sum_num`` must be a ``float``. Remaining args can be ``float`` or ``int``.
+
+.. code-block:: python
+
+    >>> print(sum_num(1.3, 44.556, 10, 22, 45, 7.88))
+    130.736
+    >>> print(sum_num(1, 44.556, 10, 22, 45, 7.88))
+    TypeError: Arg in 1st position of is expected to be of '<class 'float'>' but got 'int'
+    AcceptedTypes decorator error.
+    >>> print(sum_num(1.3, 44.556, 10, 22, 45, 7.88, "77"))
+    TypeError: Arg in 3rd position of is expected to be of '(<class 'float'>, <class 'int'>)' but got 'str'
+    AcceptedTypes decorator error.
+
+Combined Decorators
+-------------------
+
+:py:class:`~.decorator.AcceptedTypes` can be combined with other decorators.
+
+The following example limits how many args are allowed by applying
+:py:class:`~.decorator.ArgsMinMax` decorator.
+
+.. code-block:: python
+
+    from kwhelp.decorator import SubClass, ArgsMinMax
+
+    @ArgsMinMax(max=6)
+    @AcceptedTypes(float, (float, int), opt_all_args=True)
+    def sum_num(*args):
+        return sum(args)
+
+.. code-block:: python
+
+    >>> print(sum_num(1.3, 44.556, 10, 22, 45, 7.88))
+    130.736
+    >>> print(sum_num(1, 44.556, 10, 22, 45, 7.88, 100))
+    ValueError: Invalid number of args pass into 'sum_num'.
+    Expected max of 6. Got '7' args.
+    ArgsMinMax decorator error.
