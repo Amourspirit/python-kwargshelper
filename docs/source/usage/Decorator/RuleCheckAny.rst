@@ -43,6 +43,7 @@ A negative number will raise an error.
     kwhelp.exceptions.RuleError: RuleError: 'add_positives' error.
     Rule 'RuleIntPositive' Failed validation.
     Expected at least one of the following rules to match: RuleIntPositive, RuleFloatPositive.
+    RuleCheckAny decorator error.
     Inner Error Message: ValueError: Arg error: 'arg' must be a positive int value
 
 
@@ -54,6 +55,7 @@ Rules dictate that if a type is not ``int`` or ``float`` then an error will be r
     kwhelp.exceptions.RuleError: RuleError: 'add_positives' error.
     Rule 'RuleIntPositive' Failed validation.
     Expected at least one of the following rules to match: RuleIntPositive, RuleFloatPositive.
+    RuleCheckAny decorator error.
     Inner Error Message: TypeError: Argument Error: 'arg' is expecting type of 'int'. Got type of 'str'
 
 
@@ -88,6 +90,7 @@ A negative number will raise an error.
     kwhelp.exceptions.RuleError: RuleError: 'speed_msg' error. Argument: 'speed' failed validation.
     Rule 'RuleIntPositive' Failed validation.
     Expected at least one of the following rules to match: RuleIntPositive, RuleFloatPositive.
+    RuleCheckAny decorator error.
     Inner Error Message: ValueError: Arg error: 'speed' must be a positive int value
 
 .. code-block:: python
@@ -96,6 +99,7 @@ A negative number will raise an error.
     kwhelp.exceptions.RuleError: RuleError: 'speed_msg' error. Argument: 'hours' failed validation.
     Rule 'RuleIntPositive' Failed validation.
     Expected at least one of the following rules to match: RuleIntPositive, RuleFloatPositive.
+    RuleCheckAny decorator error.
     Inner Error Message: TypeError: Argument Error: 'hours' is expecting type of 'int'. Got type of 'float'
 
 Rules dictate that if a type is not ``int`` or ``float`` then an error will be raised.
@@ -106,6 +110,7 @@ Rules dictate that if a type is not ``int`` or ``float`` then an error will be r
     kwhelp.exceptions.RuleError: RuleError: 'speed_msg' error. Argument: 'limit' failed validation.
     Rule 'RuleIntPositive' Failed validation.
     Expected at least one of the following rules to match: RuleIntPositive, RuleFloatPositive.
+    RuleCheckAny decorator error.
     Inner Error Message: TypeError: Argument Error: 'limit' is expecting type of 'int'. Got type of 'str'
 
 Included Rules
