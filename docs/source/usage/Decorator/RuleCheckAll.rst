@@ -43,6 +43,7 @@ A negative number will raise an error.
     kwhelp.exceptions.RuleError: RuleError: 'add_positives' error.
     Rule 'RuleIntPositive' Failed validation.
     Expected the following rule to match: RuleIntPositive.
+    RuleCheckAll decorator error.
     Inner Error Message: ValueError: Arg error: 'arg' must be a positive int value
 
 Rules dictate that if a type is not ``int`` then an error will be raised.
@@ -53,6 +54,7 @@ Rules dictate that if a type is not ``int`` then an error will be raised.
     kwhelp.exceptions.RuleError: RuleError: 'add_positives' error.
     Rule 'RuleIntPositive' Failed validation.
     Expected the following rule to match: RuleIntPositive.
+    RuleCheckAll decorator error.
     Inner Error Message: TypeError: Argument Error: 'arg' is expecting type of 'int'. Got type of 'float'
 
 Decorating with Key, Value
@@ -100,6 +102,7 @@ A negative number will raise an error.
     kwhelp.exceptions.RuleError: RuleError: 'speed_msg' error. Argument: 'speed' failed validation.
     Rule 'RuleIntPositive' Failed validation.
     Expected the following rule to match: RuleIntPositive.
+    RuleCheckAll decorator error.
     Inner Error Message: ValueError: Arg error: 'speed' must be a positive int value
 
 
@@ -109,6 +112,7 @@ A negative number will raise an error.
     kwhelp.exceptions.RuleError: RuleError: 'speed_msg' error. Argument: 'hours' failed validation.
     Rule 'RuleIntPositive' Failed validation.
     Expected the following rule to match: RuleIntPositive.
+    RuleCheckAll decorator error.
     Inner Error Message: ValueError: Arg error: 'hours' must be a positive int value
 
 Rules dictate that if a type is not ``int`` then an error will be raised.
@@ -119,6 +123,7 @@ Rules dictate that if a type is not ``int`` then an error will be raised.
     kwhelp.exceptions.RuleError: RuleError: 'speed_msg' error. Argument: 'limit' failed validation.
     Rule 'RuleIntPositive' Failed validation.
     Expected the following rule to match: RuleIntPositive.
+    RuleCheckAll decorator error.
     Inner Error Message: TypeError: Argument Error: 'limit' is expecting type of 'int'. Got type of 'str'
 
 Included Rules

@@ -344,12 +344,26 @@ class _DecBase(_CommonBase):
         self._cache["star_args_pos"] = args_pos
         return self._cache["star_args_pos"]
 
-    def _get_class_dec_err(self) -> str:
-        return f"\n{self.__class__.__name__} decorator error."
+    def _get_class_dec_err(self, **kwargs) -> str:
+        """
+        Gets a string representing class decorator error.
+
+        Keyword Args:
+            nl (bool, optional): Determines if new line is prepended to return value. Default ``True``
+
+        Returns:
+            str: Formated string similar to ``SubClass decorator error.``
+        """
+        nl = kwargs.get('nl', True)
+        result = ""
+        if nl:
+            result = result + '\n'
+        result = result + f"{self.__class__.__name__} decorator error."
+        return result
 
 class _RuleBase(_DecBase):
     def _get_err(self, fn: callable, e: RuleError):
-        err = RuleError.from_rule_error(e, fn_name=fn.__name__)
+        err = RuleError.from_rule_error(e, fn_name=fn.__name__, msg=self._get_class_dec_err(nl=False))
         return err
 
 
