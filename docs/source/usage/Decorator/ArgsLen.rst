@@ -37,7 +37,7 @@ Passing in two args when three are expected raises a ``ValueError``
     >>> result = foo("a", "b")
     ValueError: Invalid number of args pass into 'foo'.
     Expected Length: 3. Got '2' args.
-    ArgsLen decorator Error.
+    ArgsLen decorator error.
 
 Multiple Lengths
 ----------------

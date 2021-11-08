@@ -246,16 +246,20 @@ class _DecBase(_CommonBase):
         msg = msg + self._get_class_dec_err()
         raise TypeError(msg)
 
-    def _get_formated_names(self, names: List[str]) -> str:
+    def _get_formated_names(self, names: List[str], **kwargs) -> str:
         """
         Gets a formated string of a list of names
 
         Args:
             names (List[str]): List of names
 
+        Keyword Args:
+            conj (str, optional): Conjunction used to join list. Default ``and``
+
         Returns:
             str: formated such as ``'final' and 'end'`` or ``'one', 'final', and 'end'``
         """
+        conj = kwargs.get("conj", "and")
         s = ""
         names_len = len(names)
         last_index = names_len - 1
@@ -266,7 +270,7 @@ class _DecBase(_CommonBase):
                 else:
                     s = s + ' '
                 if names_len > 1 and i == last_index:
-                    s = s + 'and '
+                    s = s + conj + ' '
 
             s = s + "'{0}'".format(name)
         return s
@@ -584,6 +588,7 @@ class ArgsLen(_DecBase):
         valid = len(self._lengths) > 0 or len(self._ranges) > 0
         if not valid:
             msg = f"{self.__class__.__name__} error. constructor must have valid args of of postive int and/or postive pairs of int."
+            msg = msg + self._get_class_dec_err()
             raise ValueError(msg)
 
     def _get_valid_counts(self) -> str:
@@ -607,7 +612,7 @@ class ArgsLen(_DecBase):
                 result = result + "Expected Length: "
             else:
                 result = result + "Expected Lengths: "
-            result = result + str_len + "."
+            result = result + f"'{str_len}'."
         if len_ranges > 0:
             if len_lengths > 0:
                 result = result + " "
@@ -640,7 +645,7 @@ class ArgsLen(_DecBase):
                     return self._opt_return
                 msg = f"Invalid number of args pass into '{func.__name__}'.\n{self._get_valid_counts()}"
                 msg = msg + f" Got '{_args_len}' args."
-                msg = msg + f"\n{self.__class__.__name__} decorator Error."
+                msg = msg + self._get_class_dec_err()
                 raise ValueError(msg)
             return func(*args, **kwargs)
         # wrapper.is_types_valid = self.is_valid
