@@ -9,6 +9,8 @@ Added SubClass decorator.
 Update AcceptedTypes decorator. Now passing enum types into constructor no longer
 require enum type to be passed in as iterable object.
 
+Added ``opt_all_args`` feature to ``AcceptedTypes`` and ``SubClass`` decorators. See :doc:`/source/general/dec_feature/opt_all_args`
+
 Version 2.3.0
 -------------
 

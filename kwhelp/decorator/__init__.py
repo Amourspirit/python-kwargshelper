@@ -1524,7 +1524,7 @@ class AutoFillKw:
 
 class SubClass(_DecBase):
     """
-    Decorator that decorates methods that requires args to match types specificed in a list
+    Decorator that decorates methods that requires args to match or be a subclass of types specificed in constructor.
 
     See Also:
         :doc:`../../usage/Decorator/SubClass`
@@ -1664,3 +1664,86 @@ class SubClass(_DecBase):
             msg = f"Arg in {str_ord} position is expected to be of a subclass of '{str_types}'."
         msg = msg + self._get_class_dec_err()
         return msg
+
+
+class SubClasskKw(_DecBase):
+    """
+    Decorator that decorates methods that requires args to match or be a subclass of types specificed in constructor.
+
+    See Also:
+        :doc:`../../usage/Decorator/SubClasskKw`
+    """
+
+    def __init__(self, arg_info: Dict[str, Union[int, type, Iterable[type]]], types: Optional[Iterable[Union[type, Iterable[type]]]] = None, **kwargs):
+        """
+        Constructor
+
+        Args:
+            arg_info (Dict[str, Union[int, type, Iterable[type]]]): Dictionary of Key and int, type, or Iterable[type].
+                Each Key represents that name of an arg to match one or more types(s).
+                If value is int then value is an index that corresponds to an item in ``types``.
+            types (Iterable[Union[type, Iterable[type]]], optional): List of types for arg_info entries to match.
+                Default ``None``
+
+        Keyword Arguments:
+            type_instance_check (bool, optional): If ``True`` then args are tested also for ``isinstance()``
+                if type does not match, rather then just type check. If ``False`` then values willl only be
+                tested as type. Default ``True``
+            ftype (DecFuncType, optional): Type of function that decorator is applied on.
+                Default ``DecFuncType.FUNCTION``
+            opt_return (object, optional): Return value when decorator is invalid.
+                By default an error is rasied when validation fails. If ``opt_return`` is
+                supplied then it will be return when validation fails and no error will be raised.
+        """
+        super().__init__(**kwargs)
+        self._arg_index = arg_info
+        if types is None:
+            self._types = []
+        else:
+            self._types = types
+        if kwargs:
+            self._kwargs = {**kwargs}
+        else:
+            self._kwargs = {}
+        # set rais_error for SubClassChecker as this class does not support this option.
+        self._kwargs['raise_error'] = True
+
+    def _get_types(self, key: str) -> Iterable:
+        value = self._arg_index[key]
+        if isinstance(value, int):
+            t = self._types[value]
+            if isinstance(t, Iterable):
+                return t
+            return [t]
+        if is_iterable(value):
+            return value
+        else:
+            # make iterable
+            return (value,)
+
+    def __call__(self, func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            is_valid = True
+            arg_name_values = self._get_args_dict(
+                func=func, fn_args=args, fn_kwargs=kwargs)
+            arg_keys = arg_name_values.keys()
+            sc = False
+            for key in self._arg_index.keys():
+                if key in arg_keys:
+                    is_valid = False
+                    types = self._get_types(key=key)
+                    if len(types) == 0:
+                        continue
+                    value = arg_name_values[key]
+                    sc = SubClassChecker(*types, **self._kwargs)
+                    try:
+                        # error_raise is always True for sc.
+                        # for this reason no need to capture results of validate.
+                        sc.validate(**{key: value})
+                    except TypeError as e:
+                        if self._is_opt_return():
+                            return self._opt_return
+                        raise e
+            return func(*args, **kwargs)
+        return wrapper
