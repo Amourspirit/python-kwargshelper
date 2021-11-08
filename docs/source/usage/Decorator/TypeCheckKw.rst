@@ -63,7 +63,7 @@ If types fail validation then a ``TypeError`` is raised.
 .. code-block:: python
 
     >>> result = speed_msg(speed=-2, limit=60, name=17, hours=5)
-    TypeError: Arg 'name' is expected to be of '<class 'str'>' but got 'int'.
+    TypeError: Arg 'name' is expected to be of 'str' but got 'int'.
     TypeCheckKw decorator error.
 
 .. _mixed-arg_info:
