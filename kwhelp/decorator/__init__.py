@@ -599,11 +599,11 @@ class ArgsLen(_DecBase):
         len_lengths = len(self._lengths)
         len_ranges = len(self._ranges)
         if len_lengths > 0:
-            lengths = sorted(self._lengths)
-            str_len = self._get_formated_names(names=lengths, conj='or')
+            str_len = self._get_formated_names(
+                names=sorted(self._lengths), conj='or')
         if len_ranges > 0:
-            ranges = sorted(self._ranges)
-            str_rng = self._get_formated_names(names=ranges, conj='or', wrapper="")
+            str_rng = self._get_formated_names(
+                names=sorted(self._ranges), conj='or', wrapper="")
         result = ""
         
         if len_lengths > 0:

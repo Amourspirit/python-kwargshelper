@@ -36,7 +36,7 @@ Passing in two args when three are expected raises a ``ValueError``
 
     >>> result = foo("a", "b")
     ValueError: Invalid number of args pass into 'foo'.
-    Expected Length: 3. Got '2' args.
+    Expected Length: '3'. Got '4' args.
     ArgsLen decorator error.
 
 Multiple Lengths
@@ -74,8 +74,8 @@ Passing in ``4`` args result in a ``ValueError``.
 
     >>> result = foo("a", "b", "c", "d")
     ValueError: Invalid number of args pass into 'foo'.
-    Expected Lengths: 3, 5. Got '4' args.
-    ArgsLen decorator Error.
+    Expected Lengths: '3' or '5'. Got '4' args.
+    ArgsLen decorator error.
 
 Ranges
 ------
@@ -118,8 +118,8 @@ Passing in ``6`` args.
 
     >>> result = foo("a", "b", "c", "d", "e", "f")
     ValueError: Invalid number of args pass into 'foo'.
-    Expected Ranges: (3, 5), (7, 9). Got '6' args.
-    ArgsLen decorator Error.
+    Expected Ranges: (3, 5) or (7, 9). Got '6' args.
+    ArgsLen decorator error.
 
 Ranges & Lengths
 ----------------
@@ -159,8 +159,8 @@ Passing in ``6`` args.
 
     >>> result = foo("a", "b", "c", "d", "e", "f")
     ValueError: Invalid number of args pass into 'foo'.
-    Expected Lengths: 3, 4, 5. Expected Range: (7, 9). Got '6' args.
-    ArgsLen decorator Error.
+    Expected Lengths: '3', '4', or '5'. Expected Range: (7, 9). Got '6' args.
+    ArgsLen decorator error.
 
 Class
 -----
