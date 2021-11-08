@@ -67,7 +67,7 @@ first arg is not a subclass of ``ObjFoo`` then an error will be raised.
 .. code-block:: python
 
     >>> print(do_something(Foo(), Obj()))
-    TypeError: Arg in 2nd position is expected to be of a subclass of '<class '__main__.ObjFoo'>'.
+    TypeError: Arg in 2nd position is expected to be of a subclass of 'ObjFoo'.
     SubClass decorator error.
 
 Arguments passed into function must match the same number of SubClass Types.
@@ -103,7 +103,7 @@ not being a subclass of ``FooBar`` or ``ObjFoo``.
 .. code-block:: python
 
     >>> print(do_something(Foo(), Color.RED))
-    TypeError: Arg in 1st position is expected to be of a subclass of '<class '__main__.FooBar'> | <class '__main__.ObjFoo'>'.
+    TypeError: Arg in 1st position is expected to be of a subclass of 'ObjFoo' or 'FooBar'.
     SubClass decorator error.
 
 
@@ -131,8 +131,8 @@ SubClass type two matches postiion two of function etc...
 .. code-block:: python
 
     >>> print(do_something(last=ObjFoo(), first=1))
-    TypeError: Arg 'first' is expected be a subclass of '<class '__main__.Foo'>'.
-    SubClass decorator error
+    TypeError: Arg 'first' is expected be a subclass of 'Foo'.
+    SubClass decorator error.
 
 Primitive Types
 ---------------
@@ -157,8 +157,8 @@ can also be used to test for numbers and strings.
     ValueError: Invalid number of arguments for do_something()
     SubClass decorator error.
     >>> print(do_something(1, 44.556, 10))
-    TypeError: Arg 'end' is expected be a subclass of '<class 'str'>'.
-    SubClass decorator error
+    TypeError: Arg 'end' is expected be a subclass of 'str'.
+    SubClass decorator error.
 
 Option opt_all_args
 -------------------
@@ -179,10 +179,10 @@ The first arg of ``sum_num`` must be a ``float``. Remaining args can be ``float`
     >>> print(sum_num(1.3, 44.556, 10, 22, 45, 7.88))
     130.736
     >>> print(sum_num(1, 44.556, 10, 22, 45, 7.88))
-    TypeError: Arg in 1st position is expected to be of a subclass of '<class 'float'>'.
+    TypeError: Arg in 1st position is expected to be of a subclass of 'float'.
     SubClass decorator error.
     >>> print(sum_num(1.3, 44.556, 10, 22, 45, 7.88, "77"))
-    TypeError: Arg in 7th position is expected to be of a subclass of '(<class 'float'>, <class 'int'>)'.
+    TypeError: Arg in 7th position is expected to be of a subclass of 'float' or 'int'.
     SubClass decorator error.
 
 
@@ -209,5 +209,5 @@ The following example limits how many args are allowed by applying
     130.736
     >>> print(sum_num(1, 44.556, 10, 22, 45, 7.88, 100))
     ValueError: Invalid number of args pass into 'sum_num'.
-    Expected max of 6. Got '7' args.
+    Expected max of '6'. Got '7' args.
     ArgsMinMax decorator error.
