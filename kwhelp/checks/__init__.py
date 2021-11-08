@@ -1,6 +1,6 @@
 # coding: utf-8
 from inspect import isclass
-from typing import Iterable, Optional, Tuple, Type, Union
+from typing import Iterable, Iterator, List, Optional, Tuple, Type, Union
 from ..rules import IRule
 from ..helper import is_iterable
 from ..exceptions import RuleError
@@ -30,6 +30,54 @@ class _CheckBase:
             pass
         return type(obj)
 
+    def _get_formated_names(self, names: List[str], **kwargs) -> str:
+        """
+        Gets a formated string of a list of names
+
+        Args:
+            names (List[str]): List of names
+
+        Keyword Args:
+            conj (str, optional): Conjunction used to join list. Default ``and``.
+            wrapper (str, optional): String to prepend and append to each value. Default ``'``.
+
+        Returns:
+            str: formated such as ``'final' and 'end'`` or ``'one', 'final', and 'end'``
+        """
+        conj = kwargs.get("conj", "and")
+        wrapper = kwargs.get("wrapper", "'")
+        s = ""
+        names_len = len(names)
+        last_index = names_len - 1
+        for i, name in enumerate(names):
+            if i > 0:
+                if names_len > 2:
+                    s = s + ', '
+                else:
+                    s = s + ' '
+                if names_len > 1 and i == last_index:
+                    s = s + conj + ' '
+
+            s = s + "{0}{1}{0}".format(wrapper, name)
+        return s
+
+    def _get_formated_types(self, types: Iterator[type], **kwargs) -> str:
+        """
+        Gets a formated string from a list of types.
+
+        Args:
+            types (Iterator[type]): Types to create fromated string.
+
+        Keyword Args:
+            conj (str, optional): Conjunction used to join list. Default ``and``.
+            wrapper (str, optional): String to prepend and append to each value. Default ``'``.
+
+        Returns:
+            str: Formated String
+        """
+        t_names = [t.__name__ for t in types]
+        result = self._get_formated_names(names=t_names, **kwargs)
+        return result
 
 class TypeChecker(_CheckBase):
     """Class that validates args match a given type"""
@@ -61,12 +109,7 @@ class TypeChecker(_CheckBase):
             kwargs.get('type_instance_check', True))
 
     def _get_formated_types(self) -> str:
-        result = ''
-        for i, t in enumerate(self._types):
-            if i > 0:
-                result = result + ' | '
-            result = f"{result}{t}"
-        return result
+        return super()._get_formated_types(types=self._types, conj='or')
 
     def _validate_type(self, value: object,  key: Union[str, None] = None):
         def _is_type_instance(_types: Iterable[type], _value):
@@ -91,9 +134,9 @@ class TypeChecker(_CheckBase):
                 result = False
                 if self._raise_error is True:
                     if key is None:
-                        msg = f"Arg Value is expected to be of '{self._get_formated_types()}' but got '{type(value).__name__}'"
+                        msg = f"Arg Value is expected to be of {self._get_formated_types()} but got '{type(value).__name__}'."
                     else:
-                        msg = f"Arg '{key}' is expected to be of '{self._get_formated_types()}' but got '{type(value).__name__}'"
+                        msg = f"Arg '{key}' is expected to be of {self._get_formated_types()} but got '{type(value).__name__}'."
                     raise TypeError(msg)
         return result
 
@@ -401,12 +444,8 @@ class SubClassChecker(_CheckBase):
         self._instance_only: bool = bool(kwargs.get('opt_inst_only', True))
 
     def _get_formated_types(self) -> str:
-        result = ''
-        for i, t in enumerate(self._types):
-            if i > 0:
-                result = result + ' | '
-            result = f"{result}{t}"
-        return result
+        return super()._get_formated_types(types=self._types, conj='or')
+
 
     def _validate_subclass(self, value: object,  key: Union[str, None] = None):
         result = True
@@ -418,9 +457,9 @@ class SubClassChecker(_CheckBase):
                 result = False
         if result is False and self._raise_error is True:
             if key is None:
-                msg = f"Arg Value is expected to be of a subclass of '{self._get_formated_types()}'."
+                msg = f"Arg Value is expected to be of a subclass of {self._get_formated_types()}."
             else:
-                msg = f"Arg '{key}' is expected to be of a subclass of '{self._get_formated_types()}'."
+                msg = f"Arg '{key}' is expected to be of a subclass of {self._get_formated_types()}."
             raise TypeError(msg)
         return result
 

@@ -41,7 +41,8 @@ Error is raises when retrun type is not valid.
 .. code-block:: python
 
     >>> result = foo(2)
-    TypeError: Return Value is expected to be of 'str' but got 'int'
+    TypeError: Return Value is expected to be of 'str' but got 'int'.
+    ReturnType decorator error.
 
 Multiple Arg Usage
 ------------------
@@ -74,4 +75,5 @@ In the following example return type must be ``int`` or ``str``.
 .. code-block:: python
 
     >>> result = ret_test(1.33, 4, 6)
-    TypeError: Return Value is expected to be of '<class 'int'> | <class 'str'>' but got 'float'
+    TypeError: Return Value is expected to be of 'int' or 'str' but got 'float'.
+    ReturnType decorator error.

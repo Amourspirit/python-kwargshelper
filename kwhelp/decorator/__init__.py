@@ -246,16 +246,22 @@ class _DecBase(_CommonBase):
         msg = msg + self._get_class_dec_err()
         raise TypeError(msg)
 
-    def _get_formated_names(self, names: List[str]) -> str:
+    def _get_formated_names(self, names: List[str], **kwargs) -> str:
         """
         Gets a formated string of a list of names
 
         Args:
             names (List[str]): List of names
 
+        Keyword Args:
+            conj (str, optional): Conjunction used to join list. Default ``and``.
+            wrapper (str, optional): String to prepend and append to each value. Default ``'``.
+
         Returns:
             str: formated such as ``'final' and 'end'`` or ``'one', 'final', and 'end'``
         """
+        conj = kwargs.get("conj", "and")
+        wrapper = kwargs.get("wrapper","'")
         s = ""
         names_len = len(names)
         last_index = names_len - 1
@@ -266,17 +272,27 @@ class _DecBase(_CommonBase):
                 else:
                     s = s + ' '
                 if names_len > 1 and i == last_index:
-                    s = s + 'and '
+                    s = s + conj + ' '
 
-            s = s + "'{0}'".format(name)
+            s = s + "{0}{1}{0}".format(wrapper, name)
         return s
                 
-    def _get_formated_types(self, types: Iterator[type]) -> str:
-        result = ''
-        for i, t in enumerate(types):
-            if i > 0:
-                result = result + ' | '
-            result = f"{result}{t}"
+    def _get_formated_types(self, types: Iterator[type], **kwargs) -> str:
+        """
+        Gets a formated string from a list of types.
+
+        Args:
+            types (Iterator[type]): Types to create fromated string.
+
+        Keyword Args:
+            conj (str, optional): Conjunction used to join list. Default ``and``.
+            wrapper (str, optional): String to prepend and append to each value. Default ``'``.
+
+        Returns:
+            str: Formated String
+        """
+        t_names = [t.__name__ for t in types]
+        result = self._get_formated_names(names=t_names, **kwargs)
         return result
 
     def _get_ordinal(self, num: int) -> str:
@@ -322,12 +338,26 @@ class _DecBase(_CommonBase):
         self._cache["star_args_pos"] = args_pos
         return self._cache["star_args_pos"]
 
-    def _get_class_dec_err(self) -> str:
-        return f"\n{self.__class__.__name__} decorator error."
+    def _get_class_dec_err(self, **kwargs) -> str:
+        """
+        Gets a string representing class decorator error.
+
+        Keyword Args:
+            nl (bool, optional): Determines if new line is prepended to return value. Default ``True``
+
+        Returns:
+            str: Formated string similar to ``SubClass decorator error.``
+        """
+        nl = kwargs.get('nl', True)
+        result = ""
+        if nl:
+            result = result + '\n'
+        result = result + f"{self.__class__.__name__} decorator error."
+        return result
 
 class _RuleBase(_DecBase):
     def _get_err(self, fn: callable, e: RuleError):
-        err = RuleError.from_rule_error(e, fn_name=fn.__name__)
+        err = RuleError.from_rule_error(e, fn_name=fn.__name__, msg=self._get_class_dec_err(nl=False))
         return err
 
 
@@ -388,7 +418,9 @@ class TypeCheck(_DecBase):
             except TypeError as e:
                 if self._is_opt_return():
                     return self._opt_return
-                raise e
+                msg = str(e)
+                msg = msg + self._get_class_dec_err()
+                raise TypeError(msg)
             return func(*args, **kwargs)
         if self._typechecker.raise_error is False:
             wrapper.is_types_valid = True
@@ -437,7 +469,10 @@ class AcceptedTypes(_DecBase):
         ex_iterable_types = (Enum, str)
         for arg in args:
             if is_iterable(arg=arg, excluded_types=ex_iterable_types):
-                self._types.append(arg)
+                arg_set = set()
+                for arg_itm in arg:
+                    arg_set.add(arg_itm)
+                self._types.append(arg_set)
             else:
                 self._types.append(tuple([arg]))
         if kwargs:
@@ -447,12 +482,15 @@ class AcceptedTypes(_DecBase):
             self._kwargs = {}
         self._all_args = bool(kwargs.get("opt_all_args", False))
 
-    def _get_formated_types(self, types: Iterator[type]) -> str:
-        result = ''
-        for i, t in enumerate(types):
-            if i > 0:
-                result = result + ' | '
-            result = f"{result}{t}"
+    def _get_formated_types(self, types: Union[Tuple[type], Set[type]]) -> str:
+        # multi is list of set, actually one set in a list
+        # single is a tuple of a single type.
+        # these types are set in constructor.
+        if isinstance(types, tuple):
+            return f"'{types[0].__name__}'"
+        lst_multi = [t.__name__ for t in types]
+        result = self._get_formated_names(names=lst_multi,
+                                          conj='or')
         return result
 
     def _get_inst(self, types: Iterable[type]):
@@ -512,8 +550,7 @@ class AcceptedTypes(_DecBase):
                 # this only happens when _all_args is True
                 # at this point remain args should match last last type in self._types
                 r_args = arg_keys[i:]
-                types = []
-                types.append(self._types[len(self._types) - 1])
+                types = self._types[len(self._types) - 1] # tuple or set
                 sc = self._get_inst(types=types)
                 for r_arg in r_args:
                     result = self._validate(func=func, key=r_arg,
@@ -522,6 +559,7 @@ class AcceptedTypes(_DecBase):
                                             inst=sc)
                     if not result is NO_THING:
                         return result
+                    i += 1
             return func(*args, **kwargs)
         return wrapper
 
@@ -529,12 +567,12 @@ class AcceptedTypes(_DecBase):
         str_types = self._get_formated_types(types=types)
         str_ord = self._get_ordinal(arg_index + 1)
         if self._ftype == DecFuncEnum.PROPERTY_CLASS:
-            msg = f"'{fn.__name__}' property error. Arg '{name}' expected type of '{str_types}' but got '{type(value).__name__}'"
+            msg = f"'{fn.__name__}' property error. Arg '{name}' expected type of {str_types} but got '{type(value).__name__}'."
             return msg
         if name:
-            msg = f"Arg '{name}' in {str_ord} position is expected to be of '{str_types}' but got '{type(value).__name__}'"
+            msg = f"Arg '{name}' in {str_ord} position is expected to be of {str_types} but got '{type(value).__name__}'."
         else:
-            msg = f"Arg in {str_ord} position of is expected to be of '{str_types}' but got '{type(value).__name__}'"
+            msg = f"Arg in {str_ord} position of is expected to be of {str_types} but got '{type(value).__name__}'."
         msg = msg + self._get_class_dec_err()
         return msg
 
@@ -584,30 +622,28 @@ class ArgsLen(_DecBase):
         valid = len(self._lengths) > 0 or len(self._ranges) > 0
         if not valid:
             msg = f"{self.__class__.__name__} error. constructor must have valid args of of postive int and/or postive pairs of int."
+            msg = msg + self._get_class_dec_err()
             raise ValueError(msg)
 
     def _get_valid_counts(self) -> str:
         str_len = ""
-        lengths = sorted(self._lengths)
-        ranges = sorted(self._ranges)
-        for i, length in enumerate(lengths):
-            if i > 0:
-                str_len = str_len + ", "
-            str_len = str_len + str(length)
         str_rng = ""
-        for i, rng in enumerate(ranges):
-            if i > 0:
-                str_rng = str_rng + ", "
-            str_rng = str_rng + f"({rng[0]}, {rng[1]})"
+        len_lengths = len(self._lengths)
+        len_ranges = len(self._ranges)
+        if len_lengths > 0:
+            str_len = self._get_formated_names(
+                names=sorted(self._lengths), conj='or')
+        if len_ranges > 0:
+            str_rng = self._get_formated_names(
+                names=sorted(self._ranges), conj='or', wrapper="")
         result = ""
-        len_lengths = len(lengths)
-        len_ranges = len(ranges)
+        
         if len_lengths > 0:
             if len_lengths == 1:
                 result = result + "Expected Length: "
             else:
                 result = result + "Expected Lengths: "
-            result = result + str_len + "."
+            result = result + f"{str_len}."
         if len_ranges > 0:
             if len_lengths > 0:
                 result = result + " "
@@ -640,7 +676,7 @@ class ArgsLen(_DecBase):
                     return self._opt_return
                 msg = f"Invalid number of args pass into '{func.__name__}'.\n{self._get_valid_counts()}"
                 msg = msg + f" Got '{_args_len}' args."
-                msg = msg + f"\n{self.__class__.__name__} decorator Error."
+                msg = msg + self._get_class_dec_err()
                 raise ValueError(msg)
             return func(*args, **kwargs)
         # wrapper.is_types_valid = self.is_valid
@@ -688,11 +724,11 @@ class ArgsMinMax(_DecBase):
         _min, _max = self._get_min_max()
         msg = ""
         if _min > 0:
-            msg = msg + "Expected min of " + str(_min) + "."
+            msg = msg + "Expected min of '" + str(_min) + "'."
         if _max >= 0:
             if _min > 0:
                 msg = msg + " "
-            msg = msg + "Expected max of " + str(_max) + "."
+            msg = msg + "Expected max of '" + str(_max) + "'."
         return msg
 
     def _get_error_msg(self, func: callable, args_len: int) -> str:
@@ -880,8 +916,9 @@ class ReturnType(_DecBase):
         return wrapper
 
     def _get_err_msg(self, value: object):
-        str_types = self._get_formated_types(self._types)
-        msg = f"Return Value is expected to be of '{str_types}' but got '{type(value).__name__}'"
+        str_types = self._get_formated_types(self._types, conj='or')
+        msg = f"Return Value is expected to be of {str_types} but got '{type(value).__name__}'."
+        msg = msg + self._get_class_dec_err()
         return msg
 
     @property
@@ -974,7 +1011,9 @@ class TypeCheckKw(_DecBase):
                     except TypeError as e:
                         if self._is_opt_return():
                             return self._opt_return
-                        raise e
+                        msg = str(e)
+                        msg = msg + self._get_class_dec_err()
+                        raise TypeError(msg)
             if tc and tc.raise_error is False:
                 wrapper.is_types_kw_valid = is_valid
                 if is_valid == False and self._is_opt_return() == True:
@@ -1560,7 +1599,10 @@ class SubClass(_DecBase):
         ex_iterable_types = (Enum, str)
         for arg in args:
             if is_iterable(arg=arg, excluded_types=ex_iterable_types):
-                self._types.append(arg)
+                arg_set = set()
+                for arg_itm in arg:
+                    arg_set.add(arg_itm)
+                self._types.append(arg_set)
             else:
                 self._types.append(tuple([arg]))
         if kwargs:
@@ -1570,12 +1612,15 @@ class SubClass(_DecBase):
             self._kwargs = {}
         self._all_args = bool(kwargs.get("opt_all_args", False))
 
-    def _get_formated_types(self, types: Iterator[type]) -> str:
-        result = ''
-        for i, t in enumerate(types):
-            if i > 0:
-                result = result + ' | '
-            result = f"{result}{t}"
+    def _get_formated_types(self, types: Union[Tuple[type], Set[type]]) -> str:
+        # multi is list of set, actually one set in a list
+        # single is a tuple of a single type.
+        # these types are set in constructor.
+        if isinstance(types, tuple):
+            return f"'{types[0].__name__}'"
+        lst_multi = [t.__name__ for t in types]
+        result = self._get_formated_names(names=lst_multi,
+                                          conj='or')
         return result
 
     def _get_inst(self, types: Iterable[type]):
@@ -1637,8 +1682,7 @@ class SubClass(_DecBase):
                 # this only happens when _all_args is True
                 # at this point remain args should match last last type in self._types
                 r_args = arg_keys[i:]
-                types = []
-                types.append(self._types[len(self._types) - 1])
+                types = self._types[len(self._types) - 1]  # tuple or set
                 sc = self._get_inst(types=types)
                 for r_arg in r_args:
                     result = self._validate(func=func, key=r_arg,
@@ -1656,12 +1700,12 @@ class SubClass(_DecBase):
         str_types = self._get_formated_types(types=types)
         str_ord = self._get_ordinal(arg_index + 1)
         if self._ftype == DecFuncEnum.PROPERTY_CLASS:
-            msg = f"'{fn.__name__}' property error. Arg '{name}' expected is expected be a subclass of '{str_types}'."
+            msg = f"'{fn.__name__}' property error. Arg '{name}' expected is expected be a subclass of {str_types}."
             return msg
         if name:
-            msg = f"Arg '{name}' is expected be a subclass of '{str_types}'."
+            msg = f"Arg '{name}' is expected be a subclass of {str_types}."
         else:
-            msg = f"Arg in {str_ord} position is expected to be of a subclass of '{str_types}'."
+            msg = f"Arg in {str_ord} position is expected to be of a subclass of {str_types}."
         msg = msg + self._get_class_dec_err()
         return msg
 

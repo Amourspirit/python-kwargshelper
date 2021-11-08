@@ -68,6 +68,7 @@ If all rules fail validation then a :py:class:`~.exceptions.RuleError` is raised
     kwhelp.exceptions.RuleError: RuleError: 'speed_msg' error. Argument: 'speed' failed validation.
     Rule 'RuleIntPositive' Failed validation.
     Expected at least one of the following rules to match: RuleIntPositive, RuleFloatPositive.
+    RuleCheckAnyKw decorator error.
     Inner Error Message: ValueError: Arg error: 'speed' must be a positive int value
 
 .. code-block:: python
@@ -76,6 +77,7 @@ If all rules fail validation then a :py:class:`~.exceptions.RuleError` is raised
     kwhelp.exceptions.RuleError: RuleError: 'speed_msg' error. Argument: 'name' failed validation.
     Rule 'RuleStrNotNullEmptyWs' Failed validation.
     Expected the following rule to match: RuleStrNotNullEmptyWs.
+    RuleCheckAnyKw decorator error.
     Inner Error Message: ValueError: Arg error: 'name' must not be empty or whitespace str
 
 .. _mixed-arg_info:
