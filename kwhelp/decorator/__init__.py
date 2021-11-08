@@ -295,10 +295,6 @@ class _DecBase(_CommonBase):
             return ""
         t_names = [t.__name__ for t in types]
         result = self._get_formated_names(names=t_names, **kwargs)
-        # for i, t in enumerate(types):
-        #     if i > 0:
-        #         result = result + ' | '
-        #     result = f"{result}{t}"
         return result
 
     def _get_ordinal(self, num: int) -> str:
