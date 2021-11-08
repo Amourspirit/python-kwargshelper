@@ -6,6 +6,7 @@ SubClass Usage
 Includes features:
 
     * :doc:`/source/general/dec_feature/ftype`
+    * :doc:`/source/general/dec_feature/opt_all_args`
     * :doc:`/source/general/dec_feature/opt_return`
     * :doc:`/source/general/dec_feature/raise_error`
 
@@ -160,7 +161,7 @@ In python numbers and str instances are classes. SubClass can also be used to te
 Option opt_all_args
 -------------------
 
-``opt_all_args`` argument allows the last class type passed into SubClass to
+``opt_all_args`` argument allows the last class type passed into :py:class:`~.decorator.SubClass` to
 validate all remaining arguments of wrapped function.
 
 .. code-block:: python
