@@ -41,7 +41,8 @@ Error is raises when retrun type is not valid.
 .. code-block:: python
 
     >>> result = foo(2)
-    TypeError: Return Value is expected to be of 'str' but got 'int'
+    TypeError: Return Value is expected to be of '<class 'str'>' but got 'int'.
+    ReturnType decorator error.
 
 Multiple Arg Usage
 ------------------

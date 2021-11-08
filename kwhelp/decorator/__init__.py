@@ -881,7 +881,8 @@ class ReturnType(_DecBase):
 
     def _get_err_msg(self, value: object):
         str_types = self._get_formated_types(self._types)
-        msg = f"Return Value is expected to be of '{str_types}' but got '{type(value).__name__}'"
+        msg = f"Return Value is expected to be of '{str_types}' but got '{type(value).__name__}'."
+        msg = msg + self._get_class_dec_err()
         return msg
 
     @property
