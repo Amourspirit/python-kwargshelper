@@ -1599,7 +1599,7 @@ class SubClass(_DecBase):
                     return result
                 i += 1
             if arg_keys_len > i:
-                # this only happens when _all_args is false
+                # this only happens when _all_args is True
                 # at this point remain args should match last last type in self._types
                 r_args = arg_keys[i:]
                 types = []
