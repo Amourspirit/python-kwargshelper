@@ -1,8 +1,7 @@
-import enum
 import functools
 import inspect
 import re
-from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Set, Tuple, Union
 from inspect import _ParameterKind, signature, isclass, Parameter, Signature
 from ..checks import TypeChecker, RuleChecker, SubClassChecker
 from ..rules import IRule
@@ -125,6 +124,7 @@ class _DecBase(_CommonBase):
             error_check (bool, optional): Determinse if errors are raise if there are missing
                 keywords. This is the case when function has keywords without defaults assigned
                 and no value is passed into function.
+            ignore_args (bool, optional): Determins if ``*args`` are ignored. Default ``False``
 
         Returns:
             Dict[str, object]: Dictionary of keys and values representing ``func`` keywords and values.
@@ -403,14 +403,31 @@ class TypeCheck(_DecBase):
             self._kwargs = {**kwargs}
         else:
             self._kwargs = {}
+        self._args_only = bool(kwargs.get('args_only', False))
+        self._kwargs_only = bool(kwargs.get('kwargs_only', False))
+
+    def _get_args_kwargs(self, func: callable, args: Tuple[object], kwargs: Dict[str, Any]) -> Tuple[Tuple[object],  Dict[str, Any]]:
+        if self._args_only is True:
+            _all = self._get_args_dict(func=func, fn_args=args, fn_kwargs=kwargs)
+            _args = self._get_args(args)
+            _kwargs = {}
+        elif self._kwargs_only is True:
+            _args = []
+            _kwargs = kwargs
+        else:
+            _args = self._get_args(args)
+            _kwargs = kwargs
+        return _args, _kwargs
 
     def __call__(self, func: callable):
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            _args = self._get_args(args)
+            if self._args_only is True and self._kwargs_only is True:
+                return func(*args, **kwargs)
+            _args, _kwargs = self._get_args_kwargs(func=func, args=args, kwargs=kwargs)
             try:
-                is_valid = self._typechecker.validate(*_args, **kwargs)
+                is_valid = self._typechecker.validate(*_args, **_kwargs)
                 if self._typechecker.raise_error is False:
                     wrapper.is_types_valid = is_valid
                 if is_valid is False and self._is_opt_return() is True:
