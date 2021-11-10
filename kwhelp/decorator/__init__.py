@@ -294,16 +294,15 @@ class _FnInstInfo(object):
         if self._fn_info.is_args is False:
             return
         tmp_args = [*args]
+        if self._fn_info.is_args_only:
+            self._real_args = tmp_args
+            return
         if self._fn_info.index_args > 0: 
             # lst_pos_or_kw contains pre *arg keys
             # if there are key, values after *args then they will be in lst_kw_only
             tmp_args = tmp_args[self._fn_info.index_args:]
             # if self._fn_info.len_kw_only > 0:
             #     tmp_args = tmp_args[:-self._fn_info.len_kw_only]
-            self._real_args = tmp_args
-            return
-        if self._fn_info.len_kw_only > 0:
-            tmp_args = tmp_args[:-self._fn_info.len_kw_only]
             self._real_args = tmp_args
             return
         self._real_args = tmp_args
