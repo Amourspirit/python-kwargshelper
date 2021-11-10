@@ -813,9 +813,9 @@ class _DecBase(_CommonBase):
 
 
 class _RuleBase(_DecBase):
-    def _get_err(self, fn: callable, e: RuleError):
+    def _get_err(self, e: RuleError):
         err = RuleError.from_rule_error(
-            e, fn_name=fn.__name__, msg=self._get_class_dec_err(nl=False))
+            e, fn_name=self.fn.__name__, msg=self._get_class_dec_err(nl=False))
         return err
 
 
@@ -1285,7 +1285,7 @@ class ReturnRuleAll(_RuleBase):
             except RuleError as e:
                 if self._is_opt_return():
                     return self._opt_return
-                err = self._get_err(fn=func, e=e)
+                err = self._get_err(e=e)
                 raise err
             return return_value
         return wrapper
@@ -1340,7 +1340,7 @@ class ReturnRuleAny(_RuleBase):
             except RuleError as e:
                 if self._is_opt_return():
                     return self._opt_return
-                err = self._get_err(fn=func, e=e)
+                err = self._get_err(e=e)
                 raise err
             return return_value
         return wrapper
@@ -1564,7 +1564,7 @@ class RuleCheckAny(_RuleBase):
             except RuleError as err:
                 if self._is_opt_return():
                     return self._opt_return
-                err_rule = self._get_err(fn=func, e=err)
+                err_rule = self._get_err(e=err)
                 raise err_rule
             if self._raise_error is False:
                 wrapper.is_rules_any_valid = is_valid
@@ -1634,7 +1634,7 @@ class RuleCheckAll(_RuleBase):
             except RuleError as err:
                 if self._is_opt_return():
                     return self._opt_return
-                err_rule = self._get_err(fn=func, e=err)
+                err_rule = self._get_err(e=err)
                 raise err_rule
             if self._rulechecker.raise_error is False:
                 wrapper.is_rules_all_valid = is_valid
@@ -1734,7 +1734,7 @@ class RuleCheckAllKw(_RuleBase):
                     except RuleError as err:
                         if self._is_opt_return():
                             return self._opt_return
-                        err_rule = self._get_err(fn=func, e=err)
+                        err_rule = self._get_err(e=err)
                         raise err_rule
                     if is_valid is False:
                         break
@@ -1782,7 +1782,7 @@ class RuleCheckAnyKw(RuleCheckAllKw):
                     except RuleError as err:
                         if self._is_opt_return():
                             return self._opt_return
-                        err_rule = self._get_err(fn=func, e=err)
+                        err_rule = self._get_err(e=err)
                         raise err_rule
                     if is_valid is False:
                         break
