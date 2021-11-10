@@ -51,6 +51,290 @@ class _CommonBase(object):
         return not self._opt_return is NO_THING
 
 
+class _FuncInfo(object):
+    # foo(*args)
+    #   assert info.index_args == 0
+    #   assert info.index_kwargs == -1
+    #   assert len(info.lst_kw_only) == 0
+    #   assert len(info.lst_pos_only) == 0
+    #   assert len(info.lst_pos_or_kw) == 0
+    #
+    # foo(**kwargs)
+    #   assert info.index_args == -1
+    #   assert info.index_kwargs == 0
+    #   assert len(info.lst_kw_only) == 0
+    #   assert len(info.lst_pos_only) == 0
+    #   assert len(info.lst_pos_or_kw) == 0
+    #
+    # foo(one, two, three, four)
+    #   assert info.index_args == -1
+    #   assert info.index_kwargs == -1
+    #   assert len(info.lst_kw_only) == 0
+    #   assert len(info.lst_pos_only) == 0
+    #   self.assertListEqual(info.lst_pos_or_kw, ['one', 'two', 'three', 'four'])
+    #
+    # foo(one, two, three, four, **kwargs)
+    #   assert info.index_args == -1
+    #   assert info.index_kwargs == 4
+    #   assert len(info.lst_kw_only) == 0
+    #   assert len(info.lst_pos_only) == 0
+    #   self.assertListEqual(info.lst_pos_or_kw, ['one', 'two', 'three', 'four'])
+    #
+    # foo(*args, one, two, three, four, **kwargs)
+    #   assert info.index_args == 0
+    #   assert info.index_kwargs == 5
+    #   self.assertListEqual(info.lst_kw_only, ['one', 'two', 'three', 'four'])
+    #   assert len(info.lst_pos_only) == 0
+    #   assert len(info.lst_pos_or_kw) == 0
+    #
+    # foo(neg_two, neg_one, *args, one, two, three, four, **kwargs)
+    #   assert info.index_args == 2
+    #   assert info.index_kwargs == 7
+    #   self.assertListEqual(info.lst_kw_only, ['one', 'two', 'three', 'four'])
+    #   assert len(info.lst_pos_only) == 0
+    #   self.assertListEqual(info.lst_pos_or_kw, ['neg_two', 'neg_one'])
+
+    # region init
+    def __init__(self, sig: Signature, ftype: DecFuncEnum):
+        self._len_pos_only = None
+        self._len_kw_only = None
+        self._len_pos_or_kw = None
+        self._all_keys = None
+        self.index_args: int = -1
+        self.index_kwargs = -1
+        self.lst_pos_only: List[str] = []
+        self.lst_kw_only: List[str] = []
+        self.lst_pos_or_kw: List[str] = []
+        self.signature: Signature = sig
+        self.ftype = ftype
+        self._defaults = {}
+        self._set_info()
+
+    def _drop_arg_first(self) -> bool:
+        return self.ftype.value > DecFuncEnum.METHOD_STATIC.value
+
+    def _set_info(self):
+        drop_first = self._drop_arg_first()
+        i = 0
+        for k, v in self.signature.parameters.items():
+            if v.kind == v.VAR_POSITIONAL:  # args
+                self.index_args = i
+                if drop_first:
+                    self.index_args -= 1
+            elif v.kind == v.VAR_KEYWORD:  # kwargs
+                self.index_kwargs = i
+                if drop_first:
+                    self.index_kwargs -= 1
+            elif v.kind == v.KEYWORD_ONLY:
+                self.lst_kw_only.append(v.name)
+                if v.default != v.empty:
+                    self._defaults[k] = v.default
+            elif v.kind == v.POSITIONAL_ONLY:
+                self.lst_pos_only.append(v.name)
+                if v.default != v.empty:
+                    self._defaults[k] = v.default
+            elif v.kind == v.POSITIONAL_OR_KEYWORD:
+                self.lst_pos_or_kw.append(v.name)
+                if v.default != v.empty:
+                    self._defaults[k] = v.default
+            i += 1
+    # endregion init
+
+    # region public Methods
+    def is_default(self, key: str) -> bool:
+        """Gets if key exist in defaults"""
+        return key in self._defaults
+    # endregion public Methods
+
+    # region Property
+    @property
+    def defauts(self) -> Dict[str, Any]:
+        """Defalut value for any args that has defaults"""
+        return self._defaults
+
+    @property
+    def len_positon_only(self) -> int:
+        """Length of Position only args"""
+        if self._len_pos_only is None:
+            self._len_pos_only = len(self.lst_pos_only)
+        return self._len_pos_only
+
+    @property
+    def len_kw_only(self) -> int:
+        """Length of Keyword only args"""
+        if self._len_kw_only is None:
+            self._len_kw_only = len(self.lst_kw_only)
+        return self._len_kw_only
+
+    @property
+    def len_pos_or_kw(self) -> int:
+        """Length of Position or Keyword args"""
+        if self._len_pos_or_kw is None:
+            self._len_pos_or_kw = len(self.lst_pos_or_kw)
+        return self._len_pos_or_kw
+
+    @property
+    def is_args_only(self) -> bool:
+        """Gets if function is *args only"""
+        if self.index_args != 0:
+            return False
+        if self.index_kwargs >= 0:
+            return False
+        result = True
+        result = result and self.len_positon_only == 0
+        result = result and self.len_kw_only == 0
+        result = result and self.len_pos_or_kw == 0
+        return result
+
+    @property
+    def is_kwargs_only(self) -> bool:
+        """Gets if function is **kwargs only"""
+        if self.index_args >= 0:
+            return False
+        if self.index_kwargs != 0:
+            return False
+        result = True
+        result = result and self.len_positon_only == 0
+        result = result and self.len_kw_only == 0
+        result = result and self.len_pos_or_kw == 0
+        return result
+
+    @property
+    def is_named_args_only(self) -> bool:
+        """Gets if function is named only. No *args or **kwargs"""
+        if self.index_args >= 0:
+            return False
+        if self.index_kwargs >= 0:
+            return False
+        result = True
+        result = result and self.len_pos_or_kw > 0
+        result = result and self.len_positon_only == 0
+        result = result and self.len_kw_only == 0
+        return result
+
+    @property
+    def is_args(self) -> bool:
+        """Gets if function has any *args"""
+        return self.index_args >= 0
+
+    @property
+    def is_kwargs(self) -> bool:
+        """Gets if function has any **kwargs"""
+        return self.index_kwargs >= 0
+
+    @property
+    def all_keys(self) -> Set[str]:
+        """Gets combined keys for ``pos_or_kw``, ``kw_only``, ``pos_only``"""
+        if self._all_keys is None:
+            self._all_keys = set()
+            for key in self.lst_pos_or_kw:
+                self._all_keys.add(key)
+            for key in self.lst_kw_only:
+                self._all_keys.add(key)
+            for key in self.lst_pos_only:
+                self._all_keys.add(key)
+        return self._all_keys
+    # endregion Property
+
+class _FnInstInfo(object):
+
+    # region init
+    def __init__(self, func: callable, fn_args: tuple, fn_kwargs: Dict[str, Any], sig: Signature, ftype: DecFuncEnum, **kwargs):
+        self._fn_name = func.__name__
+        self._fn_info = _FuncInfo(sig=sig, ftype=ftype)
+        self._kw = {**self._fn_info.defauts}
+        self._real_kw = {}
+        self._real_args = []
+        self._process_kwargs(args=fn_args,kwargs=fn_kwargs)
+        self._process_args(args=fn_args)
+
+    def _process_kwargs(self, args: tuple, kwargs: Dict[str, Any]):
+        def process_kw(keys: Iterable[str]):
+            ignore_keys = set()
+            for key in keys:
+                try:
+                    self._kw[key] = kwargs[key]
+                except KeyError:
+                    pass
+                    # will be a default
+                    if not key in self._kw:
+                        raise KeyError(f"Missing key '{key}'")
+                ignore_keys.add(key)
+            for k, v in kwargs.items():
+                if not k in ignore_keys:
+                    self._real_kw[k] = v
+            return
+        # if self._fn_info.is_kwargs is False:
+        #     return
+        if self._fn_info.is_kwargs_only is True:
+            self._real_kw = {**kwargs}
+            return
+        if self._fn_info.is_named_args_only is True:
+            self._kw.update(kwargs)
+            return
+        # at this point the are kwargs but not all are assigned to real key names.
+        # is it posible at this point that some of the values are contained within args.
+        if self._fn_info.is_args is False:
+            keys = self._fn_info.all_keys
+            process_kw(keys=keys)
+            return
+        # at this point there are definatly args
+        # check to see if there are any pre *args names.
+        if self._fn_info.index_args > 0:
+            # lst_pos_or_kw contains pre *arg keys
+            for i, key in enumerate(self._fn_info.lst_pos_or_kw):
+                self._kw[key] = args[i]
+            # if there are key, values after *args then they will be in lst_kw_only
+            process_kw(keys=self._fn_info.lst_kw_only)
+            return
+        # at this point there are *args but they do not contain any keyword arg values.
+        process_kw(keys=self._fn_info.all_keys)
+
+    def _process_args(self, args: tuple):
+        if self._fn_info.is_args is False:
+            return
+        tmp_args = [*args]
+        if self._fn_info.index_args > 0: 
+            # lst_pos_or_kw contains pre *arg keys
+            # if there are key, values after *args then they will be in lst_kw_only
+            tmp_args = tmp_args[self._fn_info.index_args:]
+            # if self._fn_info.len_kw_only > 0:
+            #     tmp_args = tmp_args[:-self._fn_info.len_kw_only]
+            self._real_args = tmp_args
+            return
+        if self._fn_info.len_kw_only > 0:
+            tmp_args = tmp_args[:-self._fn_info.len_kw_only]
+            self._real_args = tmp_args
+            return
+        self._real_args = tmp_args
+        return
+    # endregion init
+  
+    # region Properties
+    @property
+    def name(self) -> str:
+        return self._fn_name
+    
+    @property
+    def info(self) -> _FuncInfo:
+        return self._fn_info
+    
+    
+    @property
+    def key_word_args(self) -> Dict[str, Any]:
+        return self._kw
+    
+    @property
+    def kwargs(self)-> Dict[str, Any]:
+        return self._real_kw
+    
+    @property
+    def args(self) -> list:
+        return self._real_args
+    # endregion Properties
+  
+
+
 class _DecBase(_CommonBase):
     _rx_star = re.compile("^\*(\d*)$")
 
@@ -124,7 +408,6 @@ class _DecBase(_CommonBase):
             error_check (bool, optional): Determinse if errors are raise if there are missing
                 keywords. This is the case when function has keywords without defaults assigned
                 and no value is passed into function.
-            ignore_args (bool, optional): Determins if ``*args`` are ignored. Default ``False``
 
         Returns:
             Dict[str, object]: Dictionary of keys and values representing ``func`` keywords and values.
@@ -142,17 +425,17 @@ class _DecBase(_CommonBase):
         args_pos = -1
         drop_first = self._drop_arg_first()
         for k, v in sig.parameters.items():
-            if v.kind == _ParameterKind.VAR_POSITIONAL:  # args
+            if v.kind == v.VAR_POSITIONAL:  # args
                 args_pos = i
                 if drop_first:
                     args_pos -= 1
                 continue
-            if v.kind == _ParameterKind.VAR_KEYWORD:  # kwargs
+            if v.kind == v.VAR_KEYWORD:  # kwargs
                 continue
-            if not v.default is inspect._empty:
-                name_values.append((k, v.default))
-            else:
+            if v.default == v.empty:
                 name_values.append((k, NO_THING))
+            else:
+                name_values.append((k, v.default))
             i += 1
         arg_offset = 0 if args_pos == -1 else args_pos
         if drop_first and len(fn_args) > arg_offset:
@@ -233,6 +516,113 @@ class _DecBase(_CommonBase):
             self._missing_args_error(func=func, missing_names=missing_args)
         return name_defaults
 
+    def _get_args_kwargs_pos(self, func: callable) -> Tuple[int, int]:
+        """
+        Get args and kwargs postion in a function taking in to accoount DedFuncEnum value.
+
+        Args:
+            func (callable): wrapped function
+
+        Returns:
+            Tuple[int, int]: Tuple with args position at ``0`` and kwargs postion at ``1``.
+            If not found then values will be ``-1``.
+        """
+        sig = self._get_signature(func)
+        args_pos = -1
+        kwargs_pos = -1
+        drop_first = self._drop_arg_first()
+        i = 0
+        for _, v in sig.parameters.items():
+            if args_pos >= 0 and kwargs_pos >= 0:
+                break
+            if v.kind == v.VAR_POSITIONAL:  # args
+                args_pos = i
+                if drop_first:
+                    args_pos -= 1
+                continue
+            if v.kind == v.VAR_KEYWORD:  # kwargs
+                kwargs_pos = i
+                if drop_first:
+                    kwargs_pos -= 1
+                continue
+            i += 1
+        return args_pos, kwargs_pos
+
+    def get_filtered_args_dict(self, func: callable, filter: str, args_dict: Dict[str, Any]) -> Dict[str, Any]:
+        def _get_this():
+            sig = self._get_signature(func)
+            drop_first = self._drop_arg_first()
+            result = {
+                "var_pos": [],
+                "var_kw": [],
+                "pos_kw": [],
+                "pos_only": [],
+                "kw_only": []
+            }
+            i = 0
+            for _, v in sig.parameters.items():
+                if v.kind == v.VAR_POSITIONAL:  # args
+                    result['var_pos'].append(v.name)
+                    continue
+                if v.kind == v.VAR_KEYWORD:  # kwargs
+                    result['var_kw'].append(v.name)
+                    continue
+                if v.kind == v.KEYWORD_ONLY:
+                    result['kw_only'].append(v.name)
+                if v.kind == v.POSITIONAL_ONLY:
+                    result['pos_only'].append(v.name)
+                if v.kind == v.POSITIONAL_OR_KEYWORD:
+                    result['pos_kw'].append(v.name)
+                i += 1
+            return result
+
+        def _filter_args_only() -> Dict[str, Any]:
+            result = {}
+            for k, v in args_dict.items():
+                if self._is_placeholder_arg(k):
+                    result[k] = v
+            return result
+
+        def _filter_no_args() -> Dict[str, Any]:
+            result = {}
+            keys = args_dict.keys()
+            last_index = -1
+            for i, key in enumerate(keys):
+                if self._is_placeholder_arg(key):
+                    last_index = i
+            if last_index >= 0:
+                filter_keys = keys[(last_index + 1):]
+                for key in filter_keys:
+                    result[key] = args_dict[key]
+            else:
+                result = {**args_dict}
+            return result
+
+        def _filter_kwargs_only() -> Dict[str, Any]:
+            result = {}
+            kwargs_pos = self._get_args_kwargs_pos(func=func)[1]
+            if kwargs_pos < 0:
+                result = {**args_dict}
+            else:
+                keys = args_dict.keys()
+                filter_keys = keys[kwargs_pos:]
+                for key in filter_keys:
+                    result[key] = args_dict[key]
+            return result
+
+        def _filter_actual_key_only() -> Dict[str, Any]:
+            result = {}
+            keys = list(args_dict.keys())
+            filter_keys = []
+            args_pos, kwargs_pos = self._get_args_kwargs_pos(func=func)
+            if args_pos > 0:
+                # there are args before start of *args
+                filter_keys.extend(keys[:args_pos])
+            if kwargs_pos >= 0:
+                # move past all kwargs_pos
+                pass
+            return result
+
     def _missing_args_error(self, func: callable, missing_names: List[str]):
         missing_names_len = len(missing_names)
         if missing_names_len == 0:
@@ -242,7 +632,7 @@ class _DecBase(_CommonBase):
             msg = msg + " argument: "
         else:
             msg = msg + " arguments: "
-        msg = msg +  self._get_formated_names(names=missing_names)
+        msg = msg + self._get_formated_names(names=missing_names)
         msg = msg + self._get_class_dec_err()
         raise TypeError(msg)
 
@@ -261,7 +651,7 @@ class _DecBase(_CommonBase):
             str: formated such as ``'final' and 'end'`` or ``'one', 'final', and 'end'``
         """
         conj = kwargs.get("conj", "and")
-        wrapper = kwargs.get("wrapper","'")
+        wrapper = kwargs.get("wrapper", "'")
         s = ""
         names_len = len(names)
         last_index = names_len - 1
@@ -276,7 +666,7 @@ class _DecBase(_CommonBase):
 
             s = s + "{0}{1}{0}".format(wrapper, name)
         return s
-                
+
     def _get_formated_types(self, types: Iterator[type], **kwargs) -> str:
         """
         Gets a formated string from a list of types.
@@ -355,9 +745,11 @@ class _DecBase(_CommonBase):
         result = result + f"{self.__class__.__name__} decorator error."
         return result
 
+
 class _RuleBase(_DecBase):
     def _get_err(self, fn: callable, e: RuleError):
-        err = RuleError.from_rule_error(e, fn_name=fn.__name__, msg=self._get_class_dec_err(nl=False))
+        err = RuleError.from_rule_error(
+            e, fn_name=fn.__name__, msg=self._get_class_dec_err(nl=False))
         return err
 
 
@@ -407,8 +799,10 @@ class TypeCheck(_DecBase):
         self._kwargs_only = bool(kwargs.get('kwargs_only', False))
 
     def _get_args_kwargs(self, func: callable, args: Tuple[object], kwargs: Dict[str, Any]) -> Tuple[Tuple[object],  Dict[str, Any]]:
+        _all = self._get_args_dict(
+            func=func, fn_args=args, fn_kwargs=kwargs)
         if self._args_only is True:
-            _all = self._get_args_dict(func=func, fn_args=args, fn_kwargs=kwargs)
+
             _args = self._get_args(args)
             _kwargs = {}
         elif self._kwargs_only is True:
@@ -425,7 +819,8 @@ class TypeCheck(_DecBase):
         def wrapper(*args, **kwargs):
             if self._args_only is True and self._kwargs_only is True:
                 return func(*args, **kwargs)
-            _args, _kwargs = self._get_args_kwargs(func=func, args=args, kwargs=kwargs)
+            _args, _kwargs = self._get_args_kwargs(
+                func=func, args=args, kwargs=kwargs)
             try:
                 is_valid = self._typechecker.validate(*_args, **_kwargs)
                 if self._typechecker.raise_error is False:
@@ -525,8 +920,8 @@ class AcceptedTypes(_DecBase):
                 if self._is_opt_return():
                     return self._opt_return
                 raise TypeError(self._get_err_msg(name=None, value=value,
-                                                    types=types, arg_index=arg_index,
-                                                    fn=func))
+                                                  types=types, arg_index=arg_index,
+                                                  fn=func))
         else:
             try:
                 tc.validate(**{key: value})
@@ -534,8 +929,8 @@ class AcceptedTypes(_DecBase):
                 if self._is_opt_return():
                     return self._opt_return
                 raise TypeError(self._get_err_msg(name=key, value=value,
-                                                    types=types, arg_index=arg_index,
-                                                    fn=func))
+                                                  types=types, arg_index=arg_index,
+                                                  fn=func))
         return NO_THING
 
     def __call__(self, func: callable):
@@ -567,7 +962,7 @@ class AcceptedTypes(_DecBase):
                 # this only happens when _all_args is True
                 # at this point remain args should match last last type in self._types
                 r_args = arg_keys[i:]
-                types = self._types[len(self._types) - 1] # tuple or set
+                types = self._types[len(self._types) - 1]  # tuple or set
                 sc = self._get_inst(types=types)
                 for r_arg in r_args:
                     result = self._validate(func=func, key=r_arg,
@@ -654,7 +1049,7 @@ class ArgsLen(_DecBase):
             str_rng = self._get_formated_names(
                 names=sorted(self._ranges), conj='or', wrapper="")
         result = ""
-        
+
         if len_lengths > 0:
             if len_lengths == 1:
                 result = result + "Expected Length: "
