@@ -145,10 +145,6 @@ class Test_FuncInfo(unittest.TestCase):
             assert info.info.index_args == 0
             assert info.info.index_kwargs == -1
             i += 1
-        
-
-
-
 
     def test_names_kwargs_with_DefaultArgs(self):
         global FN_INFO
@@ -177,7 +173,7 @@ class Test_FuncInfo(unittest.TestCase):
         while i < 2:
             if i == 0:
                 result = foo(start='1st', center="_",
-                                one=1, two=2, three=3, four=4)
+                             one=1, two=2, three=3, four=4)
                 info: _FnInstInfo = FN_INFO
                 assert info.name == 'foo'
             else:
@@ -185,8 +181,7 @@ class Test_FuncInfo(unittest.TestCase):
                 info: _FnInstInfo = FN_INFO
                 assert info.name == 'foo_default'
             assert result['start'] == '1st'
-            
-            
+
             kwargs = {
                 "one": 1,
                 "two": 2,
@@ -215,7 +210,204 @@ class Test_FuncInfo(unittest.TestCase):
             assert info.info.index_args == -1
             assert info.info.index_kwargs == 3
             i += 1
-        
+
+    def test_args_names_kwargs_with_DefaultArgs(self):
+        global FN_INFO
+
+        @test_dec
+        def foo(*args, start, center, end="!!", **kwargs):
+            result = {
+                "args": args,
+                "start": start,
+                "center": center,
+                "end": end
+            }
+            result.update(**kwargs)
+            return result
+
+        @DefaultArgs(center="_", end="!!", four=4)
+        @test_dec
+        def foo_default(*args, start, center, end="!!", **kwargs):
+            result = {
+                "args": args,
+                "start": start,
+                "center": center,
+                "end": end
+            }
+            result.update(**kwargs)
+            return result
+        i = 0
+        while i < 2:
+            if i == 0:
+                result = foo(101, 102, 103, start='1st', center="_",
+                             one=1, two=2, three=3, four=4)
+                info: _FnInstInfo = FN_INFO
+                assert info.name == 'foo'
+            else:
+                result = foo_default(
+                    101, 102, 103, start='1st', one=1, two=2, three=3)
+                info: _FnInstInfo = FN_INFO
+                assert info.name == 'foo_default'
+            assert result['start'] == '1st'
+
+            kwargs = {
+                "one": 1,
+                "two": 2,
+                "three": 3,
+                "four": 4
+            }
+            key_word_args = {
+                'start': '1st',
+                'center': "_",
+                'end': "!!"
+            }
+            self.assertDictEqual(info.kwargs, kwargs)
+            self.assertDictEqual(info.key_word_args, key_word_args)
+            assert len(info.key_word_args) == 3
+            assert len(info.args) == 3
+            assert len(info.kwargs) == 4
+            assert info.info.len_kw_only == 3
+            assert info.info.len_pos_or_kw == 0
+            assert info.info.len_positon_only == 0
+            assert info.info.is_args == True
+            assert info.info.is_args_only == False
+            assert info.info.is_kwargs == True
+            assert info.info.is_kwargs_only == False
+            assert info.info.is_named_args_only == False
+            assert len(info.info.all_keys) == 3
+            assert info.info.index_args == 0
+            assert info.info.index_kwargs == 4
+            i += 1
+
+    def test_names_args(self):
+        @test_dec
+        def foo(first, second, *args):
+            return [first, second] + [*args]
+        result = foo(1, 2, 3, 4)
+        assert result[0] == 1
+        info: _FnInstInfo = foo.fn_info
+        assert info.name == 'foo'
+        key_word_args = {
+            'first': 1,
+            'second': 2
+        }
+        self.assertDictEqual(info.key_word_args, key_word_args)
+        self.assertListEqual(info.args, [3, 4])
+        assert len(info.key_word_args) == 2
+        assert len(info.kwargs) == 0
+        assert info.info.len_kw_only == 0
+        assert info.info.len_pos_or_kw == 2
+        assert info.info.len_positon_only == 0
+        assert info.info.is_args == True
+        assert info.info.is_args_only == False
+        assert info.info.is_kwargs == False
+        assert info.info.is_kwargs_only == False
+        assert info.info.is_named_args_only == False
+        assert len(info.info.all_keys) == 2
+        assert info.info.index_args == 2
+        assert info.info.index_kwargs == -1
+
+    def test_names_args_names(self):
+        @test_dec
+        def foo(first, second, *args, third, fourth='4th'):
+            return [first, second] + [*args] + [third, fourth]
+        result = foo(1, 2, 3, 4, third='3rd')
+        assert result[0] == 1
+        info: _FnInstInfo = foo.fn_info
+        assert info.name == 'foo'
+        key_word_args = {
+            'first': 1,
+            'second': 2,
+            'third': '3rd',
+            'fourth': '4th'
+        }
+        self.assertDictEqual(info.key_word_args, key_word_args)
+        self.assertListEqual(info.args, [3, 4])
+        self.assertDictEqual(info.info.defauts, {"fourth": "4th"})
+        assert len(info.key_word_args) == 4
+        assert len(info.kwargs) == 0
+        assert info.info.len_kw_only == 2
+        assert info.info.len_pos_or_kw == 2
+        assert info.info.len_positon_only == 0
+        assert info.info.is_args == True
+        assert info.info.is_args_only == False
+        assert info.info.is_kwargs == False
+        assert info.info.is_kwargs_only == False
+        assert info.info.is_named_args_only == False
+        assert len(info.info.all_keys) == 4
+        assert info.info.index_args == 2
+        assert info.info.index_kwargs == -1
+
+    def test_names_args_kwargs(self):
+        @test_dec
+        def foo(first, second, *args, **kwargs):
+            return [first, second] + [*args] + [v for _, v in kwargs.items()]
+        result = foo(1, 2, 3, 4, third='3rd', fourth='4th', five='5th', six='6th')
+        assert result[0] == 1
+        info: _FnInstInfo = foo.fn_info
+        assert info.name == 'foo'
+        key_word_args = {
+            'first': 1,
+            'second': 2
+        }
+        kwargs = {
+            'third': '3rd',
+            'fourth': '4th',
+            'five': '5th',
+            'six': '6th'
+        }
+        self.assertDictEqual(info.key_word_args, key_word_args)
+        self.assertDictEqual(info.kwargs, kwargs)
+        self.assertListEqual(info.args, [3, 4])
+        assert len(info.key_word_args) == 2
+        assert len(info.kwargs) == 4
+        assert info.info.len_kw_only == 0
+        assert info.info.len_pos_or_kw == 2
+        assert info.info.len_positon_only == 0
+        assert info.info.is_args == True
+        assert info.info.is_args_only == False
+        assert info.info.is_kwargs == True
+        assert info.info.is_kwargs_only == False
+        assert info.info.is_named_args_only == False
+        assert len(info.info.all_keys) == 2
+        assert info.info.index_args == 2
+        assert info.info.index_kwargs == 3
+
+    def test_names_args_names_kwargs(self):
+        @test_dec
+        def foo(first, second, *args, third, fourth='4th', **kwargs):
+            return [first, second] + [*args] + [third, fourth] + [v for _,v in kwargs.items()]
+        result = foo(1, 2, 3, 4, third='3rd', five='5th', six='6th')
+        assert result[0] == 1
+        info: _FnInstInfo = foo.fn_info
+        assert info.name == 'foo'
+        key_word_args = {
+            'first': 1,
+            'second': 2,
+            'third': '3rd',
+            'fourth': '4th'
+        }
+        kwargs = {
+            'five': '5th',
+            'six': '6th'
+        }
+        self.assertDictEqual(info.key_word_args, key_word_args)
+        self.assertDictEqual(info.kwargs, kwargs)
+        self.assertListEqual(info.args, [3, 4])
+        self.assertDictEqual(info.info.defauts, {"fourth": "4th"})
+        assert len(info.key_word_args) == 4
+        assert len(info.kwargs) == 2
+        assert info.info.len_kw_only == 2
+        assert info.info.len_pos_or_kw == 2
+        assert info.info.len_positon_only == 0
+        assert info.info.is_args == True
+        assert info.info.is_args_only == False
+        assert info.info.is_kwargs == True
+        assert info.info.is_kwargs_only == False
+        assert info.info.is_named_args_only == False
+        assert len(info.info.all_keys) == 4
+        assert info.info.index_args == 2
+        assert info.info.index_kwargs == 5
 
 if __name__ == '__main__':
     unittest.main()
