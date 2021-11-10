@@ -40,7 +40,7 @@ class _CommonBase(object):
                 supplied then it will be return when validation fails and no error will be raised.
         """
         self._opt_return = kwargs.get("opt_return", NO_THING)
-        self._fn:callable = Union[None, callable]
+        
 
     def _is_opt_return(self) -> bool:
         """
@@ -51,14 +51,7 @@ class _CommonBase(object):
         """
         return not self._opt_return is NO_THING
 
-    def _call_init(self, **kwargs):
-        self._fn = kwargs.get('func', None)
-        
-    @property
-    def fn(self) -> callable:
-        if self._fn is None:
-            raise ValueError("fn has not been set. Check if _call_init is called.")
-        return self._fn
+    
 class _FuncInfo(object):
     # foo(*args)
     #   assert info.index_args == 0
@@ -347,6 +340,8 @@ class _DecBase(_CommonBase):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        # and option check for fn value in kwargs. can be used for testing
+        self._fn: Union[None, callable] = kwargs.get('_option_fn', None)
         self._ftype: DecFuncEnum = kwargs.get("ftype", None)
         if self._ftype is not None:
             if not isinstance(self._ftype, DecFuncEnum):
@@ -357,8 +352,62 @@ class _DecBase(_CommonBase):
                         f"{self.__class__.__name__} requires arg 'ftype' to be a 'DecFuncType")
         else:
             self._ftype = DecFuncEnum.FUNCTION
-        self._cache = {}
+        self._cache = {
+            'args': [],
+            'kwargs': {}
+        }
 
+    def _call_init(self, **kwargs):
+        """
+        Call Init. Provides args for base methhods.
+        
+        Keyword Arguments:
+            func (callable): Function that is being wrapped
+        """
+        fn = kwargs.get('func', None)
+        if not fn is None:
+            self._fn = fn
+    
+    def _wrapper_init(self, **kwargs):
+        """
+        Wrapper Init. Provides args for base methods.
+        This method usually called right after Wrapper method
+    
+        Keyword Arguments:
+            args (Iterable[object]): Wrapped function ``args``
+            kwargs (Dict[str, Any]): Wrapped function ``kwargs``
+        """
+        key = 'args'
+        if key in kwargs:
+            self._cache[key] = kwargs[key]
+        key = 'kwargs'
+        if key in kwargs:
+            self._cache[key] = kwargs[key]
+
+    @property
+    def fn(self) -> callable:
+        if self._fn is None:
+            raise ValueError(
+                "fn has not been set. Check if _call_init is called.")
+        return self._fn
+    
+    @property
+    def args(self) -> Iterable[object]:
+        """Gets/sets wrapped function args"""
+        return self._cache['args']
+    
+    @args.setter
+    def args(self, value: Iterable[object]):
+        self._wrapper_init(args=value)
+    
+    @property
+    def kwargs(self) -> Dict[str, Any]:
+        """Gets/sets wrapped function kwargs"""
+        return self._cache['kwargs']
+
+    @kwargs.setter
+    def kwargs(self, value: Dict[str, Any]):
+        self._wrapper_init(kwargs=value)
 
     def _is_placeholder_arg(self, arg_name: str) -> bool:
         m = _DecBase._rx_star.match(arg_name)
@@ -833,6 +882,7 @@ class TypeCheck(_DecBase):
         super()._call_init(func=func)
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
+            self._wrapper_init(args=args, kwargs=kwargs)
             if self._args_only is True and self._kwargs_only is True:
                 return func(*args, **kwargs)
             _args, _kwargs = self._get_args_kwargs(args=args, kwargs=kwargs)
@@ -952,6 +1002,7 @@ class AcceptedTypes(_DecBase):
         super()._call_init(func=func)
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
+            self._wrapper_init(args=args, kwargs=kwargs)
             arg_name_values = self._get_args_dict(fn_args=args, fn_kwargs=kwargs)
             arg_keys = list(arg_name_values.keys())
             arg_keys_len = arg_keys.__len__()
@@ -1085,6 +1136,7 @@ class ArgsLen(_DecBase):
         super()._call_init(func=func)
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
+            self._wrapper_init(args=args, kwargs=kwargs)
             _args = self._get_args_star(args=args)
             _args_len = len(_args)
             is_valid = False
@@ -1168,6 +1220,7 @@ class ArgsMinMax(_DecBase):
         super()._call_init(func=func)
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
+            self._wrapper_init(args=args, kwargs=kwargs)
             _min, _max = self._get_min_max()
             has_rules = _min > 0 or _max >= 0
             if has_rules:
@@ -1224,6 +1277,7 @@ class ReturnRuleAll(_RuleBase):
         super()._call_init(func=func)
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
+            self._wrapper_init(args=args, kwargs=kwargs)
             return_value = func(*args, **kwargs)
             rc = self._rulechecker
             try:
@@ -1277,6 +1331,7 @@ class ReturnRuleAny(_RuleBase):
         super()._call_init(func=func)
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
+            self._wrapper_init(args=args, kwargs=kwargs)
             return_value = func(*args, **kwargs)
             rc = self._rulechecker
             # rc.current_arg = "return"
@@ -1335,6 +1390,7 @@ class ReturnType(_DecBase):
         super()._call_init(func=func)
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
+            self._wrapper_init(args=args, kwargs=kwargs)
             return_value = func(*args, **kwargs)
             try:
                 self._typechecker.validate(return_value)
@@ -1423,6 +1479,7 @@ class TypeCheckKw(_DecBase):
         super()._call_init(func=func)
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
+            self._wrapper_init(args=args, kwargs=kwargs)
             is_valid = True
             arg_name_values = self._get_args_dict(fn_args=args, fn_kwargs=kwargs)
             arg_keys = arg_name_values.keys()
@@ -1499,6 +1556,7 @@ class RuleCheckAny(_RuleBase):
         super()._call_init(func=func)
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
+            self._wrapper_init(args=args, kwargs=kwargs)
             _args = self._get_args(args)
             is_valid = False
             try:
@@ -1568,6 +1626,7 @@ class RuleCheckAll(_RuleBase):
         super()._call_init(func=func)
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
+            self._wrapper_init(args=args, kwargs=kwargs)
             _args = self._get_args(args)
             is_valid = False
             try:
@@ -1655,6 +1714,7 @@ class RuleCheckAllKw(_RuleBase):
         super()._call_init(func=func)
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
+            self._wrapper_init(args=args, kwargs=kwargs)
             is_valid = True
             arg_name_values = self._get_args_dict(fn_args=args, fn_kwargs=kwargs)
             arg_keys = arg_name_values.keys()
@@ -1702,6 +1762,7 @@ class RuleCheckAnyKw(RuleCheckAllKw):
         super()._call_init(func=func)
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
+            self._wrapper_init(args=args, kwargs=kwargs)
             is_valid = True
             arg_name_values = self._get_args_dict(fn_args=args, fn_kwargs=kwargs)
             arg_keys = arg_name_values.keys()
@@ -1767,6 +1828,7 @@ class RequireArgs(_DecBase):
         super()._call_init(func=func)
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
+            self._wrapper_init(args=args, kwargs=kwargs)
             arg_name_values = self._get_args_dict(fn_args=args, fn_kwargs=kwargs)
             arg_keys = arg_name_values.keys()
             for key in self._args:
@@ -1798,7 +1860,6 @@ class DefaultArgs(_CommonBase):
         self._kwargs = {**kwargs}
 
     def __call__(self, func):
-        super()._call_init(func=func)
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             for key, value in self._kwargs.items():
@@ -2090,6 +2151,7 @@ class SubClass(_DecBase):
         super()._call_init(func=func)
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
+            self._wrapper_init(args=args, kwargs=kwargs)
             arg_name_values = self._get_args_dict(fn_args=args, fn_kwargs=kwargs)
             arg_keys = list(arg_name_values.keys())
             arg_keys_len = arg_keys.__len__()
@@ -2202,6 +2264,7 @@ class SubClasskKw(_DecBase):
         super()._call_init(func=func)
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
+            self._wrapper_init(args=args, kwargs=kwargs)
             is_valid = True
             arg_name_values = self._get_args_dict(fn_args=args, fn_kwargs=kwargs)
             arg_keys = arg_name_values.keys()
