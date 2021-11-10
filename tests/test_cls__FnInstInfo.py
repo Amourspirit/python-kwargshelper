@@ -1,6 +1,7 @@
 # coding: utf-8
 import functools
 from inspect import signature, Signature
+from collections import OrderedDict
 import unittest
 if __name__ == '__main__':
     import os
@@ -10,6 +11,8 @@ from kwhelp.decorator import _FnInstInfo, DecFuncEnum, DefaultArgs
 
 FN_INFO = None
 
+def gen_args(length:int) -> list:
+    return [i for i in range(length)]
 
 def test_dec(func):
     @functools.wraps(func)
@@ -25,6 +28,12 @@ def test_dec(func):
 
 
 class Test_FuncInfo(unittest.TestCase):
+
+    def test_gen_args(self):
+        args = gen_args(3)
+        assert args[0] == 0
+        assert args[1] == 1
+        assert args[2] == 2
 
     def test_args_kwargs(self):
         @test_dec
@@ -122,13 +131,12 @@ class Test_FuncInfo(unittest.TestCase):
                 info: _FnInstInfo = FN_INFO
                 assert info.name == 'foo_default'
             assert result[0] == 5
-            key_word_args = {
-                'one': 1,
-                'two': 2,
-                'three': 3,
-                'four': 4
-            }
-            self.assertDictEqual(info.key_word_args, key_word_args)
+            od = OrderedDict()
+            od['one'] = 1
+            od['two'] = 2
+            od['three'] = 3
+            od['four'] = 4
+            self.assertDictEqual(info.key_word_args, od)
             self.assertListEqual(info.args, [5, 6, 7, 8])
             assert len(info.key_word_args) == 4
             assert len(info.args) == 4
@@ -181,18 +189,16 @@ class Test_FuncInfo(unittest.TestCase):
                 info: _FnInstInfo = FN_INFO
                 assert info.name == 'foo_default'
             assert result['start'] == '1st'
+            kwargs = OrderedDict()
+            kwargs['one'] = 1
+            kwargs['two'] = 2
+            kwargs['three'] = 3
+            kwargs['four'] = 4
+            key_word_args = OrderedDict()
+            key_word_args['start'] = '1st'
+            key_word_args['center'] = '_'
+            key_word_args['end'] = '!!'
 
-            kwargs = {
-                "one": 1,
-                "two": 2,
-                "three": 3,
-                "four": 4
-            }
-            key_word_args = {
-                'start': '1st',
-                'center': "_",
-                'end': "!!"
-            }
             self.assertDictEqual(info.kwargs, kwargs)
             self.assertDictEqual(info.key_word_args, key_word_args)
             assert len(info.key_word_args) == 3
@@ -250,17 +256,15 @@ class Test_FuncInfo(unittest.TestCase):
                 assert info.name == 'foo_default'
             assert result['start'] == '1st'
 
-            kwargs = {
-                "one": 1,
-                "two": 2,
-                "three": 3,
-                "four": 4
-            }
-            key_word_args = {
-                'start': '1st',
-                'center': "_",
-                'end': "!!"
-            }
+            kwargs = OrderedDict()
+            kwargs['one'] = 1
+            kwargs['two'] = 2
+            kwargs['three'] = 3
+            kwargs['four'] = 4
+            key_word_args = OrderedDict()
+            key_word_args['start'] = '1st'
+            key_word_args['center'] = '_'
+            key_word_args['end'] = '!!'
             self.assertDictEqual(info.kwargs, kwargs)
             self.assertDictEqual(info.key_word_args, key_word_args)
             assert len(info.key_word_args) == 3
@@ -287,10 +291,10 @@ class Test_FuncInfo(unittest.TestCase):
         assert result[0] == 1
         info: _FnInstInfo = foo.fn_info
         assert info.name == 'foo'
-        key_word_args = {
-            'first': 1,
-            'second': 2
-        }
+        key_word_args = OrderedDict()
+        key_word_args['first'] = 1
+        key_word_args['second'] = 2
+
         self.assertDictEqual(info.key_word_args, key_word_args)
         self.assertListEqual(info.args, [3, 4])
         assert len(info.key_word_args) == 2
@@ -315,12 +319,12 @@ class Test_FuncInfo(unittest.TestCase):
         assert result[0] == 1
         info: _FnInstInfo = foo.fn_info
         assert info.name == 'foo'
-        key_word_args = {
-            'first': 1,
-            'second': 2,
-            'third': '3rd',
-            'fourth': '4th'
-        }
+        key_word_args = OrderedDict()
+        key_word_args['first'] = 1
+        key_word_args['second'] = 2
+        key_word_args['third'] = '3rd'
+        key_word_args['fourth'] = '4th'
+
         self.assertDictEqual(info.key_word_args, key_word_args)
         self.assertListEqual(info.args, [3, 4])
         self.assertDictEqual(info.info.defauts, {"fourth": "4th"})
@@ -346,16 +350,15 @@ class Test_FuncInfo(unittest.TestCase):
         assert result[0] == 1
         info: _FnInstInfo = foo.fn_info
         assert info.name == 'foo'
-        key_word_args = {
-            'first': 1,
-            'second': 2
-        }
-        kwargs = {
-            'third': '3rd',
-            'fourth': '4th',
-            'five': '5th',
-            'six': '6th'
-        }
+        key_word_args = OrderedDict()
+        key_word_args['first'] = 1
+        key_word_args['second'] = 2
+        kwargs = OrderedDict()
+        kwargs['third'] = '3rd'
+        kwargs['fourth'] = '4th'
+        kwargs['five'] = '5th'
+        kwargs['six'] = '6th'
+
         self.assertDictEqual(info.key_word_args, key_word_args)
         self.assertDictEqual(info.kwargs, kwargs)
         self.assertListEqual(info.args, [3, 4])
@@ -381,16 +384,15 @@ class Test_FuncInfo(unittest.TestCase):
         assert result[0] == 1
         info: _FnInstInfo = foo.fn_info
         assert info.name == 'foo'
-        key_word_args = {
-            'first': 1,
-            'second': 2,
-            'third': '3rd',
-            'fourth': '4th'
-        }
-        kwargs = {
-            'five': '5th',
-            'six': '6th'
-        }
+        key_word_args = OrderedDict()
+        key_word_args['first'] = 1
+        key_word_args['second'] = 2
+        key_word_args['third'] = '3rd'
+        key_word_args['fourth'] = '4th'
+        kwargs = OrderedDict()
+        kwargs['five'] = '5th'
+        kwargs['six'] = '6th'
+
         self.assertDictEqual(info.key_word_args, key_word_args)
         self.assertDictEqual(info.kwargs, kwargs)
         self.assertListEqual(info.args, [3, 4])
@@ -447,12 +449,28 @@ class Test_FuncInfoGets(unittest.TestCase):
         assert len(dict) == 0
 
     def test_args_only(self):
+        def is_match(lst: list, dict: OrderedDict):
+            for i in range(len(lst)):
+                key = '*' + str(i)
+                assert foo_args[i] == dict[key]
         @test_dec
         def foo(*args):
             return [*args]
-        result = foo(1, 2, 3, 4)
-        assert result[0] == 1
+        args_len = 20
+        foo_args = [*gen_args(args_len)]
+        result = foo(*foo_args)
         info: _FnInstInfo = foo.fn_info
+        dict = info.get_all_args()
+        assert len(dict) == args_len
+        is_match(foo_args, dict)
+        dict = info.get_filter_arg()
+        assert len(dict) == args_len
+        is_match(foo_args, dict)
+        dict = info.get_filtered_key_word_args()
+        assert len(dict) == 0
+        dict = info.get_filtered_kwargs()
+        assert len(dict) == 0
+
 
 if __name__ == '__main__':
     unittest.main()

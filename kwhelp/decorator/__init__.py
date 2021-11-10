@@ -245,7 +245,7 @@ class _FnInstInfo(object):
     def __init__(self, func: callable, fn_args: tuple, fn_kwargs: Dict[str, Any], sig: Signature, ftype: DecFuncEnum, **kwargs):
         self._fn_name = func.__name__
         self._fn_info = _FuncInfo(sig=sig, ftype=ftype)
-        self._kw = None
+        self._kw = OrderedDict()
         self._real_kw = OrderedDict()
         self._real_args = []
         self._all_kw = None
@@ -253,62 +253,47 @@ class _FnInstInfo(object):
         self._process_args(args=fn_args)
 
     def _process_kwargs(self, args: tuple, kwargs: Dict[str, Any]):
-        kw_keys = []
-        kw = {**self._fn_info.defauts}
         def process_kw(keys: Iterable[str]):
             ignore_keys = set()
             for key in keys:
                 try:
-                    kw[key] = kwargs[key]
-                    kw_keys.append(key)
+                    self._kw[key] = kwargs[key]
                 except KeyError:
                     pass
                     # will be a default
-                    if not key in self._kw:
+                    if not key in self._fn_info.defauts:
                         raise KeyError(f"Missing key '{key}'")
+                    self._kw[key] = self._fn_info.defauts[key]
                 ignore_keys.add(key)
             for k, v in kwargs.items():
                 if not k in ignore_keys:
                     self._real_kw[k] = v
             return
 
-        def get_kw_dict() -> OrderedDict[str, Any]:
-            od = OrderedDict()
-            for key in kw_keys:
-                od[key] = kw[key]
-            return od
-
         if self._fn_info.is_kwargs_only is True:
             self._real_kw.update(**kwargs)
-            self._kw = get_kw_dict()
             return
         if self._fn_info.is_named_args_only is True:
             for key, value in kwargs.items():
-                kw_keys.append(key)
-                kw[key] = value
-            self._kw = get_kw_dict()
+                self._kw[key] = value
             return
         # at this point the are kwargs but not all are assigned to real key names.
         # is it posible at this point that some of the values are contained within args.
         if self._fn_info.is_args is False:
             keys = self._fn_info.all_keys
             process_kw(keys=keys)
-            self._kw = get_kw_dict()
             return
         # at this point there are definatly args
         # check to see if there are any pre *args names.
         if self._fn_info.index_args > 0:
             # lst_pos_or_kw contains pre *arg keys
             for i, key in enumerate(self._fn_info.lst_pos_or_kw):
-                kw[key] = args[i]
-                kw_keys.append(key)
+                self._kw[key] = args[i]
             # if there are key, values after *args then they will be in lst_kw_only
             process_kw(keys=self._fn_info.lst_kw_only)
-            self._kw = get_kw_dict()
             return
         # at this point there are *args but they do not contain any keyword arg values.
         process_kw(keys=self._fn_info.all_keys)
-        self._kw = get_kw_dict()
 
     def _process_args(self, args: tuple):
         if self._fn_info.is_args is False:
