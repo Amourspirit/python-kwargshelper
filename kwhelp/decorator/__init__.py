@@ -2,13 +2,14 @@ import functools
 import inspect
 import re
 from typing import Any, Dict, Iterable, Iterator, List, Optional, Set, Tuple, Union
+from enum import Enum, IntEnum
+from collections import OrderedDict
 from inspect import _ParameterKind, signature, isclass, Parameter, Signature
 from ..checks import TypeChecker, RuleChecker, SubClassChecker
 from ..rules import IRule
 from ..helper import is_iterable
 from ..exceptions import RuleError
 from ..helper import NO_THING
-from enum import Enum, IntEnum
 # import wrapt
 
 
@@ -100,7 +101,7 @@ class _FuncInfo(object):
         self._len_pos_only = None
         self._len_kw_only = None
         self._len_pos_or_kw = None
-        self._all_keys = None
+        self._all_keys: Union[None, Tuple[str]] = None
         self.index_args: int = -1
         self.index_kwargs = -1
         self.lst_pos_only: List[str] = []
@@ -224,16 +225,17 @@ class _FuncInfo(object):
         return self.index_kwargs >= 0
 
     @property
-    def all_keys(self) -> Set[str]:
+    def all_keys(self) -> Tuple[str]:
         """Gets combined keys for ``pos_or_kw``, ``kw_only``, ``pos_only``"""
         if self._all_keys is None:
-            self._all_keys = set()
+            keys = []
             for key in self.lst_pos_or_kw:
-                self._all_keys.add(key)
+                keys.append(key)
             for key in self.lst_kw_only:
-                self._all_keys.add(key)
+                keys.append(key)
             for key in self.lst_pos_only:
-                self._all_keys.add(key)
+                keys.append(key)
+            self._all_keys = tuple(keys)
         return self._all_keys
     # endregion Property
 
@@ -243,18 +245,22 @@ class _FnInstInfo(object):
     def __init__(self, func: callable, fn_args: tuple, fn_kwargs: Dict[str, Any], sig: Signature, ftype: DecFuncEnum, **kwargs):
         self._fn_name = func.__name__
         self._fn_info = _FuncInfo(sig=sig, ftype=ftype)
-        self._kw = {**self._fn_info.defauts}
-        self._real_kw = {}
+        self._kw = None
+        self._real_kw = OrderedDict()
         self._real_args = []
+        self._all_kw = None
         self._process_kwargs(args=fn_args,kwargs=fn_kwargs)
         self._process_args(args=fn_args)
 
     def _process_kwargs(self, args: tuple, kwargs: Dict[str, Any]):
+        kw_keys = []
+        kw = {**self._fn_info.defauts}
         def process_kw(keys: Iterable[str]):
             ignore_keys = set()
             for key in keys:
                 try:
-                    self._kw[key] = kwargs[key]
+                    kw[key] = kwargs[key]
+                    kw_keys.append(key)
                 except KeyError:
                     pass
                     # will be a default
@@ -265,31 +271,44 @@ class _FnInstInfo(object):
                 if not k in ignore_keys:
                     self._real_kw[k] = v
             return
-        # if self._fn_info.is_kwargs is False:
-        #     return
+
+        def get_kw_dict() -> OrderedDict[str, Any]:
+            od = OrderedDict()
+            for key in kw_keys:
+                od[key] = kw[key]
+            return od
+
         if self._fn_info.is_kwargs_only is True:
-            self._real_kw = {**kwargs}
+            self._real_kw.update(**kwargs)
+            self._kw = get_kw_dict()
             return
         if self._fn_info.is_named_args_only is True:
-            self._kw.update(kwargs)
+            for key, value in kwargs.items():
+                kw_keys.append(key)
+                kw[key] = value
+            self._kw = get_kw_dict()
             return
         # at this point the are kwargs but not all are assigned to real key names.
         # is it posible at this point that some of the values are contained within args.
         if self._fn_info.is_args is False:
             keys = self._fn_info.all_keys
             process_kw(keys=keys)
+            self._kw = get_kw_dict()
             return
         # at this point there are definatly args
         # check to see if there are any pre *args names.
         if self._fn_info.index_args > 0:
             # lst_pos_or_kw contains pre *arg keys
             for i, key in enumerate(self._fn_info.lst_pos_or_kw):
-                self._kw[key] = args[i]
+                kw[key] = args[i]
+                kw_keys.append(key)
             # if there are key, values after *args then they will be in lst_kw_only
             process_kw(keys=self._fn_info.lst_kw_only)
+            self._kw = get_kw_dict()
             return
         # at this point there are *args but they do not contain any keyword arg values.
         process_kw(keys=self._fn_info.all_keys)
+        self._kw = get_kw_dict()
 
     def _process_args(self, args: tuple):
         if self._fn_info.is_args is False:
@@ -302,13 +321,102 @@ class _FnInstInfo(object):
             # lst_pos_or_kw contains pre *arg keys
             # if there are key, values after *args then they will be in lst_kw_only
             tmp_args = tmp_args[self._fn_info.index_args:]
-            # if self._fn_info.len_kw_only > 0:
-            #     tmp_args = tmp_args[:-self._fn_info.len_kw_only]
             self._real_args = tmp_args
             return
         self._real_args = tmp_args
         return
     # endregion init
+  
+    # region Private Methods
+    def _get_all_kw(self) -> OrderedDict[str, Any]:
+        """Get all keword args combined into one dictionary"""
+        if not self._all_kw is None:
+            return self._all_kw
+        kw = OrderedDict(**self.key_word_args)
+        kw.update(self.kwargs)
+        self._all_kw = kw
+        return self._all_kw
+    # endregion Private Methods
+  
+    # region Public Methods
+    def get_filter_arg(self) -> OrderedDict[str, Any]:
+        """
+        Get a dictionary of args only.
+
+        All arg keys will be in the format of *#. Eg {'*0': 22, '*1': -5.67}
+
+        Returns:
+            Dict[str, Any]: Args as dictionary
+        """
+        result = OrderedDict()
+        for i, arg in enumerate(self.args):
+            key = '*' + str(i)
+            result[key] = arg
+        return result
+
+    def get_filter_noargs(self) -> OrderedDict[str, Any]:
+        """
+        Gets a dictionary of all keyword args that has all plain args omitted.
+
+        Returns:
+            Dict[str, Any]: dictionary with args ommited
+        """
+        result = OrderedDict()
+        all_kw = self._get_all_kw()
+        for key in self.info.all_keys:
+            result[key] = all_kw[key]
+        return result
+
+    def get_filtered_kwargs(self) -> OrderedDict[str, Any]:
+        """
+        Gets a dictionary of only kwargs
+
+        Returns:
+            Dict[str, Any]: dictionary of kwargs only
+        """
+        return OrderedDict(**self.kwargs)
+
+    def get_filtered_key_word_args(self) -> OrderedDict[str, Any]:
+        """
+        Gets a dictionary of only keyword args
+
+        Returns:
+            Dict[str, Any]: dictionary of keyword args only
+        """
+        return OrderedDict(**self.key_word_args)
+    
+    def get_all_args(self) -> OrderedDict[str, Any]:
+        """
+        Gets all keyword, kwarg and args in a single dictionary
+
+        Returns:
+            Dict[str, Any]: dictionay containing all args
+        """
+        def get_pre_star_keys() -> Tuple[str]:
+            pre_keys = tuple()
+            if self.info.index_args > 0:
+                # there are keys before *args
+                # when there are pre keys they are held in lst_pos_or_kw
+                pre_keys = tuple(self.info.lst_pos_or_kw)
+            return pre_keys
+        result = OrderedDict()
+        # pre list is needed to preserve order of keys
+        pre = get_pre_star_keys()
+        i = 0
+        for key in pre:
+            result[key] = self.key_word_args[key]
+            i += 1
+        for arg in self.args:
+            key = '*' + str(i)
+            result[key] = arg
+            i += 1
+        for key, value in self.key_word_args.items():
+            if not key in pre:
+                result[key] = value
+        
+        result.update(self.kwargs)
+        return result
+    # endregion Public Methods
   
     # region Properties
     @property
@@ -321,11 +429,11 @@ class _FnInstInfo(object):
     
     
     @property
-    def key_word_args(self) -> Dict[str, Any]:
+    def key_word_args(self) -> OrderedDict[str, Any]:
         return self._kw
     
     @property
-    def kwargs(self)-> Dict[str, Any]:
+    def kwargs(self)-> OrderedDict[str, Any]:
         return self._real_kw
     
     @property
@@ -619,80 +727,45 @@ class _DecBase(_CommonBase):
             i += 1
         return args_pos, kwargs_pos
 
-    def get_filtered_args_dict(self, filter: str) -> Dict[str, Any]:
-        def _get_this():
-            sig = self._get_signature()
-            drop_first = self._drop_arg_first()
-            result = {
-                "var_pos": [],
-                "var_kw": [],
-                "pos_kw": [],
-                "pos_only": [],
-                "kw_only": []
-            }
-            i = 0
-            for _, v in sig.parameters.items():
-                if v.kind == v.VAR_POSITIONAL:  # args
-                    result['var_pos'].append(v.name)
-                    continue
-                if v.kind == v.VAR_KEYWORD:  # kwargs
-                    result['var_kw'].append(v.name)
-                    continue
-                if v.kind == v.KEYWORD_ONLY:
-                    result['kw_only'].append(v.name)
-                if v.kind == v.POSITIONAL_ONLY:
-                    result['pos_only'].append(v.name)
-                if v.kind == v.POSITIONAL_OR_KEYWORD:
-                    result['pos_kw'].append(v.name)
-                i += 1
-            return result
+    def _get_filtered_args_dict(self, filter: str) -> Dict[str, Any]:
+        """
+        Gets filtered dictionary
 
-        def _filter_args_only() -> Dict[str, Any]:
-            result = {}
-            for k, v in self.kwargs.items():
-                if self._is_placeholder_arg(k):
-                    result[k] = v
-            return result
+        Args:
+            filter (str): Filter option
+            
+                * args
+                * kwargs
+                * noargs
+                * key_only
+                
 
-        def _filter_no_args() -> Dict[str, Any]:
-            result = {}
-            keys = self.kwargs.keys()
-            last_index = -1
-            for i, key in enumerate(keys):
-                if self._is_placeholder_arg(key):
-                    last_index = i
-            if last_index >= 0:
-                filter_keys = keys[(last_index + 1):]
-                for key in filter_keys:
-                    result[key] = self.kwargs[key]
-            else:
-                result = {**self.kwargs}
-            return result
+        Returns:
+            Dict[str, Any]: [description]
+        """
+        result = {}
+        info = self._get_info()
+        _kwargs = self.kwargs
+        if filter == 'args':
+            for i, arg in enumerate(info.args):
+                key = '*' + str(i)
+                result[key] = arg
+        elif filter == 'noargs':
+            for key in info.info.all_keys:
+                result[key] = _kwargs[key]
+        elif filter == 'kwargs':
+            result = {**info.kwargs}
+        elif filter == 'key_only':
+            result = {**info.key_word_args}
+        else: # all
+            
+            result = {**_kwargs}
+        return result
 
-        def _filter_kwargs_only() -> Dict[str, Any]:
-            result = {}
-            kwargs_pos = self._get_args_kwargs_pos()[1]
-            if kwargs_pos < 0:
-                result = {**self.kwargs}
-            else:
-                keys = self.kwargs.keys()
-                filter_keys = keys[kwargs_pos:]
-                for key in filter_keys:
-                    result[key] = self.kwargs[key]
-            return result
 
-        def _filter_actual_key_only() -> Dict[str, Any]:
-            result = {}
-            keys = list(self.kwargs.keys())
-            filter_keys = []
-            args_pos, kwargs_pos = self._get_args_kwargs_pos()
-            if args_pos > 0:
-                # there are args before start of *args
-                filter_keys.extend(keys[:args_pos])
-            if kwargs_pos >= 0:
-                # move past all kwargs_pos
-                pass
-            return result
+
+
+
 
     def _missing_args_error(self, missing_names: List[str]):
         missing_names_len = len(missing_names)

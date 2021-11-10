@@ -409,5 +409,50 @@ class Test_FuncInfo(unittest.TestCase):
         assert info.info.index_args == 2
         assert info.info.index_kwargs == 5
 
+
+class Test_FuncInfoGets(unittest.TestCase):
+    def test_args_kwargs(self):
+        @test_dec
+        def foo(name, value):
+            return name, value
+        assert foo.fn_info == None
+        result = foo(name='Me', value="awesome")
+        assert result[0] == 'Me'
+        assert result[1] == 'awesome'
+        info: _FnInstInfo = foo.fn_info
+        dict = info.get_all_args()
+        assert len(dict) == 2
+        keys = list(dict.keys())
+        assert keys[0] == 'name'
+        assert keys[1] == 'value'
+        assert dict['name'] == 'Me'
+        assert dict['value'] == 'awesome'
+        dict = info.get_filter_arg()
+        assert len(dict) == 0
+        dict = info.get_filter_noargs()
+        assert len(dict) == 2
+        keys = list(dict.keys())
+        assert keys[0] == 'name'
+        assert keys[1] == 'value'
+        assert dict['name'] == 'Me'
+        assert dict['value'] == 'awesome'
+        dict = info.get_filtered_key_word_args()
+        assert len(dict) == 2
+        keys = list(dict.keys())
+        assert keys[0] == 'name'
+        assert keys[1] == 'value'
+        assert dict['name'] == 'Me'
+        assert dict['value'] == 'awesome'
+        dict = info.get_filtered_kwargs()
+        assert len(dict) == 0
+
+    def test_args_only(self):
+        @test_dec
+        def foo(*args):
+            return [*args]
+        result = foo(1, 2, 3, 4)
+        assert result[0] == 1
+        info: _FnInstInfo = foo.fn_info
+
 if __name__ == '__main__':
     unittest.main()
