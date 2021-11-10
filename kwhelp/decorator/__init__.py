@@ -338,6 +338,7 @@ class _FnInstInfo(object):
 class _DecBase(_CommonBase):
     _rx_star = re.compile("^\*(\d*)$")
 
+    # region Init
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         # and option check for fn value in kwargs. can be used for testing
@@ -383,7 +384,9 @@ class _DecBase(_CommonBase):
         key = 'kwargs'
         if key in kwargs:
             self._cache[key] = kwargs[key]
+    # endregion Init
 
+    # region Property
     @property
     def fn(self) -> callable:
         if self._fn is None:
@@ -409,6 +412,8 @@ class _DecBase(_CommonBase):
     def kwargs(self, value: Dict[str, Any]):
         self._wrapper_init(kwargs=value)
 
+    # endregion Property
+
     def _is_placeholder_arg(self, arg_name: str) -> bool:
         m = _DecBase._rx_star.match(arg_name)
         if m:
@@ -418,12 +423,12 @@ class _DecBase(_CommonBase):
     def _drop_arg_first(self) -> bool:
         return self._ftype.value > DecFuncEnum.METHOD_STATIC.value
 
-    def _get_args(self, args: Iterable[object]):
+    def _get_args(self):
         if self._drop_arg_first():
-            return args[1:]
-        return args
+            return self.args[1:]
+        return self.args
 
-    def _get_args_star(self, args: Iterable[object]) -> Iterable[object]:
+    def _get_args_star(self) -> Iterable[object]:
         """
         Get args accounting for ``*args`` postions in function and if function class method.
 
@@ -442,8 +447,8 @@ class _DecBase(_CommonBase):
         if drop_first:
             i += 1
         if i > 0:
-            return args[i:]
-        return args
+            return self.args[i:]
+        return self.args
 
     def _get_signature(self) -> Signature:
         sig = self._cache.get("signature", False)
@@ -452,16 +457,16 @@ class _DecBase(_CommonBase):
         self._cache["signature"] = signature(self.fn)
         return self._cache["signature"]
 
-    def _get_info(self, args, kwargs) -> _FnInstInfo:
+    def _get_info(self) -> _FnInstInfo:
         info = self._cache.get("info", False)
         if info:
             return info
-        self._cache['info'] = _FnInstInfo(func=self.fn, fn_args=args, fn_kwargs=kwargs,
+        self._cache['info'] = _FnInstInfo(func=self.fn, fn_args=self.args, fn_kwargs=self.kwargs,
                                           sig=self._get_signature(),
                                           ftype=self._ftype)
         return self._cache['info']
 
-    def _get_args_dict(self, fn_args: Iterable[object], fn_kwargs: Dict[str, object], **kwargs) -> Dict[str, object]:
+    def _get_args_dict(self, **kwargs) -> Dict[str, object]:
         """
         [summary]
 
@@ -504,10 +509,10 @@ class _DecBase(_CommonBase):
                 name_values.append((k, v.default))
             i += 1
         arg_offset = 0 if args_pos == -1 else args_pos
-        if drop_first and len(fn_args) > arg_offset:
-            _args = fn_args[(arg_offset + 1):]
+        if drop_first and len(self.args) > arg_offset:
+            _args = self.args[(arg_offset + 1):]
         else:
-            _args = fn_args[arg_offset:]
+            _args = self.args[arg_offset:]
         arg_len = len(_args)
         name_values_len = len(name_values)
         if drop_first and name_values_len > 0:
@@ -561,16 +566,16 @@ class _DecBase(_CommonBase):
                 el = name_values[j]
                 argnames.append(el[0])
             if drop_first:
-                _zip_args = fn_args[1:]
+                _zip_args = self.args[1:]
             else:
-                _zip_args = fn_args
+                _zip_args = self.args
             d = {**dict(zip(argnames, _zip_args[:len(argnames)]))}
             name_defaults.update(d)
-        if len(fn_kwargs) > 0:
+        if len(self.kwargs) > 0:
             # update name_default with any kwargs that are passed in.
             # this will update any default values with the values passed
             # into function at call time.
-            name_defaults.update(fn_kwargs)
+            name_defaults.update(self.kwargs)
         if error_check is True:
             # if any arg has a value of NO_THING then it is a missing arg.
             # if no error is raise here then python will raise TypeError such as:
@@ -614,7 +619,7 @@ class _DecBase(_CommonBase):
             i += 1
         return args_pos, kwargs_pos
 
-    def get_filtered_args_dict(self, filter: str, args_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def get_filtered_args_dict(self, filter: str) -> Dict[str, Any]:
         def _get_this():
             sig = self._get_signature()
             drop_first = self._drop_arg_first()
@@ -644,14 +649,14 @@ class _DecBase(_CommonBase):
 
         def _filter_args_only() -> Dict[str, Any]:
             result = {}
-            for k, v in args_dict.items():
+            for k, v in self.kwargs.items():
                 if self._is_placeholder_arg(k):
                     result[k] = v
             return result
 
         def _filter_no_args() -> Dict[str, Any]:
             result = {}
-            keys = args_dict.keys()
+            keys = self.kwargs.keys()
             last_index = -1
             for i, key in enumerate(keys):
                 if self._is_placeholder_arg(key):
@@ -659,26 +664,26 @@ class _DecBase(_CommonBase):
             if last_index >= 0:
                 filter_keys = keys[(last_index + 1):]
                 for key in filter_keys:
-                    result[key] = args_dict[key]
+                    result[key] = self.kwargs[key]
             else:
-                result = {**args_dict}
+                result = {**self.kwargs}
             return result
 
         def _filter_kwargs_only() -> Dict[str, Any]:
             result = {}
             kwargs_pos = self._get_args_kwargs_pos()[1]
             if kwargs_pos < 0:
-                result = {**args_dict}
+                result = {**self.kwargs}
             else:
-                keys = args_dict.keys()
+                keys = self.kwargs.keys()
                 filter_keys = keys[kwargs_pos:]
                 for key in filter_keys:
-                    result[key] = args_dict[key]
+                    result[key] = self.kwargs[key]
             return result
 
         def _filter_actual_key_only() -> Dict[str, Any]:
             result = {}
-            keys = list(args_dict.keys())
+            keys = list(self.kwargs.keys())
             filter_keys = []
             args_pos, kwargs_pos = self._get_args_kwargs_pos()
             if args_pos > 0:
@@ -864,18 +869,18 @@ class TypeCheck(_DecBase):
         self._args_only = bool(kwargs.get('args_only', False))
         self._kwargs_only = bool(kwargs.get('kwargs_only', False))
 
-    def _get_args_kwargs(self, args: Tuple[object], kwargs: Dict[str, Any]) -> Tuple[Tuple[object],  Dict[str, Any]]:
-        _all = self._get_args_dict(fn_args=args, fn_kwargs=kwargs)
+    def _get_args_kwargs(self) -> Tuple[Tuple[object],  Dict[str, Any]]:
+        # _all = self._get_args_dict()
         if self._args_only is True:
 
-            _args = self._get_args(args)
+            _args = self._get_args(self.args)
             _kwargs = {}
         elif self._kwargs_only is True:
             _args = []
-            _kwargs = kwargs
+            _kwargs = self.kwargs
         else:
-            _args = self._get_args(args)
-            _kwargs = kwargs
+            _args = self._get_args()
+            _kwargs = self.kwargs
         return _args, _kwargs
 
     def __call__(self, func: callable):
@@ -885,7 +890,7 @@ class TypeCheck(_DecBase):
             self._wrapper_init(args=args, kwargs=kwargs)
             if self._args_only is True and self._kwargs_only is True:
                 return func(*args, **kwargs)
-            _args, _kwargs = self._get_args_kwargs(args=args, kwargs=kwargs)
+            _args, _kwargs = self._get_args_kwargs()
             try:
                 is_valid = self._typechecker.validate(*_args, **_kwargs)
                 if self._typechecker.raise_error is False:
@@ -1003,7 +1008,7 @@ class AcceptedTypes(_DecBase):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             self._wrapper_init(args=args, kwargs=kwargs)
-            arg_name_values = self._get_args_dict(fn_args=args, fn_kwargs=kwargs)
+            arg_name_values = self._get_args_dict()
             arg_keys = list(arg_name_values.keys())
             arg_keys_len = arg_keys.__len__()
             if arg_keys_len is not len(self._types):
@@ -1137,7 +1142,7 @@ class ArgsLen(_DecBase):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             self._wrapper_init(args=args, kwargs=kwargs)
-            _args = self._get_args_star(args=args)
+            _args = self._get_args_star()
             _args_len = len(_args)
             is_valid = False
             if _args_len >= 0:
@@ -1210,8 +1215,8 @@ class ArgsMinMax(_DecBase):
             msg = msg + "Expected max of '" + str(_max) + "'."
         return msg
 
-    def _get_error_msg(self, func: callable, args_len: int) -> str:
-        msg = f"Invalid number of args pass into '{func.__name__}'.\n{self._get_valid_counts()}"
+    def _get_error_msg(self, args_len: int) -> str:
+        msg = f"Invalid number of args pass into '{self.fn.__name__}'.\n{self._get_valid_counts()}"
         msg = msg + f" Got '{args_len}' args."
         msg = msg + self._get_class_dec_err()
         return msg
@@ -1224,7 +1229,7 @@ class ArgsMinMax(_DecBase):
             _min, _max = self._get_min_max()
             has_rules = _min > 0 or _max >= 0
             if has_rules:
-                _args = self._get_args_star(args=args)
+                _args = self._get_args_star()
                 _args_len = len(_args)
                 is_valid = True
                 if _min > 0:
@@ -1236,8 +1241,7 @@ class ArgsMinMax(_DecBase):
                 if is_valid is False:
                     if self._is_opt_return():
                         return self._opt_return
-                    raise ValueError(self._get_error_msg(
-                        func=func, args_len=_args_len))
+                    raise ValueError(self._get_error_msg(args_len=_args_len))
             return func(*args, **kwargs)
         # wrapper.is_types_valid = self.is_valid
         return wrapper
@@ -1481,7 +1485,7 @@ class TypeCheckKw(_DecBase):
         def wrapper(*args, **kwargs):
             self._wrapper_init(args=args, kwargs=kwargs)
             is_valid = True
-            arg_name_values = self._get_args_dict(fn_args=args, fn_kwargs=kwargs)
+            arg_name_values = self._get_args_dict()
             arg_keys = arg_name_values.keys()
             tc = False
             for key in self._arg_index.keys():
@@ -1557,7 +1561,7 @@ class RuleCheckAny(_RuleBase):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             self._wrapper_init(args=args, kwargs=kwargs)
-            _args = self._get_args(args)
+            _args = self._get_args()
             is_valid = False
             try:
                 is_valid = self._rulechecker.validate_any(*_args, **kwargs)
@@ -1627,7 +1631,7 @@ class RuleCheckAll(_RuleBase):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             self._wrapper_init(args=args, kwargs=kwargs)
-            _args = self._get_args(args)
+            _args = self._get_args()
             is_valid = False
             try:
                 is_valid = self._rulechecker.validate_all(*_args, **kwargs)
@@ -1716,7 +1720,7 @@ class RuleCheckAllKw(_RuleBase):
         def wrapper(*args, **kwargs):
             self._wrapper_init(args=args, kwargs=kwargs)
             is_valid = True
-            arg_name_values = self._get_args_dict(fn_args=args, fn_kwargs=kwargs)
+            arg_name_values = self._get_args_dict()
             arg_keys = arg_name_values.keys()
             add_attrib = None
             for key in self._arg_index.keys():
@@ -1764,7 +1768,7 @@ class RuleCheckAnyKw(RuleCheckAllKw):
         def wrapper(*args, **kwargs):
             self._wrapper_init(args=args, kwargs=kwargs)
             is_valid = True
-            arg_name_values = self._get_args_dict(fn_args=args, fn_kwargs=kwargs)
+            arg_name_values = self._get_args_dict()
             arg_keys = arg_name_values.keys()
             add_attrib = None
             for key in self._arg_index.keys():
@@ -1829,7 +1833,7 @@ class RequireArgs(_DecBase):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             self._wrapper_init(args=args, kwargs=kwargs)
-            arg_name_values = self._get_args_dict(fn_args=args, fn_kwargs=kwargs)
+            arg_name_values = self._get_args_dict()
             arg_keys = arg_name_values.keys()
             for key in self._args:
                 if not key in arg_keys:
@@ -2120,7 +2124,7 @@ class SubClass(_DecBase):
     def _get_inst(self, types: Iterable[type]):
         return SubClassChecker(*types, **self._kwargs)
 
-    def _validate(self, func: callable, key: str, value: object, types: Iterable[type], arg_index: int, inst: SubClassChecker = None):
+    def _validate(self, key: str, value: object, types: Iterable[type], arg_index: int, inst: SubClassChecker = None):
         if inst is None:
             sc = self._get_inst(types=types)
         else:
@@ -2134,8 +2138,7 @@ class SubClass(_DecBase):
                 if self._is_opt_return():
                     return self._opt_return
                 raise TypeError(self._get_err_msg(name=None, value=value,
-                                                  types=types, arg_index=arg_index,
-                                                  fn=func))
+                                                  types=types, arg_index=arg_index))
         else:
             try:
                 sc.validate(**{key: value})
@@ -2143,8 +2146,7 @@ class SubClass(_DecBase):
                 if self._is_opt_return():
                     return self._opt_return
                 raise TypeError(self._get_err_msg(name=key, value=value,
-                                                  types=types, arg_index=arg_index,
-                                                  fn=func))
+                                                  types=types, arg_index=arg_index))
         return NO_THING
 
     def __call__(self, func: callable):
@@ -2152,7 +2154,7 @@ class SubClass(_DecBase):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             self._wrapper_init(args=args, kwargs=kwargs)
-            arg_name_values = self._get_args_dict(fn_args=args, fn_kwargs=kwargs)
+            arg_name_values = self._get_args_dict()
             arg_keys = list(arg_name_values.keys())
             arg_keys_len = arg_keys.__len__()
             if self._all_args is False:
@@ -2167,7 +2169,7 @@ class SubClass(_DecBase):
             i = 0
             for arg_info in arg_type:
                 key = arg_info[0]
-                result = self._validate(func=func, key=key,
+                result = self._validate(key=key,
                                         value=arg_name_values[key],
                                         types=arg_info[1], arg_index=i)
                 if not result is NO_THING:
@@ -2180,7 +2182,7 @@ class SubClass(_DecBase):
                 types = self._types[len(self._types) - 1]  # tuple or set
                 sc = self._get_inst(types=types)
                 for r_arg in r_args:
-                    result = self._validate(func=func, key=r_arg,
+                    result = self._validate(key=r_arg,
                                             value=arg_name_values[r_arg],
                                             types=types, arg_index=i,
                                             inst=sc)
@@ -2191,11 +2193,11 @@ class SubClass(_DecBase):
             return func(*args, **kwargs)
         return wrapper
 
-    def _get_err_msg(self, name: Union[str, None], value: object, types: Iterator[type], arg_index: int, fn: callable):
+    def _get_err_msg(self, name: Union[str, None], value: object, types: Iterator[type], arg_index: int):
         str_types = self._get_formated_types(types=types)
         str_ord = self._get_ordinal(arg_index + 1)
         if self._ftype == DecFuncEnum.PROPERTY_CLASS:
-            msg = f"'{fn.__name__}' property error. Arg '{name}' expected is expected be a subclass of {str_types}."
+            msg = f"'{self.fn.__name__}' property error. Arg '{name}' expected is expected be a subclass of {str_types}."
             return msg
         if name:
             msg = f"Arg '{name}' is expected be a subclass of {str_types}."
@@ -2266,7 +2268,7 @@ class SubClasskKw(_DecBase):
         def wrapper(*args, **kwargs):
             self._wrapper_init(args=args, kwargs=kwargs)
             is_valid = True
-            arg_name_values = self._get_args_dict(fn_args=args, fn_kwargs=kwargs)
+            arg_name_values = self._get_args_dict()
             arg_keys = arg_name_values.keys()
             sc = False
             for key in self._arg_index.keys():
