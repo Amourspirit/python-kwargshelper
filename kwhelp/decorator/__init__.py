@@ -40,6 +40,7 @@ class _CommonBase(object):
                 supplied then it will be return when validation fails and no error will be raised.
         """
         self._opt_return = kwargs.get("opt_return", NO_THING)
+        self._fn:callable = Union[None, callable]
 
     def _is_opt_return(self) -> bool:
         """
@@ -50,7 +51,14 @@ class _CommonBase(object):
         """
         return not self._opt_return is NO_THING
 
-
+    def _call_init(self, **kwargs):
+        self._fn = kwargs.get('func', None)
+        
+    @property
+    def fn(self) -> callable:
+        if self._fn is None:
+            raise ValueError("fn has not been set. Check if _call_init is called.")
+        return self._fn
 class _FuncInfo(object):
     # foo(*args)
     #   assert info.index_args == 0
@@ -351,6 +359,7 @@ class _DecBase(_CommonBase):
             self._ftype = DecFuncEnum.FUNCTION
         self._cache = {}
 
+
     def _is_placeholder_arg(self, arg_name: str) -> bool:
         m = _DecBase._rx_star.match(arg_name)
         if m:
@@ -387,12 +396,21 @@ class _DecBase(_CommonBase):
             return args[i:]
         return args
 
-    def _get_signature(self, func) -> Signature:
+    def _get_signature(self, func: callable) -> Signature:
         sig = self._cache.get("signature", False)
         if sig:
             return sig
         self._cache["signature"] = signature(func)
         return self._cache["signature"]
+
+    def _get_info(self, func: callable, args, kwargs) -> _FnInstInfo:
+        info = self._cache.get("info", False)
+        if info:
+            return info
+        self._cache['info'] = _FnInstInfo(func=func, fn_args=args, fn_kwargs=kwargs,
+                                          sig=self._get_signature(func=func),
+                                          ftype=self._ftype)
+        return self._cache['info']
 
     def _get_args_dict(self, func: callable, fn_args: Iterable[object], fn_kwargs: Dict[str, object], **kwargs) -> Dict[str, object]:
         """
@@ -813,7 +831,7 @@ class TypeCheck(_DecBase):
         return _args, _kwargs
 
     def __call__(self, func: callable):
-
+        super()._call_init(func=func)
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             if self._args_only is True and self._kwargs_only is True:
@@ -933,6 +951,7 @@ class AcceptedTypes(_DecBase):
         return NO_THING
 
     def __call__(self, func: callable):
+        super()._call_init(func=func)
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             arg_name_values = self._get_args_dict(
@@ -1066,7 +1085,7 @@ class ArgsLen(_DecBase):
         return result
 
     def __call__(self, func: callable):
-
+        super()._call_init(func=func)
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             _args = self._get_args_star(func=func, args=args)
@@ -1149,6 +1168,7 @@ class ArgsMinMax(_DecBase):
         return msg
 
     def __call__(self, func: callable):
+        super()._call_init(func=func)
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             _min, _max = self._get_min_max()
@@ -1204,6 +1224,7 @@ class ReturnRuleAll(_RuleBase):
             self._kwargs = {}
 
     def __call__(self, func: callable):
+        super()._call_init(func=func)
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             return_value = func(*args, **kwargs)
@@ -1256,6 +1277,7 @@ class ReturnRuleAny(_RuleBase):
             self._kwargs = {}
 
     def __call__(self, func: callable):
+        super()._call_init(func=func)
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             return_value = func(*args, **kwargs)
@@ -1313,6 +1335,7 @@ class ReturnType(_DecBase):
             self._kwargs = {}
 
     def __call__(self, func: callable):
+        super()._call_init(func=func)
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             return_value = func(*args, **kwargs)
@@ -1400,6 +1423,7 @@ class TypeCheckKw(_DecBase):
             return (value,)
 
     def __call__(self, func):
+        super()._call_init(func=func)
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             is_valid = True
@@ -1476,6 +1500,7 @@ class RuleCheckAny(_RuleBase):
             self._kwargs = {}
 
     def __call__(self, func):
+        super()._call_init(func=func)
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             _args = self._get_args(args)
@@ -1544,6 +1569,7 @@ class RuleCheckAll(_RuleBase):
             self._kwargs = {}
 
     def __call__(self, func):
+        super()._call_init(func=func)
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             _args = self._get_args(args)
@@ -1630,7 +1656,7 @@ class RuleCheckAllKw(_RuleBase):
         return value
 
     def __call__(self, func):
-
+        super()._call_init(func=func)
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             is_valid = True
@@ -1678,6 +1704,7 @@ class RuleCheckAnyKw(RuleCheckAllKw):
     """
 
     def __call__(self, func):
+        super()._call_init(func=func)
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             is_valid = True
@@ -1743,6 +1770,7 @@ class RequireArgs(_DecBase):
                 self._args.append(arg)
 
     def __call__(self, func):
+        super()._call_init(func=func)
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             arg_name_values = self._get_args_dict(
@@ -1777,6 +1805,7 @@ class DefaultArgs(_CommonBase):
         self._kwargs = {**kwargs}
 
     def __call__(self, func):
+        super()._call_init(func=func)
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             for key, value in self._kwargs.items():
@@ -2065,6 +2094,7 @@ class SubClass(_DecBase):
         return NO_THING
 
     def __call__(self, func: callable):
+        super()._call_init(func=func)
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             arg_name_values = self._get_args_dict(
@@ -2177,6 +2207,7 @@ class SubClasskKw(_DecBase):
             return (value,)
 
     def __call__(self, func):
+        super()._call_init(func=func)
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             is_valid = True
