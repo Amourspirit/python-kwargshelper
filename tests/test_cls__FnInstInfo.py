@@ -7,7 +7,7 @@ if __name__ == '__main__':
     import os
     import sys
     sys.path.append(os.path.realpath('.'))
-from kwhelp.decorator import _FnInstInfo, DecFuncEnum, DefaultArgs
+from kwhelp.decorator import _FnInstInfo, _FuncInfo, DecFuncEnum, DefaultArgs
 
 FN_INFO = None
 
@@ -22,9 +22,8 @@ def test_dec(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         global FN_INFO
-        sig = signature(func)
-        FN_INFO = _FnInstInfo(
-            func=func, fn_args=args, fn_kwargs=kwargs, sig=sig, ftype=DecFuncEnum.FUNCTION)
+        finfo = _FuncInfo(func=func, ftype=DecFuncEnum.FUNCTION)
+        FN_INFO = _FnInstInfo(fninfo=finfo, fn_args=args, fn_kwargs=kwargs)
         wrapper.fn_info = FN_INFO
         return func(*args, **kwargs)
     wrapper.fn_info = None
@@ -37,9 +36,8 @@ def test_dec_cls(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         global FN_INFO
-        sig = signature(func)
-        FN_INFO = _FnInstInfo(
-            func=func, fn_args=args, fn_kwargs=kwargs, sig=sig, ftype=DecFuncEnum.METHOD)
+        finfo = _FuncInfo(func=func, ftype=DecFuncEnum.METHOD)
+        FN_INFO = _FnInstInfo(fninfo=finfo, fn_args=args, fn_kwargs=kwargs)
         wrapper.fn_info = FN_INFO
         return func(*args, **kwargs)
     wrapper.fn_info = None
@@ -495,7 +493,45 @@ class Test_FuncInfoGets(unittest.TestCase):
         self.assertDictEqual(od_key_word_args, d)
         d = info.get_filtered_key_word_args()
         self.assertDictEqual(od_key_word_args, d)
-        
+
+    def test_names_optional_args(self):
+        @test_dec
+        def foo(name, value, one=1, two=2):
+            return (name, value, one, two)
+        assert foo.fn_info == None
+        od_key_word_args = OrderedDict()
+        od_key_word_args['name'] = 'Me'
+        od_key_word_args['value'] = 'awesome'
+        od_key_word_args['one'] = 1
+        od_key_word_args['two'] = 2
+        result = foo(name='Me', value="awesome")
+        assert result[0] == 'Me'
+        assert result[1] == 'awesome'
+        assert result[2] == 1
+        assert result[3] == 2
+        info: _FnInstInfo = foo.fn_info
+        self.assertDictEqual(od_key_word_args, info.key_word_args)
+        d = info.get_all_args()
+        self.assertDictEqual(od_key_word_args, d)
+        d = info.get_filter_arg()
+        assert len(d) == 0
+        d = info.get_filter_noargs()
+        self.assertDictEqual(od_key_word_args, d)
+        d = info.get_filtered_key_word_args()
+        self.assertDictEqual(od_key_word_args, d)
+        d = info.get_filtered_kwargs()
+        assert len(d) == 0
+        # test positional
+        result = foo('Me', "awesome")
+        assert result[0] == 'Me'
+        assert result[1] == 'awesome'
+        info: _FnInstInfo = foo.fn_info
+        self.assertDictEqual(od_key_word_args, info.key_word_args)
+        d = info.get_all_args()
+        self.assertDictEqual(od_key_word_args, d)
+        d = info.get_filtered_key_word_args()
+        self.assertDictEqual(od_key_word_args, d)
+
     def test_args_only(self):
         def is_match(lst: list, dict: OrderedDict):
             for i in range(len(lst)):
@@ -521,6 +557,7 @@ class Test_FuncInfoGets(unittest.TestCase):
         assert len(d) == 0
         d = info.get_filter_noargs()
         assert len(d) == 0
+
 
     def test_kwargs_only(self):
         @test_dec

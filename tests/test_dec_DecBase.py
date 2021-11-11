@@ -5,7 +5,7 @@ if __name__ == '__main__':
     sys.path.append(os.path.realpath('.'))
 
 from kwhelp.decorator import DecFuncEnum, _DecBase
-from kwhelp.helper import NO_THING
+from kwhelp.helper import NO_THING, Formatter
 
 class TestDecBase(unittest.TestCase):
     def test_bad_constructro(self):
@@ -15,16 +15,12 @@ class TestDecBase(unittest.TestCase):
     def test_gen(self):
         def foo(arg1, arg2, **kwargs): pass
         
-        base = _DecBase()
+        base = _DecBase(ftype=DecFuncEnum.FUNCTION)
         base._fn = foo
         base.args = [1, 2, 3]
         assert base._drop_arg_first() == False
         args = base._get_args()
         assert len(args) == 3
-        base.args = []
-        args_dic = base._get_args_dict(error_check=False)
-        assert args_dic["arg1"] == NO_THING
-        assert args_dic["arg2"] == NO_THING
         base.args = []
         base.kwargs = {"arg1": 1, "arg2": 2}
         args_dic = base._get_args_dict()
@@ -48,11 +44,6 @@ class TestDecBase(unittest.TestCase):
         assert base._drop_arg_first() == False
         args = base._get_args()
         assert len(args) == 3
-        base.args = []
-        base.kwargs = {}
-        args_dic = base._get_args_dict(error_check=False)
-        assert args_dic["arg1"] == NO_THING
-        assert args_dic["arg2"] == NO_THING
         base.args = []
         base.kwargs = {"arg1": 1, "arg2": 2}
         args_dic = base._get_args_dict()
@@ -78,11 +69,6 @@ class TestDecBase(unittest.TestCase):
         args = base._get_args()
         assert len(args) == 3
         base.args = []
-        base.kwargs = {}
-        args_dic = base._get_args_dict(error_check=False)
-        assert args_dic["arg1"] == NO_THING
-        assert args_dic["arg2"] == NO_THING
-        base.args = []
         base.kwargs = {"arg1": 1, "arg2": 2}
         args_dic = base._get_args_dict()
         assert args_dic["arg1"] == 1
@@ -96,31 +82,6 @@ class TestDecBase(unittest.TestCase):
             base.kwargs = {}
             base._get_args_dict()
 
-    def test_ordianl(self):
-        rt = _DecBase()
-        result = rt._get_ordinal(1)
-        self.assertEqual(result, "1st")
-        result = rt._get_ordinal(2)
-        self.assertEqual(result, "2nd")
-        result = rt._get_ordinal(4)
-        self.assertEqual(result, "4th")
-        result = rt._get_ordinal(10)
-        self.assertEqual(result, "10th")
-        result = rt._get_ordinal(11)
-        self.assertEqual(result, "11th")
-        result = rt._get_ordinal(22)
-        self.assertEqual(result, "22nd")
-        result = rt._get_ordinal(33)
-        self.assertEqual(result, "33rd")
-
-    def test_get_formated_names(self):
-        rt = _DecBase()
-        result = rt._get_formated_names(names=['first'])
-        assert result == "'first'"
-        result = rt._get_formated_names(names=['first', 'second'])
-        assert result == "'first' and 'second'"
-        result = rt._get_formated_names(names=['first', 'second', 'third'])
-        assert result == "'first', 'second', and 'third'"
 
 
 if __name__ == '__main__':

@@ -7,7 +7,7 @@ from collections import OrderedDict
 from inspect import _ParameterKind, signature, isclass, Parameter, Signature
 from ..checks import TypeChecker, RuleChecker, SubClassChecker
 from ..rules import IRule
-from ..helper import is_iterable
+from ..helper import is_iterable, Formatter
 from ..exceptions import RuleError
 from ..helper import NO_THING
 # import wrapt
@@ -41,7 +41,6 @@ class _CommonBase(object):
                 supplied then it will be return when validation fails and no error will be raised.
         """
         self._opt_return = kwargs.get("opt_return", NO_THING)
-        
 
     def _is_opt_return(self) -> bool:
         """
@@ -52,7 +51,7 @@ class _CommonBase(object):
         """
         return not self._opt_return is NO_THING
 
-    
+
 class _FuncInfo(object):
     # foo(*args)
     #   assert info.index_args == 0
@@ -97,7 +96,7 @@ class _FuncInfo(object):
     #   self.assertListEqual(info.lst_pos_or_kw, ['neg_two', 'neg_one'])
 
     # region init
-    def __init__(self, sig: Signature, ftype: DecFuncEnum):
+    def __init__(self, func: callable, ftype: DecFuncEnum):
         self._len_pos_only = None
         self._len_kw_only = None
         self._len_pos_or_kw = None
@@ -107,9 +106,11 @@ class _FuncInfo(object):
         self.lst_pos_only: List[str] = []
         self.lst_kw_only: List[str] = []
         self.lst_pos_or_kw: List[str] = []
-        self.signature: Signature = sig
+        self.signature: Signature = signature(func)
+        self._name = func.__name__
         self.ftype = ftype
         self._defaults = {}
+
         self._set_info()
 
     def _drop_arg_first(self) -> bool:
@@ -245,19 +246,33 @@ class _FuncInfo(object):
     def is_drop_first(self) -> bool:
         """Gets of the first arg is to be dropped. Thsi is determined by ftype (DecFuncEnum)"""
         return self._drop_arg_first()
+
+    @property
+    def name(self) -> str:
+        """Gets the name of the function"""
+        return self._name
     # endregion Property
+
 
 class _FnInstInfo(object):
 
     # region init
-    def __init__(self, func: callable, fn_args: tuple, fn_kwargs: Dict[str, Any], sig: Signature, ftype: DecFuncEnum, **kwargs):
-        self._fn_name = func.__name__
-        self._fn_info = _FuncInfo(sig=sig, ftype=ftype)
+    def __init__(self, fninfo: _FuncInfo, fn_args: tuple, fn_kwargs: OrderedDict[str, Any]):
+        """
+        [summary]
+
+        Args:
+            fninfo (_FuncInfo): [description]
+            fn_args (tuple): [description]
+            fn_kwargs (Dict[str, Any]): [description]
+        """
+        self._fn_info = fninfo
+        self._fn_name = self._fn_info.name
         self._kw = OrderedDict()
         self._real_kw = OrderedDict()
         self._real_args = []
         self._all_kw = None
-        self._process_kwargs(args=fn_args,kwargs=fn_kwargs)
+        self._process_kwargs(args=fn_args, kwargs=fn_kwargs)
         self._process_args(args=fn_args)
 
     def _process_kwargs(self, args: tuple, kwargs: Dict[str, Any]):
@@ -267,7 +282,9 @@ class _FnInstInfo(object):
             tmp_args = [*args[1:]]
         else:
             tmp_args = [*args]
+
         def process_kw(keys: Iterable[str]):
+            missing_args = []
             ignore_keys = set()
             for key in keys:
                 if key in self._kw and not key in kwargs:
@@ -277,21 +294,17 @@ class _FnInstInfo(object):
                 except KeyError:
                     pass
                     # will be a default
-                    if not key in self._fn_info.defauts:
-                        raise KeyError(f"Missing key '{key}'")
-                    #     self._kw[key] = NO_THING
-                    # else:
-                    self._kw[key] = self._fn_info.defauts[key]
+                    if key in self._fn_info.defauts:
+                        self._kw[key] = self._fn_info.defauts[key]
+                    else:
+                        missing_args.append(key)
                 ignore_keys.add(key)
+            if len(missing_args) > 0:
+                self._missing_args_error(missing_names=missing_args)
             for k, v in kwargs.items():
                 if not k in ignore_keys:
                     self._real_kw[k] = v
             return
-
-        # def process_missing_with_defaults(keys: Iterable[str]):
-        #     for key in keys:
-        #         if not key in self._kw:
-        #             self._kw.key
 
         if self._fn_info.is_kwargs_only is True:
             self._real_kw.update(**kwargs)
@@ -299,8 +312,7 @@ class _FnInstInfo(object):
         if self._fn_info.is_named_args_only is True:
             if len(tmp_args) > 0:
                 self._kw.update(zip(self._fn_info.lst_pos_or_kw, tmp_args))
-            for key, value in kwargs.items():
-                self._kw[key] = value
+            process_kw(keys=self._fn_info.lst_pos_or_kw)
             return
         # at this point the are kwargs but not all are assigned to real key names.
         # is it posible at this point that some of the values are contained within args.
@@ -315,10 +327,6 @@ class _FnInstInfo(object):
         if self._fn_info.index_args > 0:
             if len(tmp_args) > 0 and self._fn_info.len_pos_or_kw > 0:
                 self._kw.update(zip(self._fn_info.lst_pos_or_kw, tmp_args))
-            # lst_pos_or_kw contains pre *arg keys
-            # for i, key in enumerate(self._fn_info.lst_pos_or_kw):
-            #     self._kw[key] = args[i]
-            # if there are key, values after *args then they will be in lst_kw_only
             process_kw(keys=self._fn_info.lst_kw_only)
             return
         # at this point there are *args but they do not contain any keyword arg values.
@@ -334,7 +342,7 @@ class _FnInstInfo(object):
         if self._fn_info.is_args_only:
             self._real_args = tmp_args
             return
-        if self._fn_info.index_args > 0: 
+        if self._fn_info.index_args > 0:
             # lst_pos_or_kw contains pre *arg keys
             # if there are key, values after *args then they will be in lst_kw_only
             tmp_args = tmp_args[self._fn_info.index_args:]
@@ -343,7 +351,7 @@ class _FnInstInfo(object):
         self._real_args = tmp_args
         return
     # endregion init
-  
+
     # region Private Methods
     def _get_all_kw(self) -> OrderedDict[str, Any]:
         """Get all keword args combined into one dictionary"""
@@ -353,8 +361,14 @@ class _FnInstInfo(object):
         kw.update(self.kwargs)
         self._all_kw = kw
         return self._all_kw
+
+    def _missing_args_error(self, missing_names: List[str]):
+        fn_name = self.name + "()"
+        msg = Formatter.get_missing_args_error_msg(missing_names=missing_names, name=fn_name)
+        raise TypeError(msg)
+
     # endregion Private Methods
-  
+
     # region Public Methods
     def get_filter_arg(self) -> OrderedDict[str, Any]:
         """
@@ -400,7 +414,7 @@ class _FnInstInfo(object):
             Dict[str, Any]: dictionary of keyword args only
         """
         return OrderedDict(**self.key_word_args)
-    
+
     def get_all_args(self) -> OrderedDict[str, Any]:
         """
         Gets all keyword, kwarg and args in a single dictionary
@@ -429,34 +443,32 @@ class _FnInstInfo(object):
         for key, value in self.key_word_args.items():
             if not key in pre:
                 result[key] = value
-        
+
         result.update(self.kwargs)
         return result
     # endregion Public Methods
-  
+
     # region Properties
     @property
     def name(self) -> str:
         return self._fn_name
-    
+
     @property
     def info(self) -> _FuncInfo:
         return self._fn_info
-    
-    
+
     @property
     def key_word_args(self) -> OrderedDict[str, Any]:
         return self._kw
-    
+
     @property
-    def kwargs(self)-> OrderedDict[str, Any]:
+    def kwargs(self) -> OrderedDict[str, Any]:
         return self._real_kw
-    
+
     @property
     def args(self) -> list:
         return self._real_args
     # endregion Properties
-  
 
 
 class _DecBase(_CommonBase):
@@ -479,25 +491,25 @@ class _DecBase(_CommonBase):
             self._ftype = DecFuncEnum.FUNCTION
         self._cache = {
             'args': [],
-            'kwargs': {}
+            'kwargs': OrderedDict()
         }
 
     def _call_init(self, **kwargs):
         """
         Call Init. Provides args for base methhods.
-        
+
         Keyword Arguments:
             func (callable): Function that is being wrapped
         """
         fn = kwargs.get('func', None)
         if not fn is None:
             self._fn = fn
-    
+
     def _wrapper_init(self, **kwargs):
         """
         Wrapper Init. Provides args for base methods.
         This method usually called right after Wrapper method
-    
+
         Keyword Arguments:
             args (Iterable[object]): Wrapped function ``args``
             kwargs (Dict[str, Any]): Wrapped function ``kwargs``
@@ -507,7 +519,10 @@ class _DecBase(_CommonBase):
             self._cache[key] = kwargs[key]
         key = 'kwargs'
         if key in kwargs:
-            self._cache[key] = kwargs[key]
+            od = OrderedDict()
+            for k, v in kwargs[key].items():
+                od[k] = v
+            self._cache[key] = od
     # endregion Init
 
     # region Property
@@ -517,16 +532,16 @@ class _DecBase(_CommonBase):
             raise ValueError(
                 "fn has not been set. Check if _call_init is called.")
         return self._fn
-    
+
     @property
     def args(self) -> Iterable[object]:
         """Gets/sets wrapped function args"""
         return self._cache['args']
-    
+
     @args.setter
     def args(self, value: Iterable[object]):
         self._wrapper_init(args=value)
-    
+
     @property
     def kwargs(self) -> Dict[str, Any]:
         """Gets/sets wrapped function kwargs"""
@@ -581,23 +596,16 @@ class _DecBase(_CommonBase):
         self._cache["signature"] = signature(self.fn)
         return self._cache["signature"]
 
-    def _get_info(self) -> _FnInstInfo:
-        info = self._cache.get("info", False)
+    def _get_fn_info(self) -> _FuncInfo:
+        info = self._cache.get("_fn_info", False)
         if info:
             return info
-        self._cache['info'] = _FnInstInfo(func=self.fn, fn_args=self.args, fn_kwargs=self.kwargs,
-                                          sig=self._get_signature(),
-                                          ftype=self._ftype)
-        return self._cache['info']
+        self._cache['_fn_info'] = _FuncInfo(func=self.fn, ftype=self._ftype)
+        return self._cache['_fn_info']
 
-    def _get_args_dict(self, **kwargs) -> Dict[str, object]:
+    def _get_inst_info(self, **kwargs) -> _FnInstInfo:
         """
-        [summary]
-
-        Args:
-            func (callable): Wrapped Function
-            fn_args (Iterable[object]): Wrapped function *args
-            fn_kwargs (Dict[str, object]): Wrapped function **kwargs
+        Gets Function Info
 
         Keyword Arguments:
             error_check (bool, optional): Determinse if errors are raise if there are missing
@@ -605,113 +613,35 @@ class _DecBase(_CommonBase):
                 and no value is passed into function.
 
         Returns:
-            Dict[str, object]: Dictionary of keys and values representing ``func`` keywords and values.
+            _FnInstInfo: Function Instance Info
         """
-        info = self._get_info()
+        err_chk = bool(kwargs.get("error_check", True))
+        try:
+            info = _FnInstInfo(fninfo=self._get_fn_info(),
+                               fn_args=self.args, fn_kwargs=self.kwargs)
+        except TypeError as e:
+            if err_chk:
+                msg = str(e)
+                msg += self._get_class_dec_err()
+                raise TypeError(msg)
+        return info
+
+    def _get_args_dict(self, **kwargs) -> OrderedDict[str, Any]:
+        """
+        Gets OrderedDict of all Args, and Keyword args.
+
+        All ``*arg`` values will have a key of ``*#`` Eg: ``'*0', 12``, ``'*1': 45.77``, ``'*3': 'flat'``
+
+        Keyword Arguments:
+            error_check (bool, optional): Determinse if errors are raise if there are missing
+                keywords. This is the case when function has keywords without defaults assigned
+                and no value is passed into function.
+
+        Returns:
+            OrderedDict[str, Any]: Dictionary of keys and values representing ``func`` keywords and values.
+        """
+        info = self._get_inst_info(kwargs=kwargs)
         return info.get_all_args()
-        # Positional argument cannot appear after keyword arguments
-        # no *args after **kwargs def foo(**kwargs, *args) not valid
-        # def foo(name, age, *args) not valid
-        #
-        # When only args are passed in (no **kwargs present) with named args then
-        # the last named args with defaults are like additional args
-        error_check = kwargs.get("error_check", True)
-        sig = self._get_signature()
-        name_values = []
-        i = 0
-        args_pos = -1
-        drop_first = self._drop_arg_first()
-        for k, v in sig.parameters.items():
-            if v.kind == v.VAR_POSITIONAL:  # args
-                args_pos = i
-                if drop_first:
-                    args_pos -= 1
-                continue
-            if v.kind == v.VAR_KEYWORD:  # kwargs
-                continue
-            if v.default == v.empty:
-                name_values.append((k, NO_THING))
-            else:
-                name_values.append((k, v.default))
-            i += 1
-        arg_offset = 0 if args_pos == -1 else args_pos
-        if drop_first and len(self.args) > arg_offset:
-            _args = self.args[(arg_offset + 1):]
-        else:
-            _args = self.args[arg_offset:]
-        arg_len = len(_args)
-        name_values_len = len(name_values)
-        if drop_first and name_values_len > 0:
-            del name_values[0]
-            name_values_len -= 1
-        offset = 0
-        if args_pos >= 0 and name_values_len > 0:
-            # count how many name, values from default
-            # are default values
-            reversed_list = list(reversed(name_values))
-            for k, v in reversed_list:
-                if not v is NO_THING:
-                    offset += 1
-                else:
-                    break
-
-        name_defaults = {}
-        # add first keys of name_values
-        if args_pos > 0:
-            # there are name values before *args in function
-            # add first args so they are in the same order as entered.
-            for j in range(args_pos):
-                nv = name_values[j]
-                name_defaults[nv[0]] = nv[1]
-        # add args
-        if args_pos >= 0:
-            # add args that are positional arguments
-            for j, arg in enumerate(_args):
-                key = "*" + str(j + arg_offset)
-                name_defaults[key] = arg
-
-        if args_pos > 0:
-            # add any remaining keys for name_values
-            remaining = len(name_values) - args_pos
-            if remaining > 0:
-                for j in range(remaining):
-                    index = j + args_pos
-                    nv = name_values[index]
-                    name_defaults[nv[0]] = nv[1]
-        else:
-            # there were no positional args before *args keyword so
-            # all all the name, values after postitioan args.
-            for k, v in name_values:
-                name_defaults[k] = v
-        if args_pos != 0 and arg_len > 0:
-            # if *args are not in position 0 and there are *args then
-            # make a dictionary of name values and update the
-            # name_defaults dictionary.
-            argnames = []
-            for j in range(len(name_values) - offset):
-                el = name_values[j]
-                argnames.append(el[0])
-            if drop_first:
-                _zip_args = self.args[1:]
-            else:
-                _zip_args = self.args
-            d = {**dict((argnames, _zip_args[:ziplen(argnames)]))}
-            name_defaults.update(d)
-        if len(self.kwargs) > 0:
-            # update name_default with any kwargs that are passed in.
-            # this will update any default values with the values passed
-            # into function at call time.
-            name_defaults.update(self.kwargs)
-        if error_check is True:
-            # if any arg has a value of NO_THING then it is a missing arg.
-            # if no error is raise here then python will raise TypeError such as:
-            # TypeError: foo() missing 1 required positional argument: 'end'
-            missing_args = []
-            for k, v in name_defaults.items():
-                if v is NO_THING:
-                    missing_args.append(k)
-            self._missing_args_error(missing_names=missing_args)
-        return name_defaults
 
     def _get_args_kwargs_pos(self) -> Tuple[int, int]:
         """
@@ -751,18 +681,18 @@ class _DecBase(_CommonBase):
 
         Args:
             filter (str): Filter option
-            
+
                 * args
                 * kwargs
                 * noargs
                 * key_only
-                
+
 
         Returns:
             Dict[str, Any]: [description]
         """
         result = {}
-        info = self._get_info()
+        info = self._get_inst_info()
         _kwargs = self.kwargs
         if filter == 'args':
             for i, arg in enumerate(info.args):
@@ -775,55 +705,10 @@ class _DecBase(_CommonBase):
             result = {**info.kwargs}
         elif filter == 'key_only':
             result = {**info.key_word_args}
-        else: # all
-            
+        else:  # all
+
             result = {**_kwargs}
         return result
-
-
-    def _missing_args_error(self, missing_names: List[str]):
-        missing_names_len = len(missing_names)
-        if missing_names_len == 0:
-            return
-        msg = f"{self.fn.__name__}() missing {missing_names_len} required positional"
-        if missing_names_len == 1:
-            msg = msg + " argument: "
-        else:
-            msg = msg + " arguments: "
-        msg = msg + self._get_formated_names(names=missing_names)
-        msg = msg + self._get_class_dec_err()
-        raise TypeError(msg)
-
-    def _get_formated_names(self, names: List[str], **kwargs) -> str:
-        """
-        Gets a formated string of a list of names
-
-        Args:
-            names (List[str]): List of names
-
-        Keyword Args:
-            conj (str, optional): Conjunction used to join list. Default ``and``.
-            wrapper (str, optional): String to prepend and append to each value. Default ``'``.
-
-        Returns:
-            str: formated such as ``'final' and 'end'`` or ``'one', 'final', and 'end'``
-        """
-        conj = kwargs.get("conj", "and")
-        wrapper = kwargs.get("wrapper", "'")
-        s = ""
-        names_len = len(names)
-        last_index = names_len - 1
-        for i, name in enumerate(names):
-            if i > 0:
-                if names_len > 2:
-                    s = s + ', '
-                else:
-                    s = s + ' '
-                if names_len > 1 and i == last_index:
-                    s = s + conj + ' '
-
-            s = s + "{0}{1}{0}".format(wrapper, name)
-        return s
 
     def _get_formated_types(self, types: Iterator[type], **kwargs) -> str:
         """
@@ -840,24 +725,8 @@ class _DecBase(_CommonBase):
             str: Formated String
         """
         t_names = [t.__name__ for t in types]
-        result = self._get_formated_names(names=t_names, **kwargs)
+        result = Formatter.get_formated_names(names=t_names, **kwargs)
         return result
-
-    def _get_ordinal(self, num: int) -> str:
-        """
-        Returns the ordinal number of a given integer, as a string.
-
-        Args:
-            num (int): integer to get ordinal value of.
-
-        Returns:
-            str: num as ordinal str. eg. 1 -> 1st, 2 -> 2nd, 3 -> 3rd, etc.
-        """
-        if 10 <= num % 100 < 20:
-            return '{0}th'.format(num)
-        else:
-            ord = {1: 'st', 2: 'nd', 3: 'rd'}.get(num % 10, 'th')
-            return '{0}{1}'.format(num, ord)
 
     def _get_star_args_pos(self) -> int:
         """
@@ -972,6 +841,7 @@ class TypeCheck(_DecBase):
 
     def __call__(self, func: callable):
         super()._call_init(func=func)
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             self._wrapper_init(args=args, kwargs=kwargs)
@@ -1058,8 +928,8 @@ class AcceptedTypes(_DecBase):
         if isinstance(types, tuple):
             return f"'{types[0].__name__}'"
         lst_multi = [t.__name__ for t in types]
-        result = self._get_formated_names(names=lst_multi,
-                                          conj='or')
+        result = Formatter.get_formated_names(names=lst_multi,
+                                              conj='or')
         return result
 
     def _get_inst(self, types: Iterable[type]):
@@ -1092,6 +962,7 @@ class AcceptedTypes(_DecBase):
 
     def __call__(self, func: callable):
         super()._call_init(func=func)
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             self._wrapper_init(args=args, kwargs=kwargs)
@@ -1135,7 +1006,7 @@ class AcceptedTypes(_DecBase):
 
     def _get_err_msg(self, name: Union[str, None], value: object, types: Iterator[type], arg_index: int, fn: callable):
         str_types = self._get_formated_types(types=types)
-        str_ord = self._get_ordinal(arg_index + 1)
+        str_ord = Formatter.get_ordinal(arg_index + 1)
         if self._ftype == DecFuncEnum.PROPERTY_CLASS:
             msg = f"'{fn.__name__}' property error. Arg '{name}' expected type of {str_types} but got '{type(value).__name__}'."
             return msg
@@ -1201,10 +1072,10 @@ class ArgsLen(_DecBase):
         len_lengths = len(self._lengths)
         len_ranges = len(self._ranges)
         if len_lengths > 0:
-            str_len = self._get_formated_names(
+            str_len = Formatter.get_formated_names(
                 names=sorted(self._lengths), conj='or')
         if len_ranges > 0:
-            str_rng = self._get_formated_names(
+            str_rng = Formatter.get_formated_names(
                 names=sorted(self._ranges), conj='or', wrapper="")
         result = ""
 
@@ -1226,6 +1097,7 @@ class ArgsLen(_DecBase):
 
     def __call__(self, func: callable):
         super()._call_init(func=func)
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             self._wrapper_init(args=args, kwargs=kwargs)
@@ -1310,6 +1182,7 @@ class ArgsMinMax(_DecBase):
 
     def __call__(self, func: callable):
         super()._call_init(func=func)
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             self._wrapper_init(args=args, kwargs=kwargs)
@@ -1366,6 +1239,7 @@ class ReturnRuleAll(_RuleBase):
 
     def __call__(self, func: callable):
         super()._call_init(func=func)
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             self._wrapper_init(args=args, kwargs=kwargs)
@@ -1420,6 +1294,7 @@ class ReturnRuleAny(_RuleBase):
 
     def __call__(self, func: callable):
         super()._call_init(func=func)
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             self._wrapper_init(args=args, kwargs=kwargs)
@@ -1479,6 +1354,7 @@ class ReturnType(_DecBase):
 
     def __call__(self, func: callable):
         super()._call_init(func=func)
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             self._wrapper_init(args=args, kwargs=kwargs)
@@ -1568,6 +1444,7 @@ class TypeCheckKw(_DecBase):
 
     def __call__(self, func):
         super()._call_init(func=func)
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             self._wrapper_init(args=args, kwargs=kwargs)
@@ -1645,6 +1522,7 @@ class RuleCheckAny(_RuleBase):
 
     def __call__(self, func):
         super()._call_init(func=func)
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             self._wrapper_init(args=args, kwargs=kwargs)
@@ -1715,6 +1593,7 @@ class RuleCheckAll(_RuleBase):
 
     def __call__(self, func):
         super()._call_init(func=func)
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             self._wrapper_init(args=args, kwargs=kwargs)
@@ -1803,6 +1682,7 @@ class RuleCheckAllKw(_RuleBase):
 
     def __call__(self, func):
         super()._call_init(func=func)
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             self._wrapper_init(args=args, kwargs=kwargs)
@@ -1851,6 +1731,7 @@ class RuleCheckAnyKw(RuleCheckAllKw):
 
     def __call__(self, func):
         super()._call_init(func=func)
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             self._wrapper_init(args=args, kwargs=kwargs)
@@ -1917,6 +1798,7 @@ class RequireArgs(_DecBase):
 
     def __call__(self, func):
         super()._call_init(func=func)
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             self._wrapper_init(args=args, kwargs=kwargs)
@@ -2204,8 +2086,8 @@ class SubClass(_DecBase):
         if isinstance(types, tuple):
             return f"'{types[0].__name__}'"
         lst_multi = [t.__name__ for t in types]
-        result = self._get_formated_names(names=lst_multi,
-                                          conj='or')
+        result = Formatter.get_formated_names(names=lst_multi,
+                                              conj='or')
         return result
 
     def _get_inst(self, types: Iterable[type]):
@@ -2238,6 +2120,7 @@ class SubClass(_DecBase):
 
     def __call__(self, func: callable):
         super()._call_init(func=func)
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             self._wrapper_init(args=args, kwargs=kwargs)
@@ -2282,7 +2165,7 @@ class SubClass(_DecBase):
 
     def _get_err_msg(self, name: Union[str, None], value: object, types: Iterator[type], arg_index: int):
         str_types = self._get_formated_types(types=types)
-        str_ord = self._get_ordinal(arg_index + 1)
+        str_ord = Formatter.get_ordinal(arg_index + 1)
         if self._ftype == DecFuncEnum.PROPERTY_CLASS:
             msg = f"'{self.fn.__name__}' property error. Arg '{name}' expected is expected be a subclass of {str_types}."
             return msg
@@ -2351,6 +2234,7 @@ class SubClasskKw(_DecBase):
 
     def __call__(self, func):
         super()._call_init(func=func)
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             self._wrapper_init(args=args, kwargs=kwargs)
