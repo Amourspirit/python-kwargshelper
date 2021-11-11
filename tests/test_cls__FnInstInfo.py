@@ -1,6 +1,6 @@
 # coding: utf-8
 import functools
-from inspect import signature, Signature
+from inspect import signature
 from collections import OrderedDict
 import unittest
 if __name__ == '__main__':
@@ -11,8 +11,10 @@ from kwhelp.decorator import _FnInstInfo, DecFuncEnum, DefaultArgs
 
 FN_INFO = None
 
-def gen_args(length:int) -> list:
+
+def gen_args(length: int) -> list:
     return [i for i in range(length)]
+
 
 def test_dec(func):
     @functools.wraps(func)
@@ -346,7 +348,8 @@ class Test_FuncInfo(unittest.TestCase):
         @test_dec
         def foo(first, second, *args, **kwargs):
             return [first, second] + [*args] + [v for _, v in kwargs.items()]
-        result = foo(1, 2, 3, 4, third='3rd', fourth='4th', five='5th', six='6th')
+        result = foo(1, 2, 3, 4, third='3rd',
+                     fourth='4th', five='5th', six='6th')
         assert result[0] == 1
         info: _FnInstInfo = foo.fn_info
         assert info.name == 'foo'
@@ -379,7 +382,7 @@ class Test_FuncInfo(unittest.TestCase):
     def test_names_args_names_kwargs(self):
         @test_dec
         def foo(first, second, *args, third, fourth='4th', **kwargs):
-            return [first, second] + [*args] + [third, fourth] + [v for _,v in kwargs.items()]
+            return [first, second] + [*args] + [third, fourth] + [v for _, v in kwargs.items()]
         result = foo(1, 2, 3, 4, third='3rd', five='5th', six='6th')
         assert result[0] == 1
         info: _FnInstInfo = foo.fn_info
@@ -422,37 +425,38 @@ class Test_FuncInfoGets(unittest.TestCase):
         assert result[0] == 'Me'
         assert result[1] == 'awesome'
         info: _FnInstInfo = foo.fn_info
-        dict = info.get_all_args()
-        assert len(dict) == 2
-        keys = list(dict.keys())
+        d = info.get_all_args()
+        assert len(d) == 2
+        keys = list(d.keys())
         assert keys[0] == 'name'
         assert keys[1] == 'value'
-        assert dict['name'] == 'Me'
-        assert dict['value'] == 'awesome'
-        dict = info.get_filter_arg()
-        assert len(dict) == 0
-        dict = info.get_filter_noargs()
-        assert len(dict) == 2
-        keys = list(dict.keys())
+        assert d['name'] == 'Me'
+        assert d['value'] == 'awesome'
+        d = info.get_filter_arg()
+        assert len(d) == 0
+        d = info.get_filter_noargs()
+        assert len(d) == 2
+        keys = list(d.keys())
         assert keys[0] == 'name'
         assert keys[1] == 'value'
-        assert dict['name'] == 'Me'
-        assert dict['value'] == 'awesome'
-        dict = info.get_filtered_key_word_args()
-        assert len(dict) == 2
-        keys = list(dict.keys())
+        assert d['name'] == 'Me'
+        assert d['value'] == 'awesome'
+        d = info.get_filtered_key_word_args()
+        assert len(d) == 2
+        keys = list(d.keys())
         assert keys[0] == 'name'
         assert keys[1] == 'value'
-        assert dict['name'] == 'Me'
-        assert dict['value'] == 'awesome'
-        dict = info.get_filtered_kwargs()
-        assert len(dict) == 0
+        assert d['name'] == 'Me'
+        assert d['value'] == 'awesome'
+        d = info.get_filtered_kwargs()
+        assert len(d) == 0
 
     def test_args_only(self):
         def is_match(lst: list, dict: OrderedDict):
             for i in range(len(lst)):
                 key = '*' + str(i)
                 assert foo_args[i] == dict[key]
+
         @test_dec
         def foo(*args):
             return [*args]
@@ -460,17 +464,307 @@ class Test_FuncInfoGets(unittest.TestCase):
         foo_args = [*gen_args(args_len)]
         result = foo(*foo_args)
         info: _FnInstInfo = foo.fn_info
-        dict = info.get_all_args()
-        assert len(dict) == args_len
-        is_match(foo_args, dict)
-        dict = info.get_filter_arg()
-        assert len(dict) == args_len
-        is_match(foo_args, dict)
-        dict = info.get_filtered_key_word_args()
-        assert len(dict) == 0
-        dict = info.get_filtered_kwargs()
-        assert len(dict) == 0
+        d = info.get_all_args()
+        assert len(d) == args_len
+        is_match(foo_args, d)
+        d = info.get_filter_arg()
+        assert len(d) == args_len
+        is_match(foo_args, d)
+        d = info.get_filtered_key_word_args()
+        assert len(d) == 0
+        d = info.get_filtered_kwargs()
+        assert len(d) == 0
+        d = info.get_filter_noargs()
+        assert len(d) == 0
 
+    def test_kwargs_only(self):
+        @test_dec
+        def foo(**kwargs):
+            return {**kwargs}
+        od = OrderedDict()
+        od['one'] = 1
+        od['two'] = 2
+        od['three'] = 3
+        od['four'] = 3
+        result = foo(**od)
+        assert result['one'] == 1
+        info: _FnInstInfo = foo.fn_info
+        d = info.get_all_args()
+        assert len(d) == 4
+        self.assertDictEqual(od, d)
+        d = info.get_filter_arg()
+        assert len(d) == 0
+        d = info.get_filtered_key_word_args()
+        assert len(d) == 0
+        d = info.get_filtered_kwargs()
+        self.assertDictEqual(od, d)
+        d = info.get_filter_noargs()
+        self.assertDictEqual(od, d)
+
+    def test_args_names(self):
+        @test_dec
+        def foo(*args, one, two, three, four=4):
+            return [*args] + [("one", one), ("two", two), ('three', three), ('four', four)]
+        args_lst = [5, 6, 7, 8]
+        key_word_args = OrderedDict()
+        key_word_args['one'] = 1
+        key_word_args['two'] = 2
+        key_word_args['three'] = 3
+        key_word_args['four'] = 4
+        od_all = OrderedDict()
+        od_args = OrderedDict()
+        for i, arg in enumerate(args_lst):
+            key = '*' + str(i)
+            od_all[key] = arg
+            od_args[key] = arg
+        od_all.update(key_word_args)
+        od_noargs = OrderedDict(key_word_args)
+        result = foo(*args_lst, **key_word_args)
+        info: _FnInstInfo = foo.fn_info
+        d = info.get_all_args()
+        self.assertDictEqual(od_all, d)
+        d = info.get_filter_arg()
+        self.assertDictEqual(od_args, d)
+        d = info.get_filtered_key_word_args()
+        self.assertDictEqual(key_word_args, d)
+        d = info.get_filtered_kwargs()
+        assert len(d) == 0
+        d = info.get_filter_noargs()
+        self.assertDictEqual(od_noargs, d)
+
+    def test_names_kwargs(self):
+        @test_dec
+        def foo(start, center, end="!!", **kwargs):
+            result = {
+                "start": start,
+                "center": center,
+                "end": end
+            }
+            result.update(**kwargs)
+            return result
+        kwargs = OrderedDict()
+        kwargs['one'] = 1
+        kwargs['two'] = 2
+        kwargs['three'] = 3
+        kwargs['four'] = 4
+        key_word_args = OrderedDict()
+        key_word_args['start'] = '1st'
+        key_word_args['center'] = '_'
+        key_word_args['end'] = '!!'
+        od_all = OrderedDict(key_word_args)
+        od_all.update(kwargs)
+        od_noargs = OrderedDict(key_word_args)
+        od_noargs.update(kwargs)
+        result = foo(start='1st', center="_",
+                     one=1, two=2, three=3, four=4)
+        info: _FnInstInfo = foo.fn_info
+        d = info.get_all_args()
+        self.assertDictEqual(od_all, d)
+        d = info.get_filter_arg()
+        assert len(d) == 0
+        d = info.get_filtered_key_word_args()
+        self.assertDictEqual(key_word_args, d)
+        d = info.get_filtered_kwargs()
+        self.assertDictEqual(kwargs, d)
+        d = info.get_filter_noargs()
+        self.assertDictEqual(od_noargs, d)
+
+    def test_args_names_kwargs(self):
+        @test_dec
+        def foo(*args, start, center, end="!!", **kwargs):
+            result = {
+                "args": args,
+                "start": start,
+                "center": center,
+                "end": end
+            }
+            result.update(**kwargs)
+            return result
+        args_lst = [101, 102, 103]
+        kwargs = OrderedDict()
+        kwargs['one'] = 1
+        kwargs['two'] = 2
+        kwargs['three'] = 3
+        kwargs['four'] = 4
+        key_word_args = OrderedDict()
+        key_word_args['start'] = '1st'
+        key_word_args['center'] = '_'
+        key_word_args['end'] = '!!'
+        od_args = OrderedDict()
+        od_all = OrderedDict()
+
+        for i, arg in enumerate(args_lst):
+            key = '*' + str(i)
+            od_all[key] = arg
+            od_args[key] = arg
+        od_all.update(key_word_args)
+        od_all.update(kwargs)
+        od_noargs = OrderedDict(key_word_args)
+        od_noargs.update(kwargs)
+
+        result = foo(*args_lst, start='1st', center="_",
+                     one=1, two=2, three=3, four=4)
+        info: _FnInstInfo = foo.fn_info
+        d = info.get_all_args()
+        self.assertDictEqual(od_all, d)
+        d = info.get_filter_arg()
+        self.assertDictEqual(od_args, d)
+        d = info.get_filtered_key_word_args()
+        self.assertDictEqual(key_word_args, d)
+        d = info.get_filtered_kwargs()
+        self.assertDictEqual(kwargs, d)
+        d = info.get_filter_noargs()
+        self.assertDictEqual(od_noargs, d)
+
+    def test_names_args(self):
+        @test_dec
+        def foo(first, second, *args):
+            return [first, second] + [*args]
+    
+        args_lst = [3, 4]
+        od_pre = OrderedDict()
+        od_pre['first'] = 1
+        od_pre['second'] = 2
+        od_args = OrderedDict()
+        od_all = OrderedDict(od_pre)
+        pre_ofset = len(od_pre)
+        for i, arg in enumerate(args_lst):
+            key = '*' + str(i + pre_ofset)
+            od_all[key] = arg
+            od_args[key] = arg
+        od_noargs = OrderedDict(od_pre)
+        result = foo(1, 2, *args_lst)
+        info: _FnInstInfo = foo.fn_info
+        d = info.get_all_args()
+        self.assertDictEqual(od_all, d)
+        d = info.get_filter_arg()
+        self.assertDictEqual(od_args, d)
+        d = info.get_filtered_key_word_args()
+        self.assertDictEqual(od_pre, d)
+        d = info.get_filtered_kwargs()
+        assert len(d) == 0
+        d = info.get_filter_noargs()
+        self.assertDictEqual(od_noargs, d)
+
+    def test_names_args_names(self):
+        @test_dec
+        def foo(first, second, *args, third, fourth='4th'):
+            return [first, second] + [*args] + [third, fourth]
+        
+        args_lst = [3, 4]
+        od_pre = OrderedDict()
+        od_pre['first'] = 1
+        od_pre['second'] = 2
+        key_word_args = OrderedDict()
+        key_word_args['third'] = '3rd'
+        key_word_args['fourth'] = '4th'
+        od_args = OrderedDict()
+        od_all = OrderedDict(od_pre)
+        pre_ofset = len(od_pre)
+        for i, arg in enumerate(args_lst):
+            key = '*' + str(i + pre_ofset)
+            od_all[key] = arg
+            od_args[key] = arg
+        od_all.update(key_word_args)
+        od_noargs = OrderedDict(od_pre)
+        od_noargs.update(key_word_args)
+        od_all_kw = OrderedDict(od_pre)
+        od_all_kw.update(key_word_args)
+        result = foo(1, 2, 3, 4, third='3rd')
+        assert result[0] == 1
+        info: _FnInstInfo = foo.fn_info
+        d = info.get_all_args()
+        self.assertDictEqual(od_all, d)
+        d = info.get_filter_arg()
+        self.assertDictEqual(od_args, d)
+        d = info.get_filtered_key_word_args()
+        self.assertDictEqual(od_all_kw, d)
+        d = info.get_filtered_kwargs()
+        assert len(d) == 0
+        d = info.get_filter_noargs()
+        self.assertDictEqual(od_noargs, d)
+
+    def test_names_args_kwargs(self):
+        @test_dec
+        def foo(first, second, *args, **kwargs):
+            return [first, second] + [*args] + [v for _, v in kwargs.items()]
+        
+        args_lst = [3, 4]
+        od_pre = OrderedDict()
+        od_pre['first'] = 1
+        od_pre['second'] = 2
+        kwargs = OrderedDict()
+        kwargs['third'] = '3rd'
+        kwargs['fourth'] = '4th'
+        kwargs['five'] = '5th'
+        kwargs['six'] = '6th'
+        od_args = OrderedDict()
+        od_all = OrderedDict(od_pre)
+        pre_ofset = len(od_pre)
+        for i, arg in enumerate(args_lst):
+            key = '*' + str(i + pre_ofset)
+            od_all[key] = arg
+            od_args[key] = arg
+        od_all.update(kwargs)
+        od_noargs = OrderedDict(od_pre)
+        od_noargs.update(kwargs)
+        result = foo(1, 2, 3, 4, third='3rd',
+                     fourth='4th', five='5th', six='6th')
+        assert result[0] == 1
+        info: _FnInstInfo = foo.fn_info
+        d = info.get_all_args()
+        self.assertDictEqual(od_all, d)
+        d = info.get_filter_arg()
+        self.assertDictEqual(od_args, d)
+        d = info.get_filtered_key_word_args()
+        self.assertDictEqual(od_pre, d)
+        d = info.get_filtered_kwargs()
+        self.assertDictEqual(kwargs, d)
+
+    def test_names_args_names_kwargs(self):
+        @test_dec
+        def foo(first, second, *args, third, fourth='4th', **kwargs):
+            return [first, second] + [*args] + [third, fourth] + [v for _, v in kwargs.items()]
+        
+        args_lst = [3, 4]
+        od_pre = OrderedDict()
+        od_pre['first'] = 1
+        od_pre['second'] = 2
+        key_word_args = OrderedDict()
+        key_word_args['third'] = '3rd'
+        key_word_args['fourth'] = '4th'
+        kwargs = OrderedDict()
+        kwargs['five'] = '5th'
+        kwargs['six'] = '6th'
+        od_args = OrderedDict()
+        od_all = OrderedDict(od_pre)
+        pre_ofset = len(od_pre)
+        for i, arg in enumerate(args_lst):
+            key = '*' + str(i + pre_ofset)
+            od_all[key] = arg
+            od_args[key] = arg
+        od_all.update(key_word_args)
+        od_all.update(kwargs)
+        od_noargs = OrderedDict(od_pre)
+        od_noargs.update(key_word_args)
+        od_noargs.update(kwargs)
+        od_all_kw = OrderedDict(od_pre)
+        od_all_kw.update(key_word_args)
+    
+        result = foo(1, 2, 3, 4, third='3rd', five='5th', six='6th')
+        assert result[0] == 1
+        info: _FnInstInfo = foo.fn_info
+        assert info.name == 'foo'
+        d = info.get_all_args()
+        self.assertDictEqual(od_all, d)
+        d = info.get_filter_arg()
+        self.assertDictEqual(od_args, d)
+        d = info.get_filtered_key_word_args()
+        self.assertDictEqual(od_all_kw, d)
+        d = info.get_filtered_kwargs()
+        self.assertDictEqual(kwargs, d)
+        d = info.get_filter_noargs()
+        self.assertDictEqual(od_noargs, d)
 
 if __name__ == '__main__':
     unittest.main()

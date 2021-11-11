@@ -334,8 +334,11 @@ class _FnInstInfo(object):
             Dict[str, Any]: Args as dictionary
         """
         result = OrderedDict()
+        if self.info.is_args is False:
+            return result
+        offset = self.info.index_args
         for i, arg in enumerate(self.args):
-            key = '*' + str(i)
+            key = '*' + str(i + offset)
             result[key] = arg
         return result
 
@@ -346,11 +349,7 @@ class _FnInstInfo(object):
         Returns:
             Dict[str, Any]: dictionary with args ommited
         """
-        result = OrderedDict()
-        all_kw = self._get_all_kw()
-        for key in self.info.all_keys:
-            result[key] = all_kw[key]
-        return result
+        return self._get_all_kw()
 
     def get_filtered_kwargs(self) -> OrderedDict[str, Any]:
         """
