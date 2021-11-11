@@ -589,13 +589,6 @@ class _DecBase(_CommonBase):
             return self.args[i:]
         return self.args
 
-    def _get_signature(self) -> Signature:
-        sig = self._cache.get("signature", False)
-        if sig:
-            return sig
-        self._cache["signature"] = signature(self.fn)
-        return self._cache["signature"]
-
     def _get_fn_info(self) -> _FuncInfo:
         info = self._cache.get("_fn_info", False)
         if info:
@@ -654,25 +647,10 @@ class _DecBase(_CommonBase):
             Tuple[int, int]: Tuple with args position at ``0`` and kwargs postion at ``1``.
             If not found then values will be ``-1``.
         """
-        sig = self._get_signature()
-        args_pos = -1
-        kwargs_pos = -1
-        drop_first = self._drop_arg_first()
-        i = 0
-        for _, v in sig.parameters.items():
-            if args_pos >= 0 and kwargs_pos >= 0:
-                break
-            if v.kind == v.VAR_POSITIONAL:  # args
-                args_pos = i
-                if drop_first:
-                    args_pos -= 1
-                continue
-            if v.kind == v.VAR_KEYWORD:  # kwargs
-                kwargs_pos = i
-                if drop_first:
-                    kwargs_pos -= 1
-                continue
-            i += 1
+        # _get_star_args_pos caches both
+        info = self._get_fn_info()
+        args_pos = info.index_args
+        kwargs_pos = info.index_kwargs
         return args_pos, kwargs_pos
 
     def _get_filtered_args_dict(self, filter: str) -> Dict[str, Any]:
@@ -738,22 +716,8 @@ class _DecBase(_CommonBase):
         Returns:
             int: -1 if  *args not present; Otherwise zero based postion of *args
         """
-        result = self._cache.get("star_args_pos", None)
-        if not result is None:
-            return result
-        sig = self._get_signature()
-        args_pos = -1
-        drop_first = self._drop_arg_first()
-        i = 0
-        for k, v in sig.parameters.items():
-            if v.kind == _ParameterKind.VAR_POSITIONAL:  # args
-                args_pos = i
-                if drop_first:
-                    args_pos -= 1
-                break
-            i += 1
-        self._cache["star_args_pos"] = args_pos
-        return self._cache["star_args_pos"]
+        info = self._get_fn_info()
+        return info.index_args
 
     def _get_class_dec_err(self, **kwargs) -> str:
         """

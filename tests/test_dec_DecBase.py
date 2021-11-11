@@ -26,8 +26,6 @@ class TestDecBase(unittest.TestCase):
         args_dic = base._get_args_dict()
         assert args_dic["arg1"] == 1
         assert args_dic["arg2"] == 2
-        sig = base._get_signature()
-        assert base._get_signature() == sig
         assert base._get_star_args_pos() == -1
         assert base._is_placeholder_arg("*199") == True
         with self.assertRaises(TypeError):
@@ -49,8 +47,6 @@ class TestDecBase(unittest.TestCase):
         args_dic = base._get_args_dict()
         assert args_dic["arg1"] == 1
         assert args_dic["arg2"] == 2
-        sig = base._get_signature()
-        assert base._get_signature() == sig
         assert base._get_star_args_pos() == 0
         assert base._is_placeholder_arg("199") == False
         with self.assertRaises(TypeError):
@@ -73,8 +69,6 @@ class TestDecBase(unittest.TestCase):
         args_dic = base._get_args_dict()
         assert args_dic["arg1"] == 1
         assert args_dic["arg2"] == 2
-        sig = base._get_signature()
-        assert base._get_signature() == sig
         assert base._get_star_args_pos() == 0
         assert base._is_placeholder_arg("199") == False
         with self.assertRaises(TypeError):
