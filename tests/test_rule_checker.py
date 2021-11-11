@@ -389,7 +389,7 @@ class TestRuleDecoratorsClass(unittest.TestCase):
         class Internal:
             @RuleCheckAllKw(arg_info={"start": rules.RuleStrNotNullEmptyWs,
                                     "middle": (rules.RuleStrNotNullEmptyWs,),
-                                    "end": (rules.RuleIntZero,)}, raise_error=False)
+                                    "end": (rules.RuleIntZero,)}, raise_error=False, ftype=DecFuncEnum.METHOD)
             def rule_test(self, start, middle, end) -> str:
                 return f"{start} {middle} {end}"
 

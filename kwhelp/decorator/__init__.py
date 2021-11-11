@@ -119,6 +119,9 @@ class _FuncInfo(object):
         drop_first = self._drop_arg_first()
         i = 0
         for k, v in self.signature.parameters.items():
+            if drop_first and i == 0:
+                i += 1
+                continue
             if v.kind == v.VAR_POSITIONAL:  # args
                 self.index_args = i
                 if drop_first:
@@ -237,6 +240,11 @@ class _FuncInfo(object):
                 keys.append(key)
             self._all_keys = tuple(keys)
         return self._all_keys
+
+    @property
+    def is_drop_first(self) -> bool:
+        """Gets of the first arg is to be dropped. Thsi is determined by ftype (DecFuncEnum)"""
+        return self._drop_arg_first()
     # endregion Property
 
 class _FnInstInfo(object):
@@ -253,9 +261,17 @@ class _FnInstInfo(object):
         self._process_args(args=fn_args)
 
     def _process_kwargs(self, args: tuple, kwargs: Dict[str, Any]):
+        if self._fn_info.is_args_only:
+            return
+        if self._fn_info.is_drop_first:
+            tmp_args = [*args[1:]]
+        else:
+            tmp_args = [*args]
         def process_kw(keys: Iterable[str]):
             ignore_keys = set()
             for key in keys:
+                if key in self._kw and not key in kwargs:
+                    continue
                 try:
                     self._kw[key] = kwargs[key]
                 except KeyError:
@@ -263,6 +279,8 @@ class _FnInstInfo(object):
                     # will be a default
                     if not key in self._fn_info.defauts:
                         raise KeyError(f"Missing key '{key}'")
+                    #     self._kw[key] = NO_THING
+                    # else:
                     self._kw[key] = self._fn_info.defauts[key]
                 ignore_keys.add(key)
             for k, v in kwargs.items():
@@ -270,25 +288,36 @@ class _FnInstInfo(object):
                     self._real_kw[k] = v
             return
 
+        # def process_missing_with_defaults(keys: Iterable[str]):
+        #     for key in keys:
+        #         if not key in self._kw:
+        #             self._kw.key
+
         if self._fn_info.is_kwargs_only is True:
             self._real_kw.update(**kwargs)
             return
         if self._fn_info.is_named_args_only is True:
+            if len(tmp_args) > 0:
+                self._kw.update(zip(self._fn_info.lst_pos_or_kw, tmp_args))
             for key, value in kwargs.items():
                 self._kw[key] = value
             return
         # at this point the are kwargs but not all are assigned to real key names.
         # is it posible at this point that some of the values are contained within args.
         if self._fn_info.is_args is False:
-            keys = self._fn_info.all_keys
+            if len(tmp_args) > 0:
+                self._kw.update(zip(self._fn_info.lst_pos_or_kw, tmp_args))
+            keys = self._fn_info.lst_pos_or_kw
             process_kw(keys=keys)
             return
         # at this point there are definatly args
         # check to see if there are any pre *args names.
         if self._fn_info.index_args > 0:
+            if len(tmp_args) > 0 and self._fn_info.len_pos_or_kw > 0:
+                self._kw.update(zip(self._fn_info.lst_pos_or_kw, tmp_args))
             # lst_pos_or_kw contains pre *arg keys
-            for i, key in enumerate(self._fn_info.lst_pos_or_kw):
-                self._kw[key] = args[i]
+            # for i, key in enumerate(self._fn_info.lst_pos_or_kw):
+            #     self._kw[key] = args[i]
             # if there are key, values after *args then they will be in lst_kw_only
             process_kw(keys=self._fn_info.lst_kw_only)
             return
@@ -298,7 +327,10 @@ class _FnInstInfo(object):
     def _process_args(self, args: tuple):
         if self._fn_info.is_args is False:
             return
-        tmp_args = [*args]
+        if self._fn_info.is_drop_first:
+            tmp_args = [*args[1:]]
+        else:
+            tmp_args = [*args]
         if self._fn_info.is_args_only:
             self._real_args = tmp_args
             return
@@ -575,6 +607,8 @@ class _DecBase(_CommonBase):
         Returns:
             Dict[str, object]: Dictionary of keys and values representing ``func`` keywords and values.
         """
+        info = self._get_info()
+        return info.get_all_args()
         # Positional argument cannot appear after keyword arguments
         # no *args after **kwargs def foo(**kwargs, *args) not valid
         # def foo(name, age, *args) not valid
@@ -661,7 +695,7 @@ class _DecBase(_CommonBase):
                 _zip_args = self.args[1:]
             else:
                 _zip_args = self.args
-            d = {**dict(zip(argnames, _zip_args[:len(argnames)]))}
+            d = {**dict((argnames, _zip_args[:ziplen(argnames)]))}
             name_defaults.update(d)
         if len(self.kwargs) > 0:
             # update name_default with any kwargs that are passed in.
@@ -745,10 +779,6 @@ class _DecBase(_CommonBase):
             
             result = {**_kwargs}
         return result
-
-
-
-
 
 
     def _missing_args_error(self, missing_names: List[str]):
