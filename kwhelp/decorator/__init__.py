@@ -278,7 +278,7 @@ class _FuncInfo(object):
 
 
 class _FnInstInfo(object):
-
+    rx_star = re.compile("^\*(\d*)$")
     # region init
     def __init__(self, fninfo: _FuncInfo, fn_args: tuple, fn_kwargs: OrderedDict[str, Any]):
         """
@@ -396,6 +396,21 @@ class _FnInstInfo(object):
     # endregion Private Methods
 
     # region Public Methods
+    def is_placeholder_arg(self, arg_name: str) -> bool:
+        """
+        Gets if arg name is a match to foramt ``*#``, eg: ``*0``, ``*1``, ``*2``.
+
+        Args:
+            arg_name (str): Arg to match
+
+        Returns:
+            bool: ``True`` if ``arg_name`` is a match; Otherwise, ``False``
+        """
+        m = _FnInstInfo.rx_star.match(arg_name)
+        if m:
+            return True
+        return False
+
     def get_filter_arg(self) -> OrderedDict[str, Any]:
         """
         Get a dictionary of args only.
@@ -514,7 +529,6 @@ class _FnInstInfo(object):
 
 
 class _DecBase(_CommonBase):
-    _rx_star = re.compile("^\*(\d*)$")
 
     # region Init
     def __init__(self, **kwargs):
@@ -617,10 +631,7 @@ class _DecBase(_CommonBase):
 
 
     def _is_placeholder_arg(self, arg_name: str) -> bool:
-        m = _DecBase._rx_star.match(arg_name)
-        if m:
-            return True
-        return False
+        return self.fn_inst_info.is_placeholder_arg(arg_name=arg_name)
 
     def _drop_arg_first(self) -> bool:
         return self._ftype.value > DecFuncEnum.METHOD_STATIC.value
