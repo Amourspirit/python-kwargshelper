@@ -1,6 +1,7 @@
 # coding: utf-8
 from collections.abc import Iterator
 from inspect import isclass
+import re
 from typing import Iterable, List, Optional, Tuple
 
 class Singleton(type):
@@ -19,6 +20,24 @@ class NoThing(metaclass=Singleton):
     '''Singleton Class to mimic null'''
 
 class Formatter:
+    _rx_star = re.compile("^\*(\d*)$")
+
+    @staticmethod
+    def is_star_num(name: str) -> bool:
+        """
+        Gets if arg name is a match to foramt ``*#``, eg: ``*0``, ``*1``, ``*2``.
+
+        Args:
+            name (str): Name to match
+
+        Returns:
+            bool: ``True`` if ``arg_name`` is a match; Otherwise, ``False``
+        """
+        m = Formatter._rx_star.match(name)
+        if m:
+            return True
+        return False
+
     @staticmethod
     def get_missing_args_error_msg(missing_names: List[str], name: Optional[str] = ""):
         """

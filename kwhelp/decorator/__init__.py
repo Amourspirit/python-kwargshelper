@@ -278,7 +278,6 @@ class _FuncInfo(object):
 
 
 class _FnInstInfo(object):
-    rx_star = re.compile("^\*(\d*)$")
     # region init
     def __init__(self, fninfo: _FuncInfo, fn_args: tuple, fn_kwargs: OrderedDict[str, Any]):
         """
@@ -396,20 +395,6 @@ class _FnInstInfo(object):
     # endregion Private Methods
 
     # region Public Methods
-    def is_placeholder_arg(self, arg_name: str) -> bool:
-        """
-        Gets if arg name is a match to foramt ``*#``, eg: ``*0``, ``*1``, ``*2``.
-
-        Args:
-            arg_name (str): Arg to match
-
-        Returns:
-            bool: ``True`` if ``arg_name`` is a match; Otherwise, ``False``
-        """
-        m = _FnInstInfo.rx_star.match(arg_name)
-        if m:
-            return True
-        return False
 
     def get_filter_arg(self) -> OrderedDict[str, Any]:
         """
@@ -631,12 +616,13 @@ class _DecBase(_CommonBase):
 
 
     def _is_placeholder_arg(self, arg_name: str) -> bool:
-        return self.fn_inst_info.is_placeholder_arg(arg_name=arg_name)
+        return Formatter.is_star_num(name=arg_name)
 
     def _drop_arg_first(self) -> bool:
         return self._ftype.value > DecFuncEnum.METHOD_STATIC.value
 
     def _get_args(self):
+        # return self.fn_inst_info.args
         if self._drop_arg_first():
             return self.args[1:]
         return self.args
@@ -1542,6 +1528,7 @@ class RuleCheckAny(_RuleBase):
             opt_return (object, optional): Return value when decorator is invalid.
                 By default an error is rasied when validation fails. If ``opt_return`` is
                 supplied then it will be return when validation fails and no error will be raised.
+            opt_args_filter (DecArgEnum, optional): Determinses if only ``*args`` are validated. Default ``DecArgEnum.ALL``.
         """
         super().__init__(**kwargs)
         self._raise_error = bool(kwargs.get("raise_error", True))
@@ -1551,6 +1538,8 @@ class RuleCheckAny(_RuleBase):
             self._kwargs = {**kwargs}
         else:
             self._kwargs = {}
+        self._opt_args_filter = DecArgEnum(
+            kwargs.get("opt_args_filter", DecArgEnum.All_ARGS))
 
     def __call__(self, func):
         super()._call_init(func=func)
