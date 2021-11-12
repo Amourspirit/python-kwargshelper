@@ -466,33 +466,35 @@ class Test_FuncInfoGets(unittest.TestCase):
         result = foo(name='Me', value="awesome")
         assert result[0] == 'Me'
         assert result[1] == 'awesome'
-        info: _FnInstInfo = foo.fn_info
-        self.assertDictEqual(od_key_word_args, info.key_word_args)
-        d = info.get_all_args()
-        self.assertDictEqual(od_key_word_args, d)
-        d = info.get_filter_arg()
-        assert len(d) == 0
-        d = info.get_filter_noargs()
-        assert len(d) == 2
-        keys = list(d.keys())
-        assert keys[0] == 'name'
-        assert keys[1] == 'value'
-        assert d['name'] == 'Me'
-        assert d['value'] == 'awesome'
-        d = info.get_filtered_key_word_args()
-        self.assertDictEqual(od_key_word_args, d)
-        d = info.get_filtered_kwargs()
-        assert len(d) == 0
-        # test positional
-        result = foo('Me', "awesome")
-        assert result[0] == 'Me'
-        assert result[1] == 'awesome'
-        info: _FnInstInfo = foo.fn_info
-        self.assertDictEqual(od_key_word_args, info.key_word_args)
-        d = info.get_all_args()
-        self.assertDictEqual(od_key_word_args, d)
-        d = info.get_filtered_key_word_args()
-        self.assertDictEqual(od_key_word_args, d)
+        # run twice for cache test
+        for _ in range(2):
+            info: _FnInstInfo = foo.fn_info
+            self.assertDictEqual(od_key_word_args, info.key_word_args)
+            d = info.get_all_args()
+            self.assertDictEqual(od_key_word_args, d)
+            d = info.get_filter_arg()
+            assert len(d) == 0
+            d = info.get_filter_noargs()
+            assert len(d) == 2
+            keys = list(d.keys())
+            assert keys[0] == 'name'
+            assert keys[1] == 'value'
+            assert d['name'] == 'Me'
+            assert d['value'] == 'awesome'
+            d = info.get_filtered_key_word_args()
+            self.assertDictEqual(od_key_word_args, d)
+            d = info.get_filtered_kwargs()
+            assert len(d) == 0
+            # test positional
+            result = foo('Me', "awesome")
+            assert result[0] == 'Me'
+            assert result[1] == 'awesome'
+            info: _FnInstInfo = foo.fn_info
+            self.assertDictEqual(od_key_word_args, info.key_word_args)
+            d = info.get_all_args()
+            self.assertDictEqual(od_key_word_args, d)
+            d = info.get_filtered_key_word_args()
+            self.assertDictEqual(od_key_word_args, d)
 
     def test_names_optional_args(self):
         @test_dec
@@ -509,28 +511,30 @@ class Test_FuncInfoGets(unittest.TestCase):
         assert result[1] == 'awesome'
         assert result[2] == 1
         assert result[3] == 2
-        info: _FnInstInfo = foo.fn_info
-        self.assertDictEqual(od_key_word_args, info.key_word_args)
-        d = info.get_all_args()
-        self.assertDictEqual(od_key_word_args, d)
-        d = info.get_filter_arg()
-        assert len(d) == 0
-        d = info.get_filter_noargs()
-        self.assertDictEqual(od_key_word_args, d)
-        d = info.get_filtered_key_word_args()
-        self.assertDictEqual(od_key_word_args, d)
-        d = info.get_filtered_kwargs()
-        assert len(d) == 0
-        # test positional
-        result = foo('Me', "awesome")
-        assert result[0] == 'Me'
-        assert result[1] == 'awesome'
-        info: _FnInstInfo = foo.fn_info
-        self.assertDictEqual(od_key_word_args, info.key_word_args)
-        d = info.get_all_args()
-        self.assertDictEqual(od_key_word_args, d)
-        d = info.get_filtered_key_word_args()
-        self.assertDictEqual(od_key_word_args, d)
+        # run twice for cache test
+        for _ in range(2):
+            info: _FnInstInfo = foo.fn_info
+            self.assertDictEqual(od_key_word_args, info.key_word_args)
+            d = info.get_all_args()
+            self.assertDictEqual(od_key_word_args, d)
+            d = info.get_filter_arg()
+            assert len(d) == 0
+            d = info.get_filter_noargs()
+            self.assertDictEqual(od_key_word_args, d)
+            d = info.get_filtered_key_word_args()
+            self.assertDictEqual(od_key_word_args, d)
+            d = info.get_filtered_kwargs()
+            assert len(d) == 0
+            # test positional
+            result = foo('Me', "awesome")
+            assert result[0] == 'Me'
+            assert result[1] == 'awesome'
+            info: _FnInstInfo = foo.fn_info
+            self.assertDictEqual(od_key_word_args, info.key_word_args)
+            d = info.get_all_args()
+            self.assertDictEqual(od_key_word_args, d)
+            d = info.get_filtered_key_word_args()
+            self.assertDictEqual(od_key_word_args, d)
 
     def test_args_only(self):
         def is_match(lst: list, dict: OrderedDict):
@@ -544,19 +548,21 @@ class Test_FuncInfoGets(unittest.TestCase):
         args_len = 20
         foo_args = [*gen_args(args_len)]
         result = foo(*foo_args)
-        info: _FnInstInfo = foo.fn_info
-        d = info.get_all_args()
-        assert len(d) == args_len
-        is_match(foo_args, d)
-        d = info.get_filter_arg()
-        assert len(d) == args_len
-        is_match(foo_args, d)
-        d = info.get_filtered_key_word_args()
-        assert len(d) == 0
-        d = info.get_filtered_kwargs()
-        assert len(d) == 0
-        d = info.get_filter_noargs()
-        assert len(d) == 0
+        # run twice for cache test
+        for _ in range(2):
+            info: _FnInstInfo = foo.fn_info
+            d = info.get_all_args()
+            assert len(d) == args_len
+            is_match(foo_args, d)
+            d = info.get_filter_arg()
+            assert len(d) == args_len
+            is_match(foo_args, d)
+            d = info.get_filtered_key_word_args()
+            assert len(d) == 0
+            d = info.get_filtered_kwargs()
+            assert len(d) == 0
+            d = info.get_filter_noargs()
+            assert len(d) == 0
 
 
     def test_kwargs_only(self):
@@ -571,17 +577,19 @@ class Test_FuncInfoGets(unittest.TestCase):
         result = foo(**od)
         assert result['one'] == 1
         info: _FnInstInfo = foo.fn_info
-        d = info.get_all_args()
-        assert len(d) == 4
-        self.assertDictEqual(od, d)
-        d = info.get_filter_arg()
-        assert len(d) == 0
-        d = info.get_filtered_key_word_args()
-        assert len(d) == 0
-        d = info.get_filtered_kwargs()
-        self.assertDictEqual(od, d)
-        d = info.get_filter_noargs()
-        self.assertDictEqual(od, d)
+        # run twice for cache test
+        for _ in range(2):
+            d = info.get_all_args()
+            assert len(d) == 4
+            self.assertDictEqual(od, d)
+            d = info.get_filter_arg()
+            assert len(d) == 0
+            d = info.get_filtered_key_word_args()
+            assert len(d) == 0
+            d = info.get_filtered_kwargs()
+            self.assertDictEqual(od, d)
+            d = info.get_filter_noargs()
+            self.assertDictEqual(od, d)
 
     def test_args_names(self):
         @test_dec
@@ -603,16 +611,18 @@ class Test_FuncInfoGets(unittest.TestCase):
         od_noargs = OrderedDict(key_word_args)
         result = foo(*args_lst, **key_word_args)
         info: _FnInstInfo = foo.fn_info
-        d = info.get_all_args()
-        self.assertDictEqual(od_all, d)
-        d = info.get_filter_arg()
-        self.assertDictEqual(od_args, d)
-        d = info.get_filtered_key_word_args()
-        self.assertDictEqual(key_word_args, d)
-        d = info.get_filtered_kwargs()
-        assert len(d) == 0
-        d = info.get_filter_noargs()
-        self.assertDictEqual(od_noargs, d)
+        # run twice for cache test
+        for _ in range(2):
+            d = info.get_all_args()
+            self.assertDictEqual(od_all, d)
+            d = info.get_filter_arg()
+            self.assertDictEqual(od_args, d)
+            d = info.get_filtered_key_word_args()
+            self.assertDictEqual(key_word_args, d)
+            d = info.get_filtered_kwargs()
+            assert len(d) == 0
+            d = info.get_filter_noargs()
+            self.assertDictEqual(od_noargs, d)
 
     def test_names_kwargs(self):
         @test_dec
@@ -640,16 +650,18 @@ class Test_FuncInfoGets(unittest.TestCase):
         result = foo(start='1st', center="_",
                      one=1, two=2, three=3, four=4)
         info: _FnInstInfo = foo.fn_info
-        d = info.get_all_args()
-        self.assertDictEqual(od_all, d)
-        d = info.get_filter_arg()
-        assert len(d) == 0
-        d = info.get_filtered_key_word_args()
-        self.assertDictEqual(key_word_args, d)
-        d = info.get_filtered_kwargs()
-        self.assertDictEqual(kwargs, d)
-        d = info.get_filter_noargs()
-        self.assertDictEqual(od_noargs, d)
+        # run twice for cache test
+        for _ in range(2):
+            d = info.get_all_args()
+            self.assertDictEqual(od_all, d)
+            d = info.get_filter_arg()
+            assert len(d) == 0
+            d = info.get_filtered_key_word_args()
+            self.assertDictEqual(key_word_args, d)
+            d = info.get_filtered_kwargs()
+            self.assertDictEqual(kwargs, d)
+            d = info.get_filter_noargs()
+            self.assertDictEqual(od_noargs, d)
         
         def bar(start, center, end="!!", **kwargs):
             result = {
@@ -671,16 +683,18 @@ class Test_FuncInfoGets(unittest.TestCase):
    
         result = foo('1st', "_", one=1, two=2, three=3, four=4)
         info: _FnInstInfo = foo.fn_info
-        d = info.get_all_args()
-        self.assertDictEqual(od_all, d)
-        d = info.get_filter_arg()
-        assert len(d) == 0
-        d = info.get_filtered_key_word_args()
-        self.assertDictEqual(key_word_args, d)
-        d = info.get_filtered_kwargs()
-        self.assertDictEqual(kwargs, d)
-        d = info.get_filter_noargs()
-        self.assertDictEqual(od_noargs, d)
+        # run twice for cache test
+        for _ in range(2):
+            d = info.get_all_args()
+            self.assertDictEqual(od_all, d)
+            d = info.get_filter_arg()
+            assert len(d) == 0
+            d = info.get_filtered_key_word_args()
+            self.assertDictEqual(key_word_args, d)
+            d = info.get_filtered_kwargs()
+            self.assertDictEqual(kwargs, d)
+            d = info.get_filter_noargs()
+            self.assertDictEqual(od_noargs, d)
    
 
     def test_args_names_kwargs(self):
@@ -719,16 +733,18 @@ class Test_FuncInfoGets(unittest.TestCase):
         result = foo(*args_lst, start='1st', center="_",
                      one=1, two=2, three=3, four=4)
         info: _FnInstInfo = foo.fn_info
-        d = info.get_all_args()
-        self.assertDictEqual(od_all, d)
-        d = info.get_filter_arg()
-        self.assertDictEqual(od_args, d)
-        d = info.get_filtered_key_word_args()
-        self.assertDictEqual(key_word_args, d)
-        d = info.get_filtered_kwargs()
-        self.assertDictEqual(kwargs, d)
-        d = info.get_filter_noargs()
-        self.assertDictEqual(od_noargs, d)
+        # run twice for cache test
+        for _ in range(2):
+            d = info.get_all_args()
+            self.assertDictEqual(od_all, d)
+            d = info.get_filter_arg()
+            self.assertDictEqual(od_args, d)
+            d = info.get_filtered_key_word_args()
+            self.assertDictEqual(key_word_args, d)
+            d = info.get_filtered_kwargs()
+            self.assertDictEqual(kwargs, d)
+            d = info.get_filter_noargs()
+            self.assertDictEqual(od_noargs, d)
 
     def test_names_args(self):
         @test_dec
@@ -749,16 +765,18 @@ class Test_FuncInfoGets(unittest.TestCase):
         od_noargs = OrderedDict(od_pre)
         result = foo(1, 2, *args_lst)
         info: _FnInstInfo = foo.fn_info
-        d = info.get_all_args()
-        self.assertDictEqual(od_all, d)
-        d = info.get_filter_arg()
-        self.assertDictEqual(od_args, d)
-        d = info.get_filtered_key_word_args()
-        self.assertDictEqual(od_pre, d)
-        d = info.get_filtered_kwargs()
-        assert len(d) == 0
-        d = info.get_filter_noargs()
-        self.assertDictEqual(od_noargs, d)
+        # run twice for cache test
+        for _ in range(2):
+            d = info.get_all_args()
+            self.assertDictEqual(od_all, d)
+            d = info.get_filter_arg()
+            self.assertDictEqual(od_args, d)
+            d = info.get_filtered_key_word_args()
+            self.assertDictEqual(od_pre, d)
+            d = info.get_filtered_kwargs()
+            assert len(d) == 0
+            d = info.get_filter_noargs()
+            self.assertDictEqual(od_noargs, d)
 
     def test_names_args_names(self):
         @test_dec
@@ -787,16 +805,18 @@ class Test_FuncInfoGets(unittest.TestCase):
         result = foo(1, 2, 3, 4, third='3rd')
         assert result[0] == 1
         info: _FnInstInfo = foo.fn_info
-        d = info.get_all_args()
-        self.assertDictEqual(od_all, d)
-        d = info.get_filter_arg()
-        self.assertDictEqual(od_args, d)
-        d = info.get_filtered_key_word_args()
-        self.assertDictEqual(od_all_kw, d)
-        d = info.get_filtered_kwargs()
-        assert len(d) == 0
-        d = info.get_filter_noargs()
-        self.assertDictEqual(od_noargs, d)
+        # run twice for cache test
+        for _ in range(2):
+            d = info.get_all_args()
+            self.assertDictEqual(od_all, d)
+            d = info.get_filter_arg()
+            self.assertDictEqual(od_args, d)
+            d = info.get_filtered_key_word_args()
+            self.assertDictEqual(od_all_kw, d)
+            d = info.get_filtered_kwargs()
+            assert len(d) == 0
+            d = info.get_filter_noargs()
+            self.assertDictEqual(od_noargs, d)
 
     def test_names_args_kwargs(self):
         @test_dec
@@ -826,14 +846,16 @@ class Test_FuncInfoGets(unittest.TestCase):
                      fourth='4th', five='5th', six='6th')
         assert result[0] == 1
         info: _FnInstInfo = foo.fn_info
-        d = info.get_all_args()
-        self.assertDictEqual(od_all, d)
-        d = info.get_filter_arg()
-        self.assertDictEqual(od_args, d)
-        d = info.get_filtered_key_word_args()
-        self.assertDictEqual(od_pre, d)
-        d = info.get_filtered_kwargs()
-        self.assertDictEqual(kwargs, d)
+        # run twice for cache test
+        for _ in range(2):
+            d = info.get_all_args()
+            self.assertDictEqual(od_all, d)
+            d = info.get_filter_arg()
+            self.assertDictEqual(od_args, d)
+            d = info.get_filtered_key_word_args()
+            self.assertDictEqual(od_pre, d)
+            d = info.get_filtered_kwargs()
+            self.assertDictEqual(kwargs, d)
 
     def test_names_args_names_kwargs(self):
         @test_dec
@@ -869,16 +891,18 @@ class Test_FuncInfoGets(unittest.TestCase):
         assert result[0] == 1
         info: _FnInstInfo = foo.fn_info
         assert info.name == 'foo'
-        d = info.get_all_args()
-        self.assertDictEqual(od_all, d)
-        d = info.get_filter_arg()
-        self.assertDictEqual(od_args, d)
-        d = info.get_filtered_key_word_args()
-        self.assertDictEqual(od_all_kw, d)
-        d = info.get_filtered_kwargs()
-        self.assertDictEqual(kwargs, d)
-        d = info.get_filter_noargs()
-        self.assertDictEqual(od_noargs, d)
+        # run twice for cache test
+        for _ in range(2):
+            d = info.get_all_args()
+            self.assertDictEqual(od_all, d)
+            d = info.get_filter_arg()
+            self.assertDictEqual(od_args, d)
+            d = info.get_filtered_key_word_args()
+            self.assertDictEqual(od_all_kw, d)
+            d = info.get_filtered_kwargs()
+            self.assertDictEqual(kwargs, d)
+            d = info.get_filter_noargs()
+            self.assertDictEqual(od_noargs, d)
 
 
 class Test_FuncInfoGetsClass(unittest.TestCase):
@@ -891,33 +915,35 @@ class Test_FuncInfoGetsClass(unittest.TestCase):
         r = Runner()
         result = r.foo(name='Me', value="awesome")
         info: _FnInstInfo = FN_INFO
-        assert result[0] == 'Me'
-        assert result[1] == 'awesome'
-        d = info.get_all_args()
-        assert len(d) == 2
-        keys = list(d.keys())
-        assert keys[0] == 'name'
-        assert keys[1] == 'value'
-        assert d['name'] == 'Me'
-        assert d['value'] == 'awesome'
-        d = info.get_filter_arg()
-        assert len(d) == 0
-        d = info.get_filter_noargs()
-        assert len(d) == 2
-        keys = list(d.keys())
-        assert keys[0] == 'name'
-        assert keys[1] == 'value'
-        assert d['name'] == 'Me'
-        assert d['value'] == 'awesome'
-        d = info.get_filtered_key_word_args()
-        assert len(d) == 2
-        keys = list(d.keys())
-        assert keys[0] == 'name'
-        assert keys[1] == 'value'
-        assert d['name'] == 'Me'
-        assert d['value'] == 'awesome'
-        d = info.get_filtered_kwargs()
-        assert len(d) == 0
+        # run twice for cache test
+        for _ in range(2):
+            assert result[0] == 'Me'
+            assert result[1] == 'awesome'
+            d = info.get_all_args()
+            assert len(d) == 2
+            keys = list(d.keys())
+            assert keys[0] == 'name'
+            assert keys[1] == 'value'
+            assert d['name'] == 'Me'
+            assert d['value'] == 'awesome'
+            d = info.get_filter_arg()
+            assert len(d) == 0
+            d = info.get_filter_noargs()
+            assert len(d) == 2
+            keys = list(d.keys())
+            assert keys[0] == 'name'
+            assert keys[1] == 'value'
+            assert d['name'] == 'Me'
+            assert d['value'] == 'awesome'
+            d = info.get_filtered_key_word_args()
+            assert len(d) == 2
+            keys = list(d.keys())
+            assert keys[0] == 'name'
+            assert keys[1] == 'value'
+            assert d['name'] == 'Me'
+            assert d['value'] == 'awesome'
+            d = info.get_filtered_kwargs()
+            assert len(d) == 0
 
     def test_args_only(self):
         global FN_INFO
@@ -934,18 +960,20 @@ class Test_FuncInfoGetsClass(unittest.TestCase):
         foo_args = [*gen_args(args_len)]
         result = r.foo(*foo_args)
         info: _FnInstInfo = FN_INFO
-        d = info.get_all_args()
-        assert len(d) == args_len
-        is_match(foo_args, d)
-        d = info.get_filter_arg()
-        assert len(d) == args_len
-        is_match(foo_args, d)
-        d = info.get_filtered_key_word_args()
-        assert len(d) == 0
-        d = info.get_filtered_kwargs()
-        assert len(d) == 0
-        d = info.get_filter_noargs()
-        assert len(d) == 0
+        # run twice for cache test
+        for _ in range(2):
+            d = info.get_all_args()
+            assert len(d) == args_len
+            is_match(foo_args, d)
+            d = info.get_filter_arg()
+            assert len(d) == args_len
+            is_match(foo_args, d)
+            d = info.get_filtered_key_word_args()
+            assert len(d) == 0
+            d = info.get_filtered_kwargs()
+            assert len(d) == 0
+            d = info.get_filter_noargs()
+            assert len(d) == 0
 
     def test_kwargs_only(self):
         class Runner:

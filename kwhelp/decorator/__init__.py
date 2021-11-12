@@ -41,28 +41,6 @@ class DecArgEnum(IntFlag):
     """Process Named Keyword args and **kwargs only"""
     All_ARGS = ARGS | KWARGS | NAMED_ARGS
     """Process All Args"""
- 
-
-class _CommonBase(object):
-    def __init__(self, **kwargs):
-        """
-        Constructor
-
-        Keyword Arguments:
-            opt_return (object, optional): Return value when decorator is invalid.
-                By default an error is rasied when validation fails. If ``opt_return`` is
-                supplied then it will be return when validation fails and no error will be raised.
-        """
-        self._opt_return = kwargs.get("opt_return", NO_THING)
-
-    def _is_opt_return(self) -> bool:
-        """
-        Gets if opt_return value has been set in constructor
-
-        Returns:
-            bool: True if opt_return value is set; Otherwise, False
-        """
-        return not self._opt_return is NO_THING
 
 
 class _FuncInfo(object):
@@ -148,7 +126,7 @@ class _FuncInfo(object):
                 self.lst_kw_only.append(v.name)
                 if v.default != v.empty:
                     self._defaults[k] = v.default
-            elif v.kind == v.POSITIONAL_ONLY:
+            elif v.kind == v.POSITIONAL_ONLY:  # pragma: no cover
                 self.lst_pos_only.append(v.name)
                 if v.default != v.empty:
                     self._defaults[k] = v.default
@@ -260,7 +238,7 @@ class _FuncInfo(object):
                 keys.append(key)
             for key in self.lst_kw_only:
                 keys.append(key)
-            for key in self.lst_pos_only:
+            for key in self.lst_pos_only:  # pragma: no cover
                 keys.append(key)
             self._all_keys = tuple(keys)
         return self._all_keys
@@ -383,7 +361,7 @@ class _FnInstInfo(object):
 
         kw = OrderedDict(**self.key_word_args)
         kw.update(self.kwargs)
-        self._cache[key]  = kw
+        self._cache[key] = kw
         return self._cache[key]
 
     def _missing_args_error(self, missing_names: List[str]):
@@ -405,9 +383,9 @@ class _FnInstInfo(object):
         Returns:
             Dict[str, Any]: Args as dictionary
         """
-        key = 'filter_arg'
-        if key in self._cache:
-            return self._cache[key]
+        cache_key = 'filter_arg'
+        if cache_key in self._cache:
+            return self._cache[cache_key]
         result = OrderedDict()
         if self.info.is_args is False:
             return result
@@ -415,8 +393,8 @@ class _FnInstInfo(object):
         for i, arg in enumerate(self.args):
             key = '*' + str(i + offset)
             result[key] = arg
-        self._cache[key] = result
-        return self._cache[key]
+        self._cache[cache_key] = result
+        return self._cache[cache_key]
 
     def get_filter_noargs(self) -> OrderedDict[str, Any]:
         """
@@ -463,6 +441,7 @@ class _FnInstInfo(object):
         key = 'filtered_all_args'
         if key in self._cache:
             return self._cache[key]
+
         def get_pre_star_keys() -> Tuple[str]:
             pre_keys = tuple()
             if self.info.index_args > 0:
@@ -511,6 +490,28 @@ class _FnInstInfo(object):
     def args(self) -> list:
         return self._real_args
     # endregion Properties
+
+
+class _CommonBase(object):
+    def __init__(self, **kwargs):
+        """
+        Constructor
+
+        Keyword Arguments:
+            opt_return (object, optional): Return value when decorator is invalid.
+                By default an error is rasied when validation fails. If ``opt_return`` is
+                supplied then it will be return when validation fails and no error will be raised.
+        """
+        self._opt_return = kwargs.get("opt_return", NO_THING)
+
+    def _is_opt_return(self) -> bool:
+        """
+        Gets if opt_return value has been set in constructor
+
+        Returns:
+            bool: True if opt_return value is set; Otherwise, False
+        """
+        return not self._opt_return is NO_THING
 
 
 class _DecBase(_CommonBase):
@@ -575,6 +576,7 @@ class _DecBase(_CommonBase):
                 "fn has not been set. Check if _call_init is called.")
         return self._fn
     # region Function cache Properties
+
     @property
     def fn_cache(self) -> Dict[str, object]:
         """Gets function level cache"""
@@ -602,7 +604,7 @@ class _DecBase(_CommonBase):
         for k, v in value.items():
             od[k] = v
         self.fn_cache['kwargs'] = od
-    
+
     @property
     def fn_inst_info(self) -> _FnInstInfo:
         cache = self.fn_cache
@@ -691,23 +693,6 @@ class _DecBase(_CommonBase):
         """
         info = self._get_inst_info(kwargs=kwargs)
         return info.get_all_args()
-
-    def _get_args_kwargs_pos(self) -> Tuple[int, int]:
-        """
-        Get args and kwargs postion in a function taking in to accoount DedFuncEnum value.
-
-        Args:
-            func (callable): wrapped function
-
-        Returns:
-            Tuple[int, int]: Tuple with args position at ``0`` and kwargs postion at ``1``.
-            If not found then values will be ``-1``.
-        """
-        # _get_star_args_pos caches both
-        info = self._get_fn_info()
-        args_pos = info.index_args
-        kwargs_pos = info.index_kwargs
-        return args_pos, kwargs_pos
 
     def _get_filtered_args_dict(self, opt_filter: DecArgEnum = DecArgEnum.All_ARGS) -> OrderedDict[str, Any]:
         """
@@ -916,8 +901,8 @@ class AcceptedTypes(_DecBase):
         else:
             self._kwargs = {}
         self._all_args = bool(kwargs.get("opt_all_args", False))
-        self._opt_args_filter = DecArgEnum(kwargs.get("opt_args_filter", DecArgEnum.All_ARGS))
-   
+        self._opt_args_filter = DecArgEnum(
+            kwargs.get("opt_args_filter", DecArgEnum.All_ARGS))
 
     def _get_formated_types(self, types: Union[Tuple[type], Set[type]]) -> str:
         # multi is list of set, actually one set in a list
@@ -964,7 +949,8 @@ class AcceptedTypes(_DecBase):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             self._wrapper_init(args=args, kwargs=kwargs)
-            arg_name_values = self._get_filtered_args_dict(self._opt_args_filter)
+            arg_name_values = self._get_filtered_args_dict(
+                self._opt_args_filter)
             arg_keys = list(arg_name_values.keys())
             arg_keys_len = arg_keys.__len__()
             i = 0

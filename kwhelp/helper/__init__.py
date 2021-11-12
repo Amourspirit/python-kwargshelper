@@ -67,11 +67,11 @@ class Formatter:
             name (Optional[str], optional): Function, class, method name. Defaults to "".
 
         Returns:
-            [type]: [description]
+            [type]: Formated string for ``missing_names`` has elements; Otherwise, empty string is returned.
         """
         missing_names_len = len(missing_names)
         if missing_names_len == 0:
-            return
+            return ""
         msg = f"{name} missing {missing_names_len} required positional".lstrip()
         if missing_names_len == 1:
             msg = msg + " argument: "

@@ -4,8 +4,6 @@ if __name__ == '__main__':
     import sys
     sys.path.append(os.path.realpath('.'))
 from kwhelp.decorator import DecFuncEnum, DecArgEnum
-from kwhelp import rules
-
 class TestGeneral(unittest.TestCase):
 
     def test_DecFuncEnum(self):

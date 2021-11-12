@@ -63,7 +63,16 @@ class TestFormatter(unittest.TestCase):
         assert result.startswith("missing")
         for n in names_lst:
             assert result.index(n) > 0
-        
+        result = Formatter.get_missing_args_error_msg(missing_names=[], name=name)
+        assert result == ""
+    
+    def test_is_star_num(self):
+        result = Formatter.is_star_num(name="*123")
+        assert result
+        result = Formatter.is_star_num(name="123")
+        assert not result
+        with self.assertRaises(TypeError):
+            Formatter.is_star_num(name=22)
 
 if __name__ == '__main__':
     unittest.main()
