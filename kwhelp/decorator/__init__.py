@@ -614,10 +614,6 @@ class _DecBase(_CommonBase):
     # endregion Function cache Properties
     # endregion Property
 
-
-    def _is_placeholder_arg(self, arg_name: str) -> bool:
-        return Formatter.is_star_num(name=arg_name)
-
     def _drop_arg_first(self) -> bool:
         return self._ftype.value > DecFuncEnum.METHOD_STATIC.value
 
@@ -957,7 +953,7 @@ class AcceptedTypes(_DecBase):
             tc = self._get_inst(types=types)
         else:
             tc = inst
-        if self._is_placeholder_arg(key):
+        if Formatter.is_star_num(name=key):
             try:
                 tc.validate(value)
             except TypeError:
@@ -2086,6 +2082,7 @@ class SubClass(_DecBase):
                 define any remaining args. This allows for one subclass to define required match of all arguments
                 that decorator is applied to.
                 Default ``False``
+            opt_args_filter (DecArgEnum, optional): Determinses if only ``*args`` are validated. Default ``DecArgEnum.ALL``.
         """
         super().__init__(**kwargs)
         self._types = []
@@ -2104,6 +2101,8 @@ class SubClass(_DecBase):
         else:
             self._kwargs = {}
         self._all_args = bool(kwargs.get("opt_all_args", False))
+        self._opt_args_filter = DecArgEnum(
+            kwargs.get("opt_args_filter", DecArgEnum.All_ARGS))
 
     def _get_formated_types(self, types: Union[Tuple[type], Set[type]]) -> str:
         # multi is list of set, actually one set in a list
@@ -2126,7 +2125,7 @@ class SubClass(_DecBase):
             sc = inst
         # ensure errors are raised if not valid
         sc.raise_error = True
-        if self._is_placeholder_arg(key):
+        if Formatter.is_star_num(name=key):
             try:
                 sc.validate(value)
             except TypeError:
@@ -2150,7 +2149,8 @@ class SubClass(_DecBase):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             self._wrapper_init(args=args, kwargs=kwargs)
-            arg_name_values = self._get_args_dict()
+            arg_name_values = self._get_filtered_args_dict(
+                self._opt_args_filter)
             arg_keys = list(arg_name_values.keys())
             arg_keys_len = arg_keys.__len__()
             if self._all_args is False:
