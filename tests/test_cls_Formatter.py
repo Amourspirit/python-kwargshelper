@@ -5,7 +5,7 @@ if __name__ == '__main__':
     sys.path.append(os.path.realpath('.'))
 
 from kwhelp.helper import Formatter
-
+from typing import Iterator
 
 class TestFormatter(unittest.TestCase):
     def test_ordianl(self):

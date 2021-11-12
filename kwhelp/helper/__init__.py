@@ -1,8 +1,7 @@
 # coding: utf-8
-from collections.abc import Iterator
 from inspect import isclass
 import re
-from typing import Iterable, List, Optional
+from typing import Iterable, List, Optional, Iterator
 
 class Singleton(type):
     """Singleton abstrace class"""

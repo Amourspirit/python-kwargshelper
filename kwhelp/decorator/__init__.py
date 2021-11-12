@@ -257,7 +257,7 @@ class _FuncInfo(object):
 
 class _FnInstInfo(object):
     # region init
-    def __init__(self, fninfo: _FuncInfo, fn_args: tuple, fn_kwargs: OrderedDict[str, Any]):
+    def __init__(self, fninfo: _FuncInfo, fn_args: tuple, fn_kwargs: "OrderedDict[str, Any]"):
         """
         [summary]
 
@@ -353,7 +353,7 @@ class _FnInstInfo(object):
     # endregion init
 
     # region Private Methods
-    def _get_all_kw(self) -> OrderedDict[str, Any]:
+    def _get_all_kw(self) -> "OrderedDict[str, Any]":
         """Get all keword args combined into one dictionary"""
         key = 'all_kw'
         if key in self._cache:
@@ -374,7 +374,7 @@ class _FnInstInfo(object):
 
     # region Public Methods
 
-    def get_filter_arg(self) -> OrderedDict[str, Any]:
+    def get_filter_arg(self) -> "OrderedDict[str, Any]":
         """
         Get a dictionary of args only.
 
@@ -396,7 +396,7 @@ class _FnInstInfo(object):
         self._cache[cache_key] = result
         return self._cache[cache_key]
 
-    def get_filter_noargs(self) -> OrderedDict[str, Any]:
+    def get_filter_noargs(self) -> "OrderedDict[str, Any]":
         """
         Gets a dictionary of all keyword args that has all plain args omitted.
 
@@ -405,7 +405,7 @@ class _FnInstInfo(object):
         """
         return self._get_all_kw()
 
-    def get_filtered_kwargs(self) -> OrderedDict[str, Any]:
+    def get_filtered_kwargs(self) -> "OrderedDict[str, Any]":
         """
         Gets a dictionary of only kwargs
 
@@ -418,7 +418,7 @@ class _FnInstInfo(object):
         self._cache[key] = OrderedDict(self.kwargs)
         return self._cache[key]
 
-    def get_filtered_key_word_args(self) -> OrderedDict[str, Any]:
+    def get_filtered_key_word_args(self) -> "OrderedDict[str, Any]":
         """
         Gets a dictionary of only keyword args
 
@@ -431,7 +431,7 @@ class _FnInstInfo(object):
         self._cache[key] = OrderedDict(self.key_word_args)
         return self._cache[key]
 
-    def get_all_args(self) -> OrderedDict[str, Any]:
+    def get_all_args(self) -> "OrderedDict[str, Any]":
         """
         Gets all keyword, kwarg and args in a single dictionary
 
@@ -479,11 +479,11 @@ class _FnInstInfo(object):
         return self._fn_info
 
     @property
-    def key_word_args(self) -> OrderedDict[str, Any]:
+    def key_word_args(self) -> "OrderedDict[str, Any]":
         return self._kw
 
     @property
-    def kwargs(self) -> OrderedDict[str, Any]:
+    def kwargs(self) -> "OrderedDict[str, Any]":
         return self._real_kw
 
     @property
@@ -677,7 +677,7 @@ class _DecBase(_CommonBase):
                 raise TypeError(msg)
         return info
 
-    def _get_args_dict(self, **kwargs) -> OrderedDict[str, Any]:
+    def _get_args_dict(self, **kwargs) -> "OrderedDict[str, Any]":
         """
         Gets OrderedDict of all Args, and Keyword args.
 
@@ -694,7 +694,7 @@ class _DecBase(_CommonBase):
         info = self._get_inst_info(kwargs=kwargs)
         return info.get_all_args()
 
-    def _get_filtered_args_dict(self, opt_filter: DecArgEnum = DecArgEnum.All_ARGS) -> OrderedDict[str, Any]:
+    def _get_filtered_args_dict(self, opt_filter: DecArgEnum = DecArgEnum.All_ARGS) -> "OrderedDict[str, Any]":
         """
         Gets filtered dictionary
 
