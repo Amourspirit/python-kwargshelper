@@ -49,6 +49,21 @@ class TestRuleCheckAll(unittest.TestCase):
         with self.assertRaises(RuleError):
             foo(first="True", last=100, hours=-12, years=22)
 
+    def test_rule_check_all_opt_args_filter_args(self):
+        # test only **kwargs
+        @RuleCheckAll(rules.RuleStrNotNullEmptyWs, opt_args_filter=DecArgEnum.ARGS)
+        def foo(*args, first, last, **kwargs):
+            return [*args] + [first, last] + [v for _, v in kwargs.items()]
+        result = foo("the", "quick", "brown", "fox",
+                     first=1, last=100, hours=12.5, years=22)
+        assert result[0] == "the"
+        with self.assertRaises(RuleError):
+            foo("the", "", "brown", "fox",
+                first=1, last=100, hours=12.5, years=22)
+        with self.assertRaises(RuleError):
+            foo("the", "quick", " ", "fox",
+                first=1, last=100, hours=12.5, years=22)
+
     def test_rule_check_all_opt_args_filter_named(self):
         # test only **kwargs
         @RuleCheckAll(rules.RuleInt, rules.RuleIntPositive, opt_args_filter=DecArgEnum.NAMED_ARGS)
