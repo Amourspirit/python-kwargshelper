@@ -2,7 +2,7 @@
 from collections.abc import Iterator
 from inspect import isclass
 import re
-from typing import Iterable, List, Optional, Tuple
+from typing import Iterable, List, Optional
 
 class Singleton(type):
     """Singleton abstrace class"""

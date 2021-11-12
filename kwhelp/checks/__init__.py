@@ -30,25 +30,6 @@ class _CheckBase:
             pass
         return type(obj)
 
-    def _get_formated_types(self, types: Iterator[type], **kwargs) -> str:
-        """
-        Gets a formated string from a list of types.
-
-        Args:
-            types (Iterator[type]): Types to create fromated string.
-
-        Keyword Args:
-            conj (str, optional): Conjunction used to join list. Default ``and``.
-            wrapper (str, optional): String to prepend and append to each value. Default ``'``.
-
-        Returns:
-            str: Formated String
-        """
-        t_names = [t.__name__ for t in types]
-        result = Formatter.get_formated_names(names=t_names, **kwargs)
-        return result
-
-
 class TypeChecker(_CheckBase):
     """Class that validates args match a given type"""
 
@@ -109,7 +90,7 @@ class TypeChecker(_CheckBase):
             else:
                 result = False
                 if self._raise_error is True:
-                    t_str = self._get_formated_types(types=self._types, conj='or')
+                    t_str = Formatter.get_formated_types(types=self._types, conj='or')
                     if _key is None:
                         msg = f"Arg Value is expected to be of {t_str} but got '{type(value).__name__}'."
                     else:
@@ -422,8 +403,6 @@ class SubClassChecker(_CheckBase):
         self._raise_error: bool = bool(kwargs.get('raise_error', True))
         self._instance_only: bool = bool(kwargs.get('opt_inst_only', True))
 
-    def _get_formated_types(self) -> str:
-        return super()._get_formated_types(types=self._types, conj='or')
     
     def _is_valid_arg(self, arg: Union[str, None]) -> bool:
         if arg is None:
@@ -443,10 +422,11 @@ class SubClassChecker(_CheckBase):
             if not isclass(t) or not issubclass(t, self._types):
                 result = False
         if result is False and self._raise_error is True:
+            t_str = Formatter.get_formated_types(types=self._types, conj='or')
             if _key is None:
-                msg = f"Arg Value is expected to be of a subclass of {self._get_formated_types()}."
+                msg = f"Arg Value is expected to be of a subclass of {t_str}."
             else:
-                msg = f"Arg '{_key}' is expected to be of a subclass of {self._get_formated_types()}."
+                msg = f"Arg '{_key}' is expected to be of a subclass of {t_str}."
             raise TypeError(msg)
         return result
 
