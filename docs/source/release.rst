@@ -1,6 +1,13 @@
 Release Notes
 =============
 
+Version 2.5.0
+-------------
+
+Added option ``opt_args_filter`` to AcceptedTypes,  RuleCheckAll, RuleCheckAny
+
+Upgraded underling engine to use OrderedDict to ensure order of keys for python <= 3.6
+
 Version 2.4.0
 -------------
 
