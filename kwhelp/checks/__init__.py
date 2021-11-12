@@ -45,7 +45,7 @@ class _CheckBase:
             str: Formated String
         """
         t_names = [t.__name__ for t in types]
-        result = Formatter.get_formated_names(names=t_names, kwargs=kwargs)
+        result = Formatter.get_formated_names(names=t_names, **kwargs)
         return result
 
 
@@ -77,11 +77,17 @@ class TypeChecker(_CheckBase):
         self._raise_error: bool = bool(kwargs.get('raise_error', True))
         self._type_instance_check: bool = bool(
             kwargs.get('type_instance_check', True))
-
-    def _get_formated_types(self) -> str:
-        return super()._get_formated_types(types=self._types, conj='or')
+    
+    def _is_valid_arg(self, arg: Union[str, None]) -> bool:
+        if arg is None:
+            return False
+        return not Formatter.is_star_num(name=arg)
 
     def _validate_type(self, value: object,  key: Union[str, None] = None):
+        if self._is_valid_arg(arg=key):
+            _key = key
+        else:
+            _key = None
         def _is_type_instance(_types: Iterable[type], _value):
             result = False
             for t in _types:
@@ -103,10 +109,11 @@ class TypeChecker(_CheckBase):
             else:
                 result = False
                 if self._raise_error is True:
-                    if key is None:
-                        msg = f"Arg Value is expected to be of {self._get_formated_types()} but got '{type(value).__name__}'."
+                    t_str = self._get_formated_types(types=self._types, conj='or')
+                    if _key is None:
+                        msg = f"Arg Value is expected to be of {t_str} but got '{type(value).__name__}'."
                     else:
-                        msg = f"Arg '{key}' is expected to be of {self._get_formated_types()} but got '{type(value).__name__}'."
+                        msg = f"Arg '{_key}' is expected to be of {t_str} but got '{type(value).__name__}'."
                     raise TypeError(msg)
         return result
 

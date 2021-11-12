@@ -819,7 +819,7 @@ class TypeCheck(_DecBase):
             opt_return (object, optional): Return value when decorator is invalid.
                 By default an error is rasied when validation fails. If ``opt_return`` is
                 supplied then it will be return when validation fails and no error will be raised.
-
+            opt_args_filter (DecArgEnum, optional): Determinses if only ``*args`` are validated. Default ``DecArgEnum.ALL``.
         Raises:
             TypeError: If ``types`` arg is not a iterable object such as a list or tuple.
             TypeError: If any arg is not of a type listed in ``types``.
@@ -832,22 +832,8 @@ class TypeCheck(_DecBase):
             self._kwargs = {**kwargs}
         else:
             self._kwargs = {}
-        self._args_only = bool(kwargs.get('args_only', False))
-        self._kwargs_only = bool(kwargs.get('kwargs_only', False))
-
-    def _get_args_kwargs(self) -> Tuple[Tuple[object],  Dict[str, Any]]:
-        # _all = self._get_args_dict()
-        if self._args_only is True:
-
-            _args = self._get_args(self.args)
-            _kwargs = {}
-        elif self._kwargs_only is True:
-            _args = []
-            _kwargs = self.kwargs
-        else:
-            _args = self._get_args()
-            _kwargs = self.kwargs
-        return _args, _kwargs
+        self._opt_args_filter = DecArgEnum(
+            kwargs.get("opt_args_filter", DecArgEnum.All_ARGS))
 
     def __call__(self, func: callable):
         super()._call_init(func=func)
@@ -855,11 +841,10 @@ class TypeCheck(_DecBase):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             self._wrapper_init(args=args, kwargs=kwargs)
-            if self._args_only is True and self._kwargs_only is True:
-                return func(*args, **kwargs)
-            _args, _kwargs = self._get_args_kwargs()
+            arg_name_values = self._get_filtered_args_dict(
+                self._opt_args_filter)
             try:
-                is_valid = self._typechecker.validate(*_args, **_kwargs)
+                is_valid = self._typechecker.validate(**arg_name_values)
                 if self._typechecker.raise_error is False:
                     wrapper.is_types_valid = is_valid
                 if is_valid is False and self._is_opt_return() is True:

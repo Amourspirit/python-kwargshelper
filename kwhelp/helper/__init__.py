@@ -30,9 +30,14 @@ class Formatter:
         Args:
             name (str): Name to match
 
+        Raises:
+            TypeError: if name is not a ``str`` value.
+
         Returns:
             bool: ``True`` if ``arg_name`` is a match; Otherwise, ``False``
         """
+        if not isinstance(name, str):
+            raise TypeError("'is_star_num()' error, arg 'name` must be of type `str`")
         m = Formatter._rx_star.match(name)
         if m:
             return True

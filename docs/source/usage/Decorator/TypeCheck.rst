@@ -13,7 +13,7 @@ Includes features:
 Decorating with ``*args``
 -------------------------
 
-This example requires that all args positive ``int`` or positive ``float``.
+This example requires that all args ``int`` or ``float``.
 
 .. code-block:: python
 
