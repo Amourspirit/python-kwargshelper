@@ -1,5 +1,5 @@
 {
-    "python.pythonPath": "/home/paul/miniconda3/envs/py36/bin/python",
+    "python.pythonPath": "${workspaceFolder}/env",
     "python.testing.unittestArgs": [
         "-v",
         "-s",
