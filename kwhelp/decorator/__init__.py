@@ -1547,10 +1547,13 @@ class RuleCheckAny(_RuleBase):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             self._wrapper_init(args=args, kwargs=kwargs)
-            _args = self._get_args()
+            arg_name_values = self._get_filtered_args_dict(
+                self._opt_args_filter)
+            # _args = self._get_args()
             is_valid = False
             try:
-                is_valid = self._rulechecker.validate_any(*_args, **kwargs)
+                # is_valid = self._rulechecker.validate_any(*_args, **kwargs)
+                is_valid = self._rulechecker.validate_any(**arg_name_values)
             except RuleError as err:
                 if self._is_opt_return():
                     return self._opt_return
