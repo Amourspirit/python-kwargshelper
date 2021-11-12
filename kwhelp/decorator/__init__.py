@@ -1,10 +1,9 @@
 import functools
-import inspect
 import re
 from typing import Any, Dict, Iterable, Iterator, List, Optional, Set, Tuple, Union
-from enum import Enum, IntEnum
+from enum import Enum, IntEnum, IntFlag, auto
 from collections import OrderedDict
-from inspect import _ParameterKind, signature, isclass, Parameter, Signature
+from inspect import signature, isclass, Parameter, Signature
 from ..checks import TypeChecker, RuleChecker, SubClassChecker
 from ..rules import IRule
 from ..helper import is_iterable, Formatter
@@ -29,6 +28,20 @@ class DecFuncEnum(IntEnum):
     def __str__(self):
         return self._name_
 
+
+class DecArgEnum(IntFlag):
+    """Represents options for the type of functin arguments to process"""
+    ARGS = auto()
+    """Process *args"""
+    KWARGS = auto()
+    """Process **kwargs"""
+    NAMED_ARGS = auto()
+    """Process named keyword args"""
+    NO_ARGS = NAMED_ARGS | KWARGS
+    """Process Named Keyword args and **kwargs only"""
+    All_ARGS = ARGS | KWARGS | NAMED_ARGS
+    """Process All Args"""
+ 
 
 class _CommonBase(object):
     def __init__(self, **kwargs):
@@ -224,6 +237,16 @@ class _FuncInfo(object):
         return self.index_args >= 0
 
     @property
+    def is_noargs(self) -> bool:
+        """Gets if function has any arguments after excluding any *args"""
+        if self.is_kwargs:
+            return True
+        count = self.len_kw_only
+        count += self.len_pos_or_kw
+        count += self.len_positon_only
+        return count > 0
+
+    @property
     def is_kwargs(self) -> bool:
         """Gets if function has any **kwargs"""
         return self.index_kwargs >= 0
@@ -364,7 +387,8 @@ class _FnInstInfo(object):
 
     def _missing_args_error(self, missing_names: List[str]):
         fn_name = self.name + "()"
-        msg = Formatter.get_missing_args_error_msg(missing_names=missing_names, name=fn_name)
+        msg = Formatter.get_missing_args_error_msg(
+            missing_names=missing_names, name=fn_name)
         raise TypeError(msg)
 
     # endregion Private Methods
@@ -493,6 +517,7 @@ class _DecBase(_CommonBase):
             'args': [],
             'kwargs': OrderedDict()
         }
+        self._w_cache = None
 
     def _call_init(self, **kwargs):
         """
@@ -514,15 +539,15 @@ class _DecBase(_CommonBase):
             args (Iterable[object]): Wrapped function ``args``
             kwargs (Dict[str, Any]): Wrapped function ``kwargs``
         """
+        clear_cache = kwargs.get("clear_cache", True)
+        if clear_cache:
+            self._w_cache = {}
         key = 'args'
         if key in kwargs:
-            self._cache[key] = kwargs[key]
+            self.args = kwargs[key]
         key = 'kwargs'
         if key in kwargs:
-            od = OrderedDict()
-            for k, v in kwargs[key].items():
-                od[k] = v
-            self._cache[key] = od
+            self.kwargs = kwargs[key]
     # endregion Init
 
     # region Property
@@ -532,26 +557,46 @@ class _DecBase(_CommonBase):
             raise ValueError(
                 "fn has not been set. Check if _call_init is called.")
         return self._fn
+    # region Function cache Properties
+    @property
+    def fn_cache(self) -> Dict[str, object]:
+        """Gets function level cache"""
+        if not self._w_cache:
+            self._w_cache = {}
+        return self._w_cache
 
     @property
     def args(self) -> Iterable[object]:
         """Gets/sets wrapped function args"""
-        return self._cache['args']
+        return self.fn_cache['args']
 
     @args.setter
     def args(self, value: Iterable[object]):
-        self._wrapper_init(args=value)
+        self.fn_cache['args'] = [*value]
 
     @property
     def kwargs(self) -> Dict[str, Any]:
         """Gets/sets wrapped function kwargs"""
-        return self._cache['kwargs']
+        return self.fn_cache['kwargs']
 
     @kwargs.setter
     def kwargs(self, value: Dict[str, Any]):
-        self._wrapper_init(kwargs=value)
-
+        od = OrderedDict()
+        for k, v in value.items():
+            od[k] = v
+        self.fn_cache['kwargs'] = od
+    
+    @property
+    def fn_inst_info(self) -> _FnInstInfo:
+        cache = self.fn_cache
+        key = '_fn_instance_info'
+        if key in cache:
+            return cache[key]
+        cache[key] = self._get_inst_info()
+        return cache[key]
+    # endregion Function cache Properties
     # endregion Property
+
 
     def _is_placeholder_arg(self, arg_name: str) -> bool:
         m = _DecBase._rx_star.match(arg_name)
@@ -653,39 +698,29 @@ class _DecBase(_CommonBase):
         kwargs_pos = info.index_kwargs
         return args_pos, kwargs_pos
 
-    def _get_filtered_args_dict(self, filter: str) -> Dict[str, Any]:
+    def _get_filtered_args_dict(self, opt_filter: DecArgEnum = DecArgEnum.All_ARGS) -> OrderedDict[str, Any]:
         """
         Gets filtered dictionary
 
         Args:
-            filter (str): Filter option
-
-                * args
-                * kwargs
-                * noargs
-                * key_only
-
-
+            filter (DecArgEnum): Filter option
         Returns:
-            Dict[str, Any]: [description]
+            OrderedDict[str, Any]: of based on filter
         """
-        result = {}
-        info = self._get_inst_info()
-        _kwargs = self.kwargs
-        if filter == 'args':
-            for i, arg in enumerate(info.args):
-                key = '*' + str(i)
-                result[key] = arg
-        elif filter == 'noargs':
-            for key in info.info.all_keys:
-                result[key] = _kwargs[key]
-        elif filter == 'kwargs':
-            result = {**info.kwargs}
-        elif filter == 'key_only':
-            result = {**info.key_word_args}
-        else:  # all
-
-            result = {**_kwargs}
+        fn_info = self.fn_inst_info
+        if opt_filter & DecArgEnum.All_ARGS == DecArgEnum.All_ARGS:
+            return fn_info.get_all_args()
+        if opt_filter & DecArgEnum.NO_ARGS == DecArgEnum.NO_ARGS:
+            return fn_info.get_filter_noargs()
+        result = OrderedDict()
+        if DecArgEnum.ARGS in opt_filter:
+            if fn_info.info.is_args:
+                result.update(fn_info.get_filter_arg())
+        if DecArgEnum.KWARGS in opt_filter:
+            if fn_info.info.is_kwargs:
+                result.update(fn_info.get_filtered_kwargs())
+        if DecArgEnum.NAMED_ARGS in opt_filter:
+            result.update(fn_info.get_filtered_key_word_args())
         return result
 
     def _get_formated_types(self, types: Iterator[type], **kwargs) -> str:
@@ -865,6 +900,7 @@ class AcceptedTypes(_DecBase):
                 define any remaining args. This allows for one subclass to define required match of all arguments
                 that decorator is applied to.
                 Default ``False``
+            opt_args_filter (DecArgEnum, optional): Determinses if only ``*args`` are validated. Default ``DecArgEnum.ALL``.
         """
         super().__init__(**kwargs)
         self._tc = None
@@ -884,6 +920,8 @@ class AcceptedTypes(_DecBase):
         else:
             self._kwargs = {}
         self._all_args = bool(kwargs.get("opt_all_args", False))
+        self._opt_args_filter = DecArgEnum(kwargs.get("opt_args_filter", DecArgEnum.All_ARGS))
+   
 
     def _get_formated_types(self, types: Union[Tuple[type], Set[type]]) -> str:
         # multi is list of set, actually one set in a list
@@ -930,9 +968,10 @@ class AcceptedTypes(_DecBase):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             self._wrapper_init(args=args, kwargs=kwargs)
-            arg_name_values = self._get_args_dict()
+            arg_name_values = self._get_filtered_args_dict(self._opt_args_filter)
             arg_keys = list(arg_name_values.keys())
             arg_keys_len = arg_keys.__len__()
+            i = 0
             if arg_keys_len is not len(self._types):
                 if self._all_args is False:
                     if self._is_opt_return():
@@ -942,7 +981,7 @@ class AcceptedTypes(_DecBase):
                     msg = msg + self._get_class_dec_err()
                     raise ValueError(msg)
             arg_type = zip(arg_keys, self._types)
-            i = 0
+
             for arg_info in arg_type:
                 key = arg_info[0]
                 result = self._validate(func=func, key=key,
