@@ -294,7 +294,7 @@ class _FnInstInfo(object):
         self._kw = OrderedDict()
         self._real_kw = OrderedDict()
         self._real_args = []
-        self._all_kw = None
+        self._cache = {}
         self._process_kwargs(args=fn_args, kwargs=fn_kwargs)
         self._process_args(args=fn_args)
 
@@ -378,12 +378,14 @@ class _FnInstInfo(object):
     # region Private Methods
     def _get_all_kw(self) -> OrderedDict[str, Any]:
         """Get all keword args combined into one dictionary"""
-        if not self._all_kw is None:
-            return self._all_kw
+        key = 'all_kw'
+        if key in self._cache:
+            return self._cache[key]
+
         kw = OrderedDict(**self.key_word_args)
         kw.update(self.kwargs)
-        self._all_kw = kw
-        return self._all_kw
+        self._cache[key]  = kw
+        return self._cache[key]
 
     def _missing_args_error(self, missing_names: List[str]):
         fn_name = self.name + "()"
@@ -403,6 +405,9 @@ class _FnInstInfo(object):
         Returns:
             Dict[str, Any]: Args as dictionary
         """
+        key = 'filter_arg'
+        if key in self._cache:
+            return self._cache[key]
         result = OrderedDict()
         if self.info.is_args is False:
             return result
@@ -410,7 +415,8 @@ class _FnInstInfo(object):
         for i, arg in enumerate(self.args):
             key = '*' + str(i + offset)
             result[key] = arg
-        return result
+        self._cache[key] = result
+        return self._cache[key]
 
     def get_filter_noargs(self) -> OrderedDict[str, Any]:
         """
@@ -428,7 +434,11 @@ class _FnInstInfo(object):
         Returns:
             Dict[str, Any]: dictionary of kwargs only
         """
-        return OrderedDict(**self.kwargs)
+        key = 'filtered_kwargs'
+        if key in self._cache:
+            return self._cache[key]
+        self._cache[key] = OrderedDict(self.kwargs)
+        return self._cache[key]
 
     def get_filtered_key_word_args(self) -> OrderedDict[str, Any]:
         """
@@ -437,7 +447,11 @@ class _FnInstInfo(object):
         Returns:
             Dict[str, Any]: dictionary of keyword args only
         """
-        return OrderedDict(**self.key_word_args)
+        key = 'filtered_key_word_args'
+        if key in self._cache:
+            return self._cache[key]
+        self._cache[key] = OrderedDict(self.key_word_args)
+        return self._cache[key]
 
     def get_all_args(self) -> OrderedDict[str, Any]:
         """
@@ -446,6 +460,9 @@ class _FnInstInfo(object):
         Returns:
             Dict[str, Any]: dictionay containing all args
         """
+        key = 'filtered_all_args'
+        if key in self._cache:
+            return self._cache[key]
         def get_pre_star_keys() -> Tuple[str]:
             pre_keys = tuple()
             if self.info.index_args > 0:
@@ -469,7 +486,8 @@ class _FnInstInfo(object):
                 result[key] = value
 
         result.update(self.kwargs)
-        return result
+        self._cache[key] = result
+        return self._cache[key]
     # endregion Public Methods
 
     # region Properties
