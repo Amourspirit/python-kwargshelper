@@ -25,7 +25,7 @@ class Formatter:
     @staticmethod
     def is_star_num(name: str) -> bool:
         """
-        Gets if arg name is a match to foramt ``*#``, eg: ``*0``, ``*1``, ``*2``.
+        Gets if arg name is a match to foramt ``'*#'``, eg: ``'*0'``, ``'*1'``, ``'*2'``.
 
         Args:
             name (str): Name to match
@@ -37,6 +37,19 @@ class Formatter:
         if m:
             return True
         return False
+    
+    @staticmethod
+    def get_star_num(num: int) -> str:
+        """
+        Gets a str in format of ``'*#'``, eg: ``'*0'``, ``'*1'``, ``'*2'``.
+
+        Args:
+            num (int): int to convert
+
+        Returns:
+            str: [str in format of ``'*#'``
+        """
+        return "*" + str(num)
 
     @staticmethod
     def get_missing_args_error_msg(missing_names: List[str], name: Optional[str] = ""):

@@ -48,6 +48,7 @@ class _CheckBase:
         result = Formatter.get_formated_names(names=t_names, kwargs=kwargs)
         return result
 
+
 class TypeChecker(_CheckBase):
     """Class that validates args match a given type"""
 
@@ -291,7 +292,7 @@ class RuleChecker(_CheckBase):
         return result
 
     def _is_valid_arg(self, arg: str) -> bool:
-        return arg != '..arg'
+        return not Formatter.is_star_num(name=arg)
 
     # endregion internal validation methods
 
@@ -310,9 +311,10 @@ class RuleChecker(_CheckBase):
         if self._len_all == 0:
             return True
         result = True
-        for arg in args:
+        for i, arg in enumerate(args):
+            key = Formatter.get_star_num(i)
             result = result & self._validate_rules_all(
-                key="..arg", field="arg", value=arg)
+                key=key, field="arg", value=arg)
             if result is False:
                 break
         if result is False:
@@ -338,9 +340,10 @@ class RuleChecker(_CheckBase):
         if self._len_any == 0:
             return True
         result = True
-        for arg in args:
+        for i, arg in enumerate(args):
+            key = Formatter.get_star_num(i)
             result = self._validate_rules_any(
-                key="..arg", field="arg", value=arg)
+                key=key, field="arg", value=arg)
             if result is False:
                 break
         if result is False:
@@ -414,9 +417,17 @@ class SubClassChecker(_CheckBase):
 
     def _get_formated_types(self) -> str:
         return super()._get_formated_types(types=self._types, conj='or')
-
+    
+    def _is_valid_arg(self, arg: Union[str, None]) -> bool:
+        if arg is None:
+            return False
+        return not Formatter.is_star_num(name=arg)
 
     def _validate_subclass(self, value: object,  key: Union[str, None] = None):
+        if self._is_valid_arg(arg=key):
+            _key = key
+        else:
+            _key = None
         result = True
         if self._instance_only is True:
             result = self._is_instance(value)
@@ -425,10 +436,10 @@ class SubClassChecker(_CheckBase):
             if not isclass(t) or not issubclass(t, self._types):
                 result = False
         if result is False and self._raise_error is True:
-            if key is None:
+            if _key is None:
                 msg = f"Arg Value is expected to be of a subclass of {self._get_formated_types()}."
             else:
-                msg = f"Arg '{key}' is expected to be of a subclass of {self._get_formated_types()}."
+                msg = f"Arg '{_key}' is expected to be of a subclass of {self._get_formated_types()}."
             raise TypeError(msg)
         return result
 
