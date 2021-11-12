@@ -1549,10 +1549,8 @@ class RuleCheckAny(_RuleBase):
             self._wrapper_init(args=args, kwargs=kwargs)
             arg_name_values = self._get_filtered_args_dict(
                 self._opt_args_filter)
-            # _args = self._get_args()
             is_valid = False
             try:
-                # is_valid = self._rulechecker.validate_any(*_args, **kwargs)
                 is_valid = self._rulechecker.validate_any(**arg_name_values)
             except RuleError as err:
                 if self._is_opt_return():
@@ -1605,6 +1603,7 @@ class RuleCheckAll(_RuleBase):
             opt_return (object, optional): Return value when decorator is invalid.
                 By default an error is rasied when validation fails. If ``opt_return`` is
                 supplied then it will be return when validation fails and no error will be raised.
+            opt_args_filter (DecArgEnum, optional): Determinses if only ``*args`` are validated. Default ``DecArgEnum.ALL``.
         """
         super().__init__(**kwargs)
         self._raise_error = bool(kwargs.get("raise_error", True))
@@ -1614,6 +1613,8 @@ class RuleCheckAll(_RuleBase):
             self._kwargs = {**kwargs}
         else:
             self._kwargs = {}
+        self._opt_args_filter = DecArgEnum(
+            kwargs.get("opt_args_filter", DecArgEnum.All_ARGS))
 
     def __call__(self, func):
         super()._call_init(func=func)
@@ -1621,10 +1622,11 @@ class RuleCheckAll(_RuleBase):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             self._wrapper_init(args=args, kwargs=kwargs)
-            _args = self._get_args()
+            arg_name_values = self._get_filtered_args_dict(
+                self._opt_args_filter)
             is_valid = False
             try:
-                is_valid = self._rulechecker.validate_all(*_args, **kwargs)
+                is_valid = self._rulechecker.validate_all(**arg_name_values)
             except RuleError as err:
                 if self._is_opt_return():
                     return self._opt_return
