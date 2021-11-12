@@ -131,6 +131,31 @@ class TestSubClassDecorators(unittest.TestCase):
         with self.assertRaises(ValueError):
             # too many args
            req_test(Foo(), Bar(), Foo(), first="1st", last="!", one=1, two=2)
+    
+    def test_subclass_opt_args_filter_named_args(self):
+        @SubClass((Foo, ObjFoo), Base, opt_args_filter=DecArgEnum.NAMED_ARGS)
+        def req_test(*args, first, last, **kwargs):
+            return [*args] + [first, last] + [v for _, v in kwargs.items()]
+
+        result = req_test(1, 2, 3, first=Foo(), last=Bar(), one=1, two=2)
+        assert result[0] == 1
+        with self.assertRaises(TypeError):
+           req_test(1, 2, 3, first=Foo(), last=1, one=1, two=2)
+
+    def test_subclass_opt_args_filter_no_args(self):
+        @SubClass((Foo, ObjFoo), Base, Foo, Base, opt_args_filter=DecArgEnum.NO_ARGS)
+        def req_test(*args, first, last, **kwargs):
+            return [*args] + [first, last] + [v for _, v in kwargs.items()]
+
+        result = req_test(1, 2, 3, first=Foo(), last=Bar(), one=Foo(), two=Bar())
+        assert result[0] == 1
+        with self.assertRaises(TypeError):
+            req_test(1, 2, 3, first=Foo(), last=Bar(), one=Foo(), two=ObjFoo())
+        with self.assertRaises(TypeError):
+            req_test(1, 2, 3, first=Foo(), last=ObjFoo(), one=Foo(), two=Bar())
+        with self.assertRaises(ValueError):
+            # too many args
+           req_test(1, 2, 3, first=Foo(), last=Bar(), one=Foo(), two=Bar(), three=Bar())
 
     def test_subclass_named_args(self):
         @SubClass((Foo, ObjFoo), Base)
