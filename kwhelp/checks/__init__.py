@@ -2,7 +2,7 @@
 from inspect import isclass
 from typing import Iterable, Iterator, List, Optional, Tuple, Type, Union
 from ..rules import IRule
-from ..helper import is_iterable
+from ..helper import is_iterable, Formatter
 from ..exceptions import RuleError
 
 
@@ -30,37 +30,6 @@ class _CheckBase:
             pass
         return type(obj)
 
-    def _get_formated_names(self, names: List[str], **kwargs) -> str:
-        """
-        Gets a formated string of a list of names
-
-        Args:
-            names (List[str]): List of names
-
-        Keyword Args:
-            conj (str, optional): Conjunction used to join list. Default ``and``.
-            wrapper (str, optional): String to prepend and append to each value. Default ``'``.
-
-        Returns:
-            str: formated such as ``'final' and 'end'`` or ``'one', 'final', and 'end'``
-        """
-        conj = kwargs.get("conj", "and")
-        wrapper = kwargs.get("wrapper", "'")
-        s = ""
-        names_len = len(names)
-        last_index = names_len - 1
-        for i, name in enumerate(names):
-            if i > 0:
-                if names_len > 2:
-                    s = s + ', '
-                else:
-                    s = s + ' '
-                if names_len > 1 and i == last_index:
-                    s = s + conj + ' '
-
-            s = s + "{0}{1}{0}".format(wrapper, name)
-        return s
-
     def _get_formated_types(self, types: Iterator[type], **kwargs) -> str:
         """
         Gets a formated string from a list of types.
@@ -76,7 +45,7 @@ class _CheckBase:
             str: Formated String
         """
         t_names = [t.__name__ for t in types]
-        result = self._get_formated_names(names=t_names, **kwargs)
+        result = Formatter.get_formated_names(names=t_names, kwargs=kwargs)
         return result
 
 class TypeChecker(_CheckBase):
