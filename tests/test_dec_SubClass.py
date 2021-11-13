@@ -5,9 +5,10 @@ if __name__ == '__main__':
     sys.path.append(os.path.realpath('.'))
 
 from enum import IntEnum, auto
-from kwhelp.decorator import SubClass, DecFuncEnum, RequireArgs, ReturnType
+from kwhelp.decorator import DecArgEnum, SubClass, DecFuncEnum, RequireArgs, ReturnType
 
-def gen_args(length:int) -> list:
+
+def gen_args(length: int) -> list:
     return [i for i in range(length)]
 
 
@@ -23,6 +24,7 @@ def gen_int_float(length: int) -> list:
         r.append(i + 0.7)
     return r
 
+
 class Color(IntEnum):
     RED = auto()
     GREEN = auto()
@@ -30,21 +32,39 @@ class Color(IntEnum):
 
     def __str__(self) -> str:
         return self._name_
+
+
 class Base:
     def __repr__(self) -> str:
         return self.__class__.__name__
+
     def __str__(self) -> str:
         return self.__class__.__name__
-class Foo(Base): pass
-class Bar(Foo): pass
-class FooBar(Bar): pass
+
+
+class Foo(Base):
+    pass
+
+
+class Bar(Foo):
+    pass
+
+
+class FooBar(Bar):
+    pass
+
+
 class Obj:
     def __repr__(self) -> str:
         return self.__class__.__name__
 
     def __str__(self) -> str:
         return self.__class__.__name__
-class ObjFoo(Obj): pass
+
+
+class ObjFoo(Obj):
+    pass
+
 
 class TestSubClassDecorators(unittest.TestCase):
 
@@ -60,7 +80,6 @@ class TestSubClassDecorators(unittest.TestCase):
         result = gen_int_float(20)
         for i, num in enumerate(ex):
             assert result[i] == num
-        
 
     def test_subclass_gen(self):
         @SubClass((Foo, ObjFoo), Base)
@@ -83,7 +102,60 @@ class TestSubClassDecorators(unittest.TestCase):
         with self.assertRaises(TypeError):
             result = req_test(one=Obj(), two=Bar())
         with self.assertRaises(ValueError):
+            # too many args
             result = req_test(one=Obj(), two=Bar(), three=Bar())
+
+    def test_subclass_opt_args_filter_kwargs(self):
+        @SubClass((Foo, ObjFoo), Base, opt_args_filter=DecArgEnum.KWARGS)
+        def req_test(*args, first, last, **kwargs):
+            return [*args] + [first, last] + [v for _, v in kwargs.items()]
+
+        result = req_test(1, 2, 3, first="1st", last="!", one=Foo(), two=Bar())
+        assert result[0] == 1
+        with self.assertRaises(TypeError):
+            req_test(1, 2, 3, first="1st",
+                              last="!", one='one', two=Bar())
+        with self.assertRaises(ValueError):
+            # too many args
+            req_test(1, 2, 3, first="1st", last="!", one=Foo(), two=Bar(), three=Foo())
+
+    def test_subclass_opt_args_filter_args(self):
+        @SubClass((Foo, ObjFoo), Base, opt_args_filter=DecArgEnum.ARGS)
+        def req_test(*args, first, last, **kwargs):
+            return [*args] + [first, last] + [v for _, v in kwargs.items()]
+
+        result = req_test(Foo(), Bar(), first="1st", last="!", one=1, two=2)
+        assert isinstance(result[0], Foo)
+        with self.assertRaises(TypeError):
+            req_test(Foo(), 1, first="1st", last="!", one=1, two=2)
+        with self.assertRaises(ValueError):
+            # too many args
+           req_test(Foo(), Bar(), Foo(), first="1st", last="!", one=1, two=2)
+    
+    def test_subclass_opt_args_filter_named_args(self):
+        @SubClass((Foo, ObjFoo), Base, opt_args_filter=DecArgEnum.NAMED_ARGS)
+        def req_test(*args, first, last, **kwargs):
+            return [*args] + [first, last] + [v for _, v in kwargs.items()]
+
+        result = req_test(1, 2, 3, first=Foo(), last=Bar(), one=1, two=2)
+        assert result[0] == 1
+        with self.assertRaises(TypeError):
+           req_test(1, 2, 3, first=Foo(), last=1, one=1, two=2)
+
+    def test_subclass_opt_args_filter_no_args(self):
+        @SubClass((Foo, ObjFoo), Base, Foo, Base, opt_args_filter=DecArgEnum.NO_ARGS)
+        def req_test(*args, first, last, **kwargs):
+            return [*args] + [first, last] + [v for _, v in kwargs.items()]
+
+        result = req_test(1, 2, 3, first=Foo(), last=Bar(), one=Foo(), two=Bar())
+        assert result[0] == 1
+        with self.assertRaises(TypeError):
+            req_test(1, 2, 3, first=Foo(), last=Bar(), one=Foo(), two=ObjFoo())
+        with self.assertRaises(TypeError):
+            req_test(1, 2, 3, first=Foo(), last=ObjFoo(), one=Foo(), two=Bar())
+        with self.assertRaises(ValueError):
+            # too many args
+           req_test(1, 2, 3, first=Foo(), last=Bar(), one=Foo(), two=Bar(), three=Bar())
 
     def test_subclass_named_args(self):
         @SubClass((Foo, ObjFoo), Base)
@@ -104,7 +176,6 @@ class TestSubClassDecorators(unittest.TestCase):
             result = req_test(one=Obj(), two=Bar())
         with self.assertRaises(ValueError):
             result = req_test(one=Obj(), two=Bar(), three=Bar())
-
 
     def test_subclass_opt_all_args(self):
         @SubClass((float, int), opt_all_args=True)
@@ -151,7 +222,7 @@ class TestSubClassDecorators(unittest.TestCase):
         args.append(12.4)
         with self.assertRaises(TypeError):
             sum_num(*args)
-        args = [12,3, 2.1] + int_args
+        args = [12, 3, 2.1] + int_args
         with self.assertRaises(TypeError):
             sum_num(*args)
         with self.assertRaises(TypeError):
@@ -174,7 +245,7 @@ class TestSubClassDecorators(unittest.TestCase):
             result = req_test(two=Bar())
         with self.assertRaises(TypeError):
             result = req_test(one=Obj(), two=Bar())
-    
+
     def test_subclass_instance_only_false(self):
         @SubClass((Foo, ObjFoo), Base, opt_inst_only=False)
         def req_test(**kwargs):
@@ -241,7 +312,7 @@ class TestSubClassDecorators(unittest.TestCase):
         assert result == False
 
     def test_subclass_optional_args(self):
-        @SubClass(Foo,FooBar, Obj)
+        @SubClass(Foo, FooBar, Obj)
         def req_test(first, second=FooBar(), third=Obj()):
             return (first, second, third)
 
@@ -279,7 +350,8 @@ class TestSubClassDecorators(unittest.TestCase):
         @SubClass(Base, Base, Base, (Bar, Obj), (FooBar, Obj), Base)
         def req_test(*args, first, second=ObjFoo(), third=Bar()):
             return [*args] + [first, second, third]
-        result = req_test(Foo(), Bar(), FooBar(), first=ObjFoo(), second=Obj(), third=Foo())
+        result = req_test(Foo(), Bar(), FooBar(),
+                          first=ObjFoo(), second=Obj(), third=Foo())
         assert str(result[0]) == 'Foo'
         assert str(result[1]) == 'Bar'
         assert str(result[2]) == 'FooBar'
@@ -391,7 +463,8 @@ class TestSubClassDecorators(unittest.TestCase):
         assert result[3] == Color.BLUE
         assert str(result[4]) == "FooBar"
         assert str(result[5]) == "ObjFoo"
-        result = myfunc(Bar(), Base(), Obj(), Color.RED, FooBar(), last=ObjFoo())
+        result = myfunc(Bar(), Base(), Obj(), Color.RED,
+                        FooBar(), last=ObjFoo())
         assert str(result[0]) == "Bar"
         assert str(result[1]) == "Base"
         assert str(result[2]) == "Obj"
@@ -595,7 +668,7 @@ class TestSubClassDecoratorsClass(unittest.TestCase):
                 return [*args] + [first, second, third]
         r = Runner()
         result = r.req_test(Foo(), Bar(), FooBar(),
-                        first=ObjFoo(), second=Obj(), third=Foo())
+                            first=ObjFoo(), second=Obj(), third=Foo())
         assert str(result[0]) == 'Foo'
         assert str(result[1]) == 'Bar'
         assert str(result[2]) == 'FooBar'
@@ -610,7 +683,7 @@ class TestSubClassDecoratorsClass(unittest.TestCase):
         assert str(result[4]) == 'ObjFoo'
         assert str(result[5]) == 'Bar'
         result = r.req_test(Foo(), Bar(), FooBar(),
-                          first=ObjFoo(), third=Foo())
+                            first=ObjFoo(), third=Foo())
         assert str(result[0]) == 'Foo'
         assert str(result[1]) == 'Bar'
         assert str(result[2]) == 'FooBar'
@@ -715,7 +788,7 @@ class TestSubClassDecoratorsClass(unittest.TestCase):
         assert str(result[4]) == "FooBar"
         assert str(result[5]) == "ObjFoo"
         result = r.myfunc(Bar(), Base(), Obj(), Color.RED,
-                        FooBar(), last=ObjFoo())
+                          FooBar(), last=ObjFoo())
         assert str(result[0]) == "Bar"
         assert str(result[1]) == "Base"
         assert str(result[2]) == "Obj"
@@ -769,15 +842,17 @@ class TestSubClassDecoratorsClass(unittest.TestCase):
             result = Runner.req_test(two=Bar())
         with self.assertRaises(TypeError):
             result = Runner.req_test(one=Obj(), two=Bar())
-    
+
     def test_subclass_property(self):
         class Runner:
             @SubClass(str, ftype=DecFuncEnum.METHOD_CLASS)
             def __init__(self, test_value):
                 self._test = test_value
+
             @property
             def test(self):
                 return self._test
+
             @test.setter
             @SubClass(str, ftype=DecFuncEnum.PROPERTY_CLASS)
             def test(self, value):
@@ -788,6 +863,7 @@ class TestSubClassDecoratorsClass(unittest.TestCase):
         assert r.test == "world"
         with self.assertRaises(TypeError):
             r.test = 1
+
 
 if __name__ == '__main__':
     unittest.main()

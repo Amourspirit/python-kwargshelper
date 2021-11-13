@@ -7,6 +7,7 @@ Includes features:
 
     * :doc:`/source/general/dec_feature/ftype`
     * :doc:`/source/general/dec_feature/opt_return`
+    * :doc:`/source/general/dec_feature/opt_args_filter`
     * :doc:`/source/general/dec_feature/raise_error`
 
 Decorating with ``*args``
@@ -112,6 +113,37 @@ Rules dictate that if a type is not ``int`` or ``float`` then an error will be r
     Expected at least one of the following rules to match: RuleIntPositive, RuleFloatPositive.
     RuleCheckAny decorator error.
     Inner Error Message: TypeError: Argument Error: 'limit' is expecting type of 'int'. Got type of 'str'
+
+Opton opt_args_filter
+---------------------
+
+The arguments are validated by :py:class:`~.decorator.RuleCheckAny` can be filtered by setting ``opt_args_filter`` option. 
+
+For more examples see :doc:`/source/general/dec_feature/opt_args_filter`.
+
+In the following example all ``*args`` must be positive ``int`` or postive ``float``.
+``opt_args_filter=DecArgEnum.ARGS`` filters ``RuleCheckAll`` to only process ``*args``.
+
+.. code-block:: python
+
+    from kwhelp.decorator import RuleCheckAny, DecArgEnum
+    from kwhelp import rules
+
+    @RuleCheckAny(rules.RuleIntPositive, rules.RuleFloatPositive, opt_args_filter=DecArgEnum.ARGS)
+    def foo(*args, first, last="!", **kwargs):
+        return [*args] + [first, last] + [v for _, v in kwargs.items()]
+
+.. code-block:: python
+
+    >>> result = foo(101.11, 223.77, 778, 887, first="1st", one='one', two="2nd")
+    >>> print(result)
+    [101.11, 223.77, 778, 887, '1st', '!', 'one', '2nd']
+    >>> result = foo(101.11, -223.77, 778, 887, first="1st", one='one', two="2nd")
+    kwhelp.exceptions.RuleError: RuleError: 'foo' error.
+    Rule 'RuleIntPositive' Failed validation.
+    Expected at least one of the following rules to match: RuleIntPositive, RuleFloatPositive.
+    RuleCheckAny decorator error.
+    Inner Error Message: TypeError: Argument Error: 'arg' is expecting type of 'int'. Got type of 'float'
 
 Included Rules
 --------------

@@ -5,7 +5,7 @@ if __name__ == '__main__':
     sys.path.append(os.path.realpath('.'))
 
 from enum import IntEnum, auto
-from kwhelp.decorator import AcceptedTypes, DecFuncEnum, RequireArgs, ReturnType
+from kwhelp.decorator import AcceptedTypes, DecFuncEnum, DecArgEnum, RequireArgs, ReturnType
 
 
 def gen_int_float(length: int) -> list:
@@ -21,6 +21,9 @@ def gen_int_float(length: int) -> list:
     return r
 
 
+def gen_args(length: int) -> list:
+    return [i for i in range(length)]
+
 class Color(IntEnum):
     RED = auto()
     GREEN = auto()
@@ -31,6 +34,12 @@ class Color(IntEnum):
 
 
 class TestAcceptedTypesDecorators(unittest.TestCase):
+    def test_gen_args(self):
+        args = gen_args(3)
+        assert args[0] == 0
+        assert args[1] == 1
+        assert args[2] == 2
+
     def test_gen_int_float(self):
         ex = [0.3, 1.7, 2, 3.3, 4, 5.7, 6.3, 7.7, 8, 9.3, 10,
               11.7, 12.3, 13.7, 14, 15.3, 16, 17.7, 18.3, 19.7]
@@ -571,6 +580,54 @@ class TestAcceptedTypesClassDecorators(unittest.TestCase):
         result = b.req_test(one=4.5, two=2)
         assert result == False
 
+class TestAcceptedTypesClassFilter(unittest.TestCase):
+   
+    def test_opt_args_only(self):
+        # opt_args_only: only test *args
+        @AcceptedTypes(int, int, int, opt_args_filter=DecArgEnum.ARGS)
+        def foo(*args, first, second, **kwargs):
+            result = [*args]
+            result = result + [first, second]
+            result = result + [v for _, v in kwargs.items()]
+            return result
+        args_len = 3
+        args_lst = [*gen_args(args_len)]
+        result = foo(*args_lst, first='1st', second='2nd', one='1', two='2')
+        assert result[0] == 0
+        args_len = 4
+        args_lst = [*gen_args(args_len)]
+        with self.assertRaises(ValueError):
+            foo(*args_lst, first='1st', second='2nd', one='1', two='2')
+
+    def test_opt_all_args_opt_args_only(self):
+        # opt_all_args then the last subclass type passed into constructor will validate all others
+        # opt_args_only: only *args are validated
+        @AcceptedTypes(int, opt_args_filter=DecArgEnum.ARGS, opt_all_args=True)
+        def foo(*args, first, second, **kwargs):
+            result = [*args]
+            result = result + [first, second]
+            result = result + [v for _, v in kwargs.items()]
+            return result
+        args_len = 22
+        args_lst = [*gen_args(args_len)]
+        result = foo(*args_lst, first='1st', second='2nd', one='1', two='2')
+        assert result[0] == 0
+        assert len(result) == 26
+        
+    def test_opt_kwarg_only(self):
+        # opt_kwarg_only: only **kwargs are validated
+        @AcceptedTypes(str, str, opt_args_filter=DecArgEnum.KWARGS)
+        def foo(*args, first, second, **kwargs):
+            result = [*args]
+            result = result + [first, second]
+            result = result + [v for _, v in kwargs.items()]
+            return result
+        args_len = 3
+        args_lst = [*gen_args(args_len)]
+        result = foo(*args_lst, first='1st', second='2nd', one='1', two='2')
+        assert result[0] == 0
+        with self.assertRaises(TypeError):
+            foo(*args_lst, first='1st', second='2nd', one=1, two='2')
 
 if __name__ == '__main__':
     unittest.main()

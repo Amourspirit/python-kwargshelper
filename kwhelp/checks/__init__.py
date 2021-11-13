@@ -2,7 +2,7 @@
 from inspect import isclass
 from typing import Iterable, Iterator, List, Optional, Tuple, Type, Union
 from ..rules import IRule
-from ..helper import is_iterable
+from ..helper import is_iterable, Formatter
 from ..exceptions import RuleError
 
 
@@ -29,55 +29,6 @@ class _CheckBase:
         except TypeError:
             pass
         return type(obj)
-
-    def _get_formated_names(self, names: List[str], **kwargs) -> str:
-        """
-        Gets a formated string of a list of names
-
-        Args:
-            names (List[str]): List of names
-
-        Keyword Args:
-            conj (str, optional): Conjunction used to join list. Default ``and``.
-            wrapper (str, optional): String to prepend and append to each value. Default ``'``.
-
-        Returns:
-            str: formated such as ``'final' and 'end'`` or ``'one', 'final', and 'end'``
-        """
-        conj = kwargs.get("conj", "and")
-        wrapper = kwargs.get("wrapper", "'")
-        s = ""
-        names_len = len(names)
-        last_index = names_len - 1
-        for i, name in enumerate(names):
-            if i > 0:
-                if names_len > 2:
-                    s = s + ', '
-                else:
-                    s = s + ' '
-                if names_len > 1 and i == last_index:
-                    s = s + conj + ' '
-
-            s = s + "{0}{1}{0}".format(wrapper, name)
-        return s
-
-    def _get_formated_types(self, types: Iterator[type], **kwargs) -> str:
-        """
-        Gets a formated string from a list of types.
-
-        Args:
-            types (Iterator[type]): Types to create fromated string.
-
-        Keyword Args:
-            conj (str, optional): Conjunction used to join list. Default ``and``.
-            wrapper (str, optional): String to prepend and append to each value. Default ``'``.
-
-        Returns:
-            str: Formated String
-        """
-        t_names = [t.__name__ for t in types]
-        result = self._get_formated_names(names=t_names, **kwargs)
-        return result
 
 class TypeChecker(_CheckBase):
     """Class that validates args match a given type"""
@@ -107,11 +58,17 @@ class TypeChecker(_CheckBase):
         self._raise_error: bool = bool(kwargs.get('raise_error', True))
         self._type_instance_check: bool = bool(
             kwargs.get('type_instance_check', True))
-
-    def _get_formated_types(self) -> str:
-        return super()._get_formated_types(types=self._types, conj='or')
+    
+    def _is_valid_arg(self, arg: Union[str, None]) -> bool:
+        if arg is None:
+            return False
+        return not Formatter.is_star_num(name=arg)
 
     def _validate_type(self, value: object,  key: Union[str, None] = None):
+        if self._is_valid_arg(arg=key):
+            _key = key
+        else:
+            _key = None
         def _is_type_instance(_types: Iterable[type], _value):
             result = False
             for t in _types:
@@ -133,10 +90,11 @@ class TypeChecker(_CheckBase):
             else:
                 result = False
                 if self._raise_error is True:
-                    if key is None:
-                        msg = f"Arg Value is expected to be of {self._get_formated_types()} but got '{type(value).__name__}'."
+                    t_str = Formatter.get_formated_types(types=self._types, conj='or')
+                    if _key is None:
+                        msg = f"Arg Value is expected to be of {t_str} but got '{type(value).__name__}'."
                     else:
-                        msg = f"Arg '{key}' is expected to be of {self._get_formated_types()} but got '{type(value).__name__}'."
+                        msg = f"Arg '{_key}' is expected to be of {t_str} but got '{type(value).__name__}'."
                     raise TypeError(msg)
         return result
 
@@ -322,7 +280,7 @@ class RuleChecker(_CheckBase):
         return result
 
     def _is_valid_arg(self, arg: str) -> bool:
-        return arg != '..arg'
+        return not Formatter.is_star_num(name=arg)
 
     # endregion internal validation methods
 
@@ -341,9 +299,10 @@ class RuleChecker(_CheckBase):
         if self._len_all == 0:
             return True
         result = True
-        for arg in args:
+        for i, arg in enumerate(args):
+            key = Formatter.get_star_num(i)
             result = result & self._validate_rules_all(
-                key="..arg", field="arg", value=arg)
+                key=key, field="arg", value=arg)
             if result is False:
                 break
         if result is False:
@@ -369,9 +328,10 @@ class RuleChecker(_CheckBase):
         if self._len_any == 0:
             return True
         result = True
-        for arg in args:
+        for i, arg in enumerate(args):
+            key = Formatter.get_star_num(i)
             result = self._validate_rules_any(
-                key="..arg", field="arg", value=arg)
+                key=key, field="arg", value=arg)
             if result is False:
                 break
         if result is False:
@@ -443,11 +403,17 @@ class SubClassChecker(_CheckBase):
         self._raise_error: bool = bool(kwargs.get('raise_error', True))
         self._instance_only: bool = bool(kwargs.get('opt_inst_only', True))
 
-    def _get_formated_types(self) -> str:
-        return super()._get_formated_types(types=self._types, conj='or')
-
+    
+    def _is_valid_arg(self, arg: Union[str, None]) -> bool:
+        if arg is None:
+            return False
+        return not Formatter.is_star_num(name=arg)
 
     def _validate_subclass(self, value: object,  key: Union[str, None] = None):
+        if self._is_valid_arg(arg=key):
+            _key = key
+        else:
+            _key = None
         result = True
         if self._instance_only is True:
             result = self._is_instance(value)
@@ -456,10 +422,11 @@ class SubClassChecker(_CheckBase):
             if not isclass(t) or not issubclass(t, self._types):
                 result = False
         if result is False and self._raise_error is True:
-            if key is None:
-                msg = f"Arg Value is expected to be of a subclass of {self._get_formated_types()}."
+            t_str = Formatter.get_formated_types(types=self._types, conj='or')
+            if _key is None:
+                msg = f"Arg Value is expected to be of a subclass of {t_str}."
             else:
-                msg = f"Arg '{key}' is expected to be of a subclass of {self._get_formated_types()}."
+                msg = f"Arg '{_key}' is expected to be of a subclass of {t_str}."
             raise TypeError(msg)
         return result
 

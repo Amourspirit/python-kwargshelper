@@ -3,7 +3,7 @@ if __name__ == '__main__':
     import os
     import sys
     sys.path.append(os.path.realpath('.'))
-from kwhelp.decorator import DecFuncEnum, RuleCheckAll
+from kwhelp.decorator import DecArgEnum, DecFuncEnum, RuleCheckAll
 from kwhelp import rules
 from kwhelp.exceptions import RuleError
 
@@ -33,6 +33,70 @@ class TestRuleCheckAll(unittest.TestCase):
             foo(first=-1, last=100, hours=12, years=22)
         with self.assertRaises(RuleError):
             foo(first=1, last=100, hours=-12, years=22)
+
+    def test_rule_check_all_opt_args_filter_kwargs(self):
+        # test only **kwargs
+        @RuleCheckAll(rules.RuleInt, rules.RuleIntPositive, opt_args_filter=DecArgEnum.KWARGS)
+        def foo(*args, first, last, **kwargs):
+            return [*args] + [first, last] + [v for _, v in kwargs.items()]
+        result = foo(first="Yes", last="22", hours=12, years=22)
+        assert result[0] == "Yes"
+        assert result[1] == "22"
+        assert result[2] == 12
+        assert result[3] == 22
+        with self.assertRaises(RuleError):
+            foo(first=1, last=100, hours=12, years="22")
+        with self.assertRaises(RuleError):
+            foo(first="True", last=100, hours=-12, years=22)
+
+    def test_rule_check_all_opt_args_filter_args(self):
+        # test only **kwargs
+        @RuleCheckAll(rules.RuleStrNotNullEmptyWs, opt_args_filter=DecArgEnum.ARGS)
+        def foo(*args, first, last, **kwargs):
+            return [*args] + [first, last] + [v for _, v in kwargs.items()]
+        result = foo("the", "quick", "brown", "fox",
+                     first=1, last=100, hours=12.5, years=22)
+        assert result[0] == "the"
+        with self.assertRaises(RuleError):
+            foo("the", "", "brown", "fox",
+                first=1, last=100, hours=12.5, years=22)
+        with self.assertRaises(RuleError):
+            foo("the", "quick", " ", "fox",
+                first=1, last=100, hours=12.5, years=22)
+
+    def test_rule_check_all_opt_args_filter_named(self):
+        # test only **kwargs
+        @RuleCheckAll(rules.RuleInt, rules.RuleIntPositive, opt_args_filter=DecArgEnum.NAMED_ARGS)
+        def foo(*args, first, last, **kwargs):
+            return [*args] + [first, last] + [v for _, v in kwargs.items()]
+        result = foo("the", "quick", "brown", "fox",
+                     first=10, last=12, hours='Hello', years='World')
+        assert result[4] == 10
+        assert result[5] == 12
+        assert result[6] == "Hello"
+        assert result[7] == "World"
+        with self.assertRaises(RuleError):
+            foo("a", "b", "c", first="one", last=100, hours=12, years="22")
+        with self.assertRaises(RuleError):
+            foo(first=10, last="!", hours=-12, years=22)
+
+
+    def test_rule_check_all_opt_args_filter_no_args(self):
+      # test only **kwargs
+        @RuleCheckAll(rules.RuleInt, rules.RuleIntPositive, opt_args_filter=DecArgEnum.NO_ARGS)
+        def foo(*args, first, last, **kwargs):
+            return [*args] + [first, last] + [v for _, v in kwargs.items()]
+        result = foo("the", "quick", "brown", "fox", first=10, last=12, hours=14, years=16)
+        assert result[4] == 10
+        assert result[5] == 12
+        assert result[6] == 14
+        assert result[7] == 16
+        with self.assertRaises(RuleError):
+            foo("the", "quick", "brown", "fox",
+               first=10, last="12", hours=14, years=16)
+        with self.assertRaises(RuleError):
+            foo("the", "quick", "brown", "fox",
+               first=10, last=12, hours=14, years=-12)
 
     def test_rule_check_all_opt_return(self):
         @RuleCheckAll(rules.RuleFloatPositive, opt_return=None)

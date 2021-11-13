@@ -7,13 +7,14 @@ Includes features:
 
     * :doc:`/source/general/dec_feature/ftype`
     * :doc:`/source/general/dec_feature/opt_return`
+    * :doc:`/source/general/dec_feature/opt_args_filter`
     * :doc:`/source/general/dec_feature/raise_error`
     * :doc:`/source/general/dec_feature/type_instance_check`
 
 Decorating with ``*args``
 -------------------------
 
-This example requires that all args positive ``int`` or positive ``float``.
+This example requires that all args ``int`` or ``float``.
 
 .. code-block:: python
 
@@ -83,4 +84,64 @@ Types dictate that if a type is not ``int`` or ``float`` then an error will be r
 
     >>> result = speed_msg(speed=45, limit="Fast")
     TypeError: Arg 'limit' is expected to be of 'float' or 'int' but got 'str'.
+    TypeCheck decorator error.
+
+Opton opt_args_filter
+---------------------
+
+The arguments are validated by :py:class:`~.decorator.TypeCheck` can be filtered by setting ``opt_args_filter`` option. 
+
+For more examples see :doc:`/source/general/dec_feature/opt_args_filter`.
+
+Single TypeCheck
+++++++++++++++++
+
+In the following example all ``*args`` must of of type ``float`` or ``int``.
+``opt_args_filter=DecArgEnum.ARGS`` filters ``TypeCheck`` to only process ``*args``.
+
+.. code-block:: python
+
+    from kwhelp.decorator import TypeCheck, DecArgEnum
+
+    @TypeCheck(float, int, opt_args_filter=DecArgEnum.ARGS)
+    def sum_num(*args, msg: str):
+        _sum = sum(args)
+        return msg + str(_sum)
+
+.. code-block:: python
+
+    >>> result = sum_num(102, 2.45, 34.55, -24, 5.8, -6, msg='Total: ')
+    >>> Total: 114.8
+    Total: 21
+    >>> sum_num(102, "two", 34.55, -24, 5.8, -6, msg='Total: ')
+    TypeError: Arg Value is expected to be of 'float' or 'int' but got 'str'.
+    TypeCheck decorator error.
+
+
+Multi TypeCheck
++++++++++++++++
+
+By combining ``TypeCheck`` decorators with different ``opt_args_filter`` settings
+it is possible to required diferent types for ``*args``, ``**kwargs`` and Named Args.
+
+.. code-block:: python
+
+    from kwhelp.decorator import TypeCheck, DecArgEnum
+
+    @TypeCheck(str, opt_args_filter=DecArgEnum.NAMED_ARGS)
+    @TypeCheck(float, int, opt_args_filter=DecArgEnum.ARGS)
+    def sum_num(*args, msg: str):
+        _sum = sum(args)
+        return msg + str(_sum)
+
+.. code-block:: python
+
+    >>> result = sum_num(102, 2.45, 34.55, -24, 5.8, -6, msg='Total: ')
+    >>> Total: 114.8
+    Total: 21
+    >>> sum_num(102, "two", 34.55, -24, 5.8, -6, msg='Total: ')
+    TypeError: Arg Value is expected to be of 'float' or 'int' but got 'str'.
+    TypeCheck decorator error.
+    >>> sum_num(102, 2.45, 34.55, -24, 5.8, -6, msg=22)
+    TypeError: Arg 'msg' is expected to be of 'str' but got 'int'.
     TypeCheck decorator error.

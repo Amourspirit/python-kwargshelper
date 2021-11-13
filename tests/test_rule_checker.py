@@ -352,27 +352,27 @@ class TestRuleDecoratorsClass(unittest.TestCase):
             instance.rule_test(start="1", middle=2, end=".")
 
     def test_rules_all_kw(self):
-        class Internal:
+        class Runner:
             @RuleCheckAllKw(arg_info={"start": 0, "middle": 0, "end": 1},
                             rules=[(rules.RuleStrNotNullEmptyWs,), (rules.RuleIntZero,)],
                             ftype=DecFuncEnum.METHOD)
             def rule_test(self, start, middle, end) -> str:
                 return f"{start} {middle} {end}"
 
-        instance = Internal()
-        result = instance.rule_test("1", "2", 0)
+        r = Runner()
+        result = r.rule_test("1", "2", 0)
         assert result == "1 2 0"
 
         with self.assertRaises(RuleError):
-            instance.rule_test("1", "2", 1)
+            r.rule_test("1", "2", 1)
         with self.assertRaises(RuleError):
-            instance.rule_test("1", "2", "0")
+            r.rule_test("1", "2", "0")
         with self.assertRaises(RuleError):
-            instance.rule_test(None, "2", 0)
+            r.rule_test(None, "2", 0)
         with self.assertRaises(RuleError):
-            instance.rule_test(22, "2", 0)
+            r.rule_test(22, "2", 0)
         with self.assertRaises(RuleError):
-            instance.rule_test("1", 2, 1)
+            r.rule_test("1", 2, 1)
 
     def test_rules_any_kw_empty_sub_rule(self):
         class Internal:
@@ -389,7 +389,7 @@ class TestRuleDecoratorsClass(unittest.TestCase):
         class Internal:
             @RuleCheckAllKw(arg_info={"start": rules.RuleStrNotNullEmptyWs,
                                     "middle": (rules.RuleStrNotNullEmptyWs,),
-                                    "end": (rules.RuleIntZero,)}, raise_error=False)
+                                    "end": (rules.RuleIntZero,)}, raise_error=False, ftype=DecFuncEnum.METHOD)
             def rule_test(self, start, middle, end) -> str:
                 return f"{start} {middle} {end}"
 

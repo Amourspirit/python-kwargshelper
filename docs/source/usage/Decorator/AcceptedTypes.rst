@@ -9,6 +9,7 @@ Includes features:
     * :doc:`/source/general/dec_feature/type_instance_check`
     * :doc:`/source/general/dec_feature/ftype`
     * :doc:`/source/general/dec_feature/opt_all_args`
+    * :doc:`/source/general/dec_feature/opt_args_filter`
     * :doc:`/source/general/dec_feature/opt_return`
 
 
@@ -219,6 +220,8 @@ Option opt_all_args
 ``opt_all_args`` argument allows the last class type passed into :py:class:`~.decorator.AcceptedTypes` to
 validate all remaining arguments of wrapped function.
 
+For more examples see :doc:`/source/general/dec_feature/opt_all_args`.
+
 .. code-block:: python
 
     @AcceptedTypes(float, (float, int), opt_all_args=True)
@@ -238,6 +241,31 @@ The first arg of ``sum_num`` must be a ``float``. Remaining args can be ``float`
     TypeError: Arg in 7th position of is expected to be of 'float' or 'int' but got 'str'.
     AcceptedTypes decorator error.
 
+Opton opt_args_filter
+---------------------
+
+The arguments are validated by :py:class:`~.decorator.AcceptedTypes` can be filtered by setting ``opt_args_filter`` option. 
+
+For more examples see :doc:`/source/general/dec_feature/opt_args_filter`.
+
+In the following example all ``*args`` must of of type ``float`` or ``int``.
+``opt_args_filter=DecArgEnum.ARGS`` filters ``AcceptedTypes`` to only process ``*args``.
+
+.. code-block:: python
+
+    from kwhelp.decorator import AcceptedTypes, DecArgEnum
+
+    @AcceptedTypes((float, int), opt_all_args=True, opt_args_filter=DecArgEnum.ARGS)
+    def sum_num(*args, msg: str):
+        _sum = sum(args)
+        return msg + str(_sum)
+
+.. code-block:: python
+
+    >>> result = sum_num(1, 2, 3, 4, 5, 6, msg='Total: ')
+    >>> print(result)
+    Total: 21
+
 Combined Decorators
 -------------------
 
@@ -248,7 +276,7 @@ The following example limits how many args are allowed by applying
 
 .. code-block:: python
 
-    from kwhelp.decorator import SubClass, ArgsMinMax
+    from kwhelp.decorator import AcceptedTypes, ArgsMinMax
 
     @ArgsMinMax(max=6)
     @AcceptedTypes(float, (float, int), opt_all_args=True)
@@ -263,3 +291,30 @@ The following example limits how many args are allowed by applying
     ValueError: Invalid number of args pass into 'sum_num'.
     Expected max of '6'. Got '7' args.
     ArgsMinMax decorator error.
+
+
+Multiple AcceptedTypes
+----------------------
+
+Multiple :py:class:`~.decorator.AcceptedTypes` can be applied to a single function.
+
+.. code-block:: python
+
+    from kwhelp.decorator import AcceptedTypes, DecArgEnum
+
+    @AcceptedTypes(str, opt_all_args=True, opt_args_filter=DecArgEnum.ARGS)
+    @AcceptedTypes((int, float), opt_all_args=True, opt_args_filter=DecArgEnum.NO_ARGS)
+    def foo(*args, first, last=1001, **kwargs):
+        return [*args] + [first, last] + [v for _, v in kwargs.items()]
+
+.. code-block:: python
+
+    >>> result = foo("a", "b", "c", first=-100, one=101.11, two=22.22, third=33.33)
+    >>> print(result)
+    ['a', 'b', 'c', -100, 1001, 101.11, 22.22, 33.33]
+    >>> result = foo("a", "b", 1, first=-100, one=101.11, two=22.22, third=33.33)
+    TypeError: Arg in 3rd position of is expected to be of 'str' but got 'int'.
+    AcceptedTypes decorator error.
+    >>> result = foo("a", "b", "c", first=-100, one=101.11, two="2nd", third=33.33)
+    TypeError: Arg 'two' in 4th position is expected to be of 'float' or 'int' but got 'str'.
+    AcceptedTypes decorator error.
