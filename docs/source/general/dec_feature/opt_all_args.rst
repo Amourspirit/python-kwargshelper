@@ -1,7 +1,7 @@
 opt_all_args
 ============
 
-``opt_all_args`` argument allows the last class type passed into :py:class:`~.decorator.AcceptedTypes` to
+``opt_all_args`` argument allows the last paramater passed into ``*args`` to
 validate all remaining arguments of wrapped function.
 
 .. code-block:: python

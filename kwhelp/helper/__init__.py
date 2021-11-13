@@ -1,7 +1,7 @@
 # coding: utf-8
-from collections.abc import Iterator
 from inspect import isclass
-from typing import Iterable, Tuple
+import re
+from typing import Iterable, List, Optional, Iterator
 
 class Singleton(type):
     """Singleton abstrace class"""
@@ -18,6 +18,135 @@ class Singleton(type):
 class NoThing(metaclass=Singleton):
     '''Singleton Class to mimic null'''
 
+class Formatter:
+    """String Fromat Methods"""
+    _rx_star = re.compile("^\*(\d*)$")
+
+    @staticmethod
+    def is_star_num(name: str) -> bool:
+        """
+        Gets if arg name is a match to foramt ``'*#'``, eg: ``'*0'``, ``'*1'``, ``'*2'``.
+
+        Args:
+            name (str): Name to match
+
+        Raises:
+            TypeError: if name is not a ``str`` value.
+
+        Returns:
+            bool: ``True`` if ``arg_name`` is a match; Otherwise, ``False``
+        """
+        if not isinstance(name, str):
+            raise TypeError("'is_star_num()' error, arg 'name` must be of type `str`")
+        m = Formatter._rx_star.match(name)
+        if m:
+            return True
+        return False
+    
+    @staticmethod
+    def get_star_num(num: int) -> str:
+        """
+        Gets a str in format of ``'*#'``, eg: ``'*0'``, ``'*1'``, ``'*2'``.
+
+        Args:
+            num (int): int to convert
+
+        Returns:
+            str: [str in format of ``'*#'``
+        """
+        return "*" + str(num)
+
+    @staticmethod
+    def get_missing_args_error_msg(missing_names: List[str], name: Optional[str] = ""):
+        """
+        Get an error message for a list of names.
+
+        Args:
+            missing_names (List[str]): List of names that generated the error.
+                Such as a list of missing arguments of a function.
+            name (Optional[str], optional): Function, class, method name. Defaults to "".
+
+        Returns:
+            [type]: Formated string for ``missing_names`` has elements; Otherwise, empty string is returned.
+        """
+        missing_names_len = len(missing_names)
+        if missing_names_len == 0:
+            return ""
+        msg = f"{name} missing {missing_names_len} required positional".lstrip()
+        if missing_names_len == 1:
+            msg = msg + " argument: "
+        else:
+            msg = msg + " arguments: "
+        msg = msg + Formatter.get_formated_names(names=missing_names)
+        return msg
+
+    @staticmethod
+    def get_formated_names(names: List[str], **kwargs) -> str:
+        """
+        Gets a formated string of a list of names
+
+        Args:
+            names (List[str]): List of names
+
+        Keyword Args:
+            conj (str, optional): Conjunction used to join list. Default ``and``.
+            wrapper (str, optional): String to prepend and append to each value. Default ``'``.
+
+        Returns:
+            str: formated such as ``'final' and 'end'`` or ``'one', 'final', and 'end'``
+        """
+        conj = kwargs.get("conj", "and")
+        wrapper = kwargs.get("wrapper", "'")
+        s = ""
+        names_len = len(names)
+        last_index = names_len - 1
+        for i, name in enumerate(names):
+            if i > 0:
+                if names_len > 2:
+                    s = s + ', '
+                else:
+                    s = s + ' '
+                if names_len > 1 and i == last_index:
+                    s = s + conj + ' '
+
+            s = s + "{0}{1}{0}".format(wrapper, name)
+        return s
+    
+    @staticmethod
+    def get_formated_types(types: Iterator[type], **kwargs) -> str:
+        """
+        Gets a formated string from a list of types.
+
+        Args:
+            types (Iterator[type]): Types to create fromated string.
+
+        Keyword Args:
+            conj (str, optional): Conjunction used to join list. Default ``and``.
+            wrapper (str, optional): String to prepend and append to each value. Default ``'``.
+
+        Returns:
+            str: Formated String
+        """
+        t_names = [t.__name__ for t in types]
+        result = Formatter.get_formated_names(names=t_names, **kwargs)
+        return result
+
+    @staticmethod
+    def get_ordinal(num: int) -> str:
+        """
+        Returns the ordinal number of a given integer, as a string.
+
+        Args:
+            num (int): integer to get ordinal value of.
+
+        Returns:
+            str: num as ordinal str. eg. 1 -> 1st, 2 -> 2nd, 3 -> 3rd, etc.
+        """
+        if 10 <= num % 100 < 20:
+            return '{0}th'.format(num)
+        else:
+            ord = {1: 'st', 2: 'nd', 3: 'rd'}.get(num % 10, 'th')
+            return '{0}{1}'.format(num, ord)
 
 NO_THING = NoThing()
 """
