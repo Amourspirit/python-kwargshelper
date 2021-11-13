@@ -1,5 +1,4 @@
 import functools
-import re
 from typing import Any, Dict, Iterable, Iterator, List, Optional, Set, Tuple, Union
 from enum import Enum, IntEnum, IntFlag, auto
 from collections import OrderedDict
@@ -30,7 +29,7 @@ class DecFuncEnum(IntEnum):
 
 
 class DecArgEnum(IntFlag):
-    """Represents options for the type of functin arguments to process"""
+    """Represents options for the type of function arguments to process"""
     ARGS = auto()
     """Process ``*args``"""
     KWARGS = auto()
