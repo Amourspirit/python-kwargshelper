@@ -8,6 +8,7 @@ Includes features:
 
     * :doc:`/source/general/dec_feature/ftype`
     * :doc:`/source/general/dec_feature/opt_all_args`
+    * :doc:`/source/general/dec_feature/opt_args_filter`
     * :doc:`/source/general/dec_feature/opt_return`
     * :doc:`/source/general/dec_feature/raise_error`
 
@@ -166,6 +167,8 @@ Option opt_all_args
 ``opt_all_args`` argument allows the last class type passed into :py:class:`~.decorator.SubClass` to
 validate all remaining arguments of wrapped function.
 
+For more examples see :doc:`/source/general/dec_feature/opt_all_args`.
+
 .. code-block:: python
 
     @SubClass(float, (float, int), opt_all_args=True)
@@ -183,6 +186,34 @@ The first arg of ``sum_num`` must be a ``float``. Remaining args can be ``float`
     SubClass decorator error.
     >>> print(sum_num(1.3, 44.556, 10, 22, 45, 7.88, "77"))
     TypeError: Arg in 7th position is expected to be of a subclass of 'float' or 'int'.
+    SubClass decorator error.
+
+Opton opt_args_filter
+---------------------
+
+The arguments are validated by :py:class:`~.decorator.SubClass` can be filtered by setting ``opt_args_filter`` option. 
+
+For more examples see :doc:`/source/general/dec_feature/opt_args_filter`.
+
+In the following example all ``*args`` must of or derived from clase ``Base``.
+``opt_args_filter=DecArgEnum.ARGS`` filters ``SubClass`` to only process ``*args``.
+
+.. code-block:: python
+
+    from kwhelp.decorator import SubClass, DecArgEnum
+
+    @SubClass(Base, opt_all_args=True, opt_args_filter=DecArgEnum.ARGS)
+    def foo(*args, msg: str):
+        result = [str(t) for t in args]
+        return msg + ', '.join(result)
+
+.. code-block:: python
+
+    >>> result = foo(Foo(), Bar(), FooBar(), ObjFoo(), msg='Summary: ')
+    >>> print(result)
+    Summary: Foo, Bar, FooBar, Foo
+    >>> result = foo(Foo(), Bar(), FooBar(), ObjFoo(), msg='Summary: ')
+    TypeError: Arg in 4th position is expected to be of a subclass of 'Base'.
     SubClass decorator error.
 
 

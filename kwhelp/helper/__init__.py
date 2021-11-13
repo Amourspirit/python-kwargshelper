@@ -19,6 +19,7 @@ class NoThing(metaclass=Singleton):
     '''Singleton Class to mimic null'''
 
 class Formatter:
+    """String Fromat Methods"""
     _rx_star = re.compile("^\*(\d*)$")
 
     @staticmethod

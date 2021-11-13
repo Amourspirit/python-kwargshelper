@@ -32,13 +32,13 @@ class DecFuncEnum(IntEnum):
 class DecArgEnum(IntFlag):
     """Represents options for the type of functin arguments to process"""
     ARGS = auto()
-    """Process *args"""
+    """Process ``*args``"""
     KWARGS = auto()
-    """Process **kwargs"""
+    """Process ``**kwargs``"""
     NAMED_ARGS = auto()
     """Process named keyword args"""
     NO_ARGS = NAMED_ARGS | KWARGS
-    """Process Named Keyword args and **kwargs only"""
+    """Process Named Keyword args and ``**kwargs`` only"""
     All_ARGS = ARGS | KWARGS | NAMED_ARGS
     """Process All Args"""
 
@@ -804,7 +804,7 @@ class TypeCheck(_DecBase):
             opt_return (object, optional): Return value when decorator is invalid.
                 By default an error is rasied when validation fails. If ``opt_return`` is
                 supplied then it will be return when validation fails and no error will be raised.
-            opt_args_filter (DecArgEnum, optional): Determinses if only ``*args`` are validated. Default ``DecArgEnum.ALL``.
+            opt_args_filter (DecArgEnum, optional): Filters the arguments that are validated. Default ``DecArgEnum.ALL``.
         Raises:
             TypeError: If ``types`` arg is not a iterable object such as a list or tuple.
             TypeError: If any arg is not of a type listed in ``types``.
@@ -881,7 +881,7 @@ class AcceptedTypes(_DecBase):
                 define any remaining args. This allows for one subclass to define required match of all arguments
                 that decorator is applied to.
                 Default ``False``
-            opt_args_filter (DecArgEnum, optional): Determinses if only ``*args`` are validated. Default ``DecArgEnum.ALL``.
+            opt_args_filter (DecArgEnum, optional): Filters the arguments that are validated. Default ``DecArgEnum.ALL``.
         """
         super().__init__(**kwargs)
         self._tc = None
@@ -1495,7 +1495,7 @@ class RuleCheckAny(_RuleBase):
             opt_return (object, optional): Return value when decorator is invalid.
                 By default an error is rasied when validation fails. If ``opt_return`` is
                 supplied then it will be return when validation fails and no error will be raised.
-            opt_args_filter (DecArgEnum, optional): Determinses if only ``*args`` are validated. Default ``DecArgEnum.ALL``.
+            opt_args_filter (DecArgEnum, optional): Filters the arguments that are validated. Default ``DecArgEnum.ALL``.
         """
         super().__init__(**kwargs)
         self._raise_error = bool(kwargs.get("raise_error", True))
@@ -1570,7 +1570,7 @@ class RuleCheckAll(_RuleBase):
             opt_return (object, optional): Return value when decorator is invalid.
                 By default an error is rasied when validation fails. If ``opt_return`` is
                 supplied then it will be return when validation fails and no error will be raised.
-            opt_args_filter (DecArgEnum, optional): Determinses if only ``*args`` are validated. Default ``DecArgEnum.ALL``.
+            opt_args_filter (DecArgEnum, optional): Filters the arguments that are validated. Default ``DecArgEnum.ALL``.
         """
         super().__init__(**kwargs)
         self._raise_error = bool(kwargs.get("raise_error", True))
@@ -2053,7 +2053,7 @@ class SubClass(_DecBase):
                 define any remaining args. This allows for one subclass to define required match of all arguments
                 that decorator is applied to.
                 Default ``False``
-            opt_args_filter (DecArgEnum, optional): Determinses if only ``*args`` are validated. Default ``DecArgEnum.ALL``.
+            opt_args_filter (DecArgEnum, optional): Filters the arguments that are validated. Default ``DecArgEnum.ALL``.
         """
         super().__init__(**kwargs)
         self._types = []
