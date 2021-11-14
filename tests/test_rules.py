@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Type
 import unittest
 if __name__ == '__main__':
@@ -543,6 +544,82 @@ class TestRules(unittest.TestCase):
         with self.assertRaises(TypeError):
             r.validate()
     # endregion Iterable
+
+    # region Path
+    def test_path(self):
+        p = Path.home()
+        r = self.create(rule=rules.RulePath, val=p)
+        self.assertTrue(r.validate())
+        r.field_value = "/home"
+        self.assertFalse(r.validate())
+        r.raise_errors = True
+        with self.assertRaises(TypeError):
+            r.validate()
+
+    def test_path_exist(self):
+        p = Path.home()
+        r = self.create(rule=rules.RulePathExist, val=p)
+        self.assertTrue(r.validate())
+        r.field_value = Path("/__not_a_path/expected/To/Exist")
+        self.assertFalse(r.validate())
+        r.raise_errors = True
+        with self.assertRaises(FileNotFoundError):
+            self.assertFalse(r.validate())
+        r.field_value = ''
+        r.raise_errors = False
+        self.assertFalse(r.validate())
+        r.raise_errors = True
+        with self.assertRaises(TypeError):
+            self.assertFalse(r.validate())
+
+    def test_path_not_exist(self):
+        p = Path("/__not_a_path/expected/To/Exist")
+        r = self.create(rule=rules.RulePathNotExist, val=p)
+        self.assertTrue(r.validate())
+        r.field_value = Path.home()
+        self.assertFalse(r.validate())
+        r.raise_errors = True
+        with self.assertRaises(FileExistsError):
+            self.assertFalse(r.validate())
+        r.field_value = ''
+        r.raise_errors = False
+        self.assertFalse(r.validate())
+        r.raise_errors = True
+        with self.assertRaises(TypeError):
+            self.assertFalse(r.validate())
+    
+    def test_str_path_exist(self):
+        p = str(Path.home())
+        r = self.create(rule=rules.RuleStrPathExist, val=p)
+        self.assertTrue(r.validate())
+        r.field_value = "/__not_a_path/expected/To/Exist"
+        self.assertFalse(r.validate())
+        r.raise_errors = True
+        with self.assertRaises(FileNotFoundError):
+            self.assertFalse(r.validate())
+        r.field_value = 2
+        r.raise_errors = False
+        self.assertFalse(r.validate())
+        r.raise_errors = True
+        with self.assertRaises(TypeError):
+            self.assertFalse(r.validate())
+    
+    def test_str_path_not_exist(self):
+        p = "/__not_a_path/expected/To/Exist"
+        r = self.create(rule=rules.RuleStrPathNotExist, val=p)
+        self.assertTrue(r.validate())
+        r.field_value = str(Path.home())
+        self.assertFalse(r.validate())
+        r.raise_errors = True
+        with self.assertRaises(FileExistsError):
+            self.assertFalse(r.validate())
+        r.field_value = 2
+        r.raise_errors = False
+        self.assertFalse(r.validate())
+        r.raise_errors = True
+        with self.assertRaises(TypeError):
+            self.assertFalse(r.validate())
+    # endregion Path
 
 if __name__ == '__main__':
     unittest.main()

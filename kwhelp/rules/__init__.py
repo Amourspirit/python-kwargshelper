@@ -1,6 +1,8 @@
 # coding: utf-8
 from abc import ABC, abstractmethod
 import numbers
+import os
+from pathlib import Path
 from typing import Optional
 from ..helper import is_iterable
 # region Interface
@@ -755,3 +757,126 @@ class RuleNotIterable(IRule):
     
     
 # endregion Iterable
+
+# region Path
+class RulePath(IRule):
+    """
+     Rule that matched only if value is instance of ``Path``.
+    """
+
+    def validate(self) -> bool:
+        """
+        Validates that value to assign is a Path
+
+        Raises:
+            TypeError: If ``raise_errors`` is ``True`` and ``field_value`` is not instance of Path.
+
+        Returns:
+            bool: ``True`` if ``field_value`` is a bool; Otherwise, ``False``.
+        """
+        if not isinstance(self.field_value, Path):
+            if self.raise_errors:
+                raise TypeError(self._get_type_error_msg(expected_type='Path'))
+            return False
+        return True
+
+
+class RulePathExist(RulePath):
+    """
+     Rule that matched only if value is instance of ``Path`` and path exist.
+    """
+
+    def validate(self) -> bool:
+        """
+        Validates that value to assign is a path that exist
+
+        Raises:
+            FileNotFoundError: If ``raise_errors`` is ``True`` and ``field_value`` is path does not exist.
+
+        Returns:
+            bool: ``True`` if ``field_value`` is an existing path; Otherwise, ``False``.
+        """
+        if not super().validate():
+            return False
+        if not os.path.exists(self.field_value):
+            if self.raise_errors:
+                raise FileNotFoundError(
+                    f"Unable to find path: '{self.field_value}'")
+            return False
+        return True
+
+
+class RulePathNotExist(RulePath):
+    """
+     Rule that matched only if value is instance of ``Path`` and path does not exist.
+    """
+
+    def validate(self) -> bool:
+        """
+        Validates that value to assign is a Path that does not exist
+
+        Raises:
+            FileExistsError: If ``raise_errors`` is ``True`` and ``field_value`` is path that is existing.
+
+        Returns:
+            bool: ``True`` if ``field_value`` is a p    ath that does not exist; Otherwise, ``False``.
+        """
+        if not super().validate():
+            return False
+        if os.path.exists(self.field_value):
+            if self.raise_errors:
+                raise FileExistsError(
+                    f"File already exist: '{self.field_value}'")
+            return False
+        return True
+
+
+class RuleStrPathExist(RuleStr):
+    """
+     Rule that matched only if value is instance of str and path exist.
+    """
+
+    def validate(self) -> bool:
+        """
+        Validates that value to assign is a str path that exist
+
+        Raises:
+            FileNotFoundError: If ``raise_errors`` is ``True`` and ``field_value`` is path does not exist.
+
+        Returns:
+            bool: ``True`` if ``field_value`` is a path that does exist; Otherwise, ``False``.
+        """
+        if not super().validate():
+            return False
+        if not os.path.exists(self.field_value):
+            if self.raise_errors:
+                raise FileNotFoundError(
+                    f"Unable to find path: '{self.field_value}'")
+            return False
+        return True
+
+
+class RuleStrPathNotExist(RuleStr):
+    """
+     Rule that matched only if value is instance of str and path is not existing.
+    """
+
+    def validate(self) -> bool:
+        """
+        Validates that value to assign is a path not existing
+
+        Raises:
+            FileExistsError: If ``raise_errors`` is ``True`` and ``field_value`` is a path that is not existing.
+
+        Returns:
+            bool: ``True`` if ``field_value`` is a path that does not exist; Otherwise, ``False``.
+        """
+        if not super().validate():
+            return False
+        if os.path.exists(self.field_value):
+            if self.raise_errors:
+                raise FileExistsError(
+                    f"File already exist: '{self.field_value}'")
+            return False
+        return True
+# end Region Path
