@@ -1,6 +1,17 @@
 Release Notes
 =============
 
+Versoin 2.6.0
+-------------
+
+Added Rules:
+
+    * RulePath
+    * RulePathExist
+    * RulePathNotExist
+    * RuleStrPathExist
+    * RuleStrPathNotExist
+
 Version 2.5.0
 -------------
 
