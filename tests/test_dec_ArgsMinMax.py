@@ -7,7 +7,7 @@ if __name__ == '__main__':
     import sys
     sys.path.append(os.path.realpath('.'))
 from kwhelp.decorator import ArgsMinMax, DecFuncEnum
-
+from tests.ex_logger import test_logger, clear_log, get_logged_errors
 
 class Color(IntEnum):
     RED = auto()
@@ -333,6 +333,79 @@ class TestArgsMinMaxClass(unittest.TestCase):
         b = Bar()
         result = b.foo()
         assert result == None
+
+
+class TestArgsMinMaxLogger(unittest.TestCase):
+    def setUp(self):
+        clear_log()
+
+    def tearDown(self):
+        pass
+
+    def test_no_max(self):
+        @ArgsMinMax(min=3, opt_logger=test_logger)
+        def foo(*args):
+            return len(args)
+        with self.assertRaises(ValueError):
+            foo()
+        with self.assertRaises(ValueError):
+            foo("a", "b")
+        with self.assertRaises(ValueError):
+            foo("a")
+        errors = get_logged_errors()
+        assert len(errors) == 3
+
+    def test_enum(self):
+        @ArgsMinMax(max=2, opt_logger=test_logger)
+        def foo(*args):
+            return len(args)
+        with self.assertRaises(ValueError):
+            foo(Color.RED, Color.BLUE, Color.GREEN)
+        errors = get_logged_errors()
+        assert len(errors) == 1
+
+    def test_tuple(self):
+        @ArgsMinMax(min=3, opt_logger=test_logger)
+        def foo(*args):
+            return len(args)
+        with self.assertRaises(ValueError):
+            result = foo()
+        with self.assertRaises(ValueError):
+            foo(*gen_args(2))
+        with self.assertRaises(ValueError):
+            foo(*gen_args(1))
+        errors = get_logged_errors()
+        assert len(errors) == 3
+
+    def test_int_range_kwargs(self):
+        @ArgsMinMax(min=2, max=7, opt_logger=test_logger)
+        def foo(*args, **kwargs):
+            return len(args), len(kwargs)
+        with self.assertRaises(ValueError):
+            foo()
+        with self.assertRaises(ValueError):
+            foo(a=1, b=2)
+        with self.assertRaises(ValueError):
+            foo(*gen_args(1))
+        with self.assertRaises(ValueError):
+            foo(*gen_args(1), a=1, b=2)
+        with self.assertRaises(ValueError):
+            foo(*gen_args(8))
+        with self.assertRaises(ValueError):
+            foo(*gen_args(8), a=1, b=2)
+        errors = get_logged_errors()
+        assert len(errors) == 6
+
+    def test_star_args_third(self):
+        @ArgsMinMax(min=2, max=4, opt_logger=test_logger)
+        def foo(arg1, arg2, *args, a, b, **kwargs):
+            return len(args), len(kwargs), (a, b), (arg1, arg2)
+        with self.assertRaises(ValueError):
+            foo(*gen_args(7), a=1, b=2, opt1="one", opt2="two")
+        errors = get_logged_errors()
+        assert len(errors) == 1
+
+
 
 if __name__ == '__main__':
     unittest.main()

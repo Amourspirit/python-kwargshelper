@@ -1,3 +1,4 @@
+from types import prepare_class
 import unittest
 if __name__ == '__main__':
     import os
@@ -6,7 +7,7 @@ if __name__ == '__main__':
 
 from enum import IntEnum, auto
 from kwhelp.decorator import DecArgEnum, SubClass, DecFuncEnum, RequireArgs, ReturnType
-
+from tests.ex_logger import test_logger, clear_log, get_logged_errors
 
 def gen_args(length: int) -> list:
     return [i for i in range(length)]
@@ -410,13 +411,7 @@ class TestSubClassDecorators(unittest.TestCase):
             req_test(Base(), "", one=ObjFoo(), two=Bar())
 
     def test_enum(self):
-        # enum are iterable so [*Color] is list comperhension.
-        # and becomes [<Color.RED: 1>, <Color.BLUE: 2>, <Color.GREEN: 3>]
-        # for this reason when passing enum types they must be in an itterable
-        # such as a list or tuple
-        # SubClass will handle enum but will parse all enum values in the process
-        # when enum is not passed as iterable.
-        @SubClass([Color], Base, [Color])
+        @SubClass(Color, Base, Color)
         def foo(one, two, three):
             return one, two, three
         result = foo(Color.BLUE, Foo(), Color.RED)
@@ -863,6 +858,190 @@ class TestSubClassDecoratorsClass(unittest.TestCase):
         assert r.test == "world"
         with self.assertRaises(TypeError):
             r.test = 1
+
+
+class TestSubClassDecoratorsLogger(unittest.TestCase):
+    def setUp(self):
+        clear_log()
+
+    def tearDown(self):
+        pass
+    
+    def test_subclass_gen(self):
+        @SubClass((Foo, ObjFoo), Base, opt_logger=test_logger)
+        def req_test(**kwargs):
+            pass
+        with self.assertRaises(ValueError):
+            req_test(one=Foo())
+        with self.assertRaises(ValueError):
+            req_test(two=Bar())
+        with self.assertRaises(TypeError):
+            req_test(one=Obj(), two=Bar())
+        with self.assertRaises(ValueError):
+            # too many args
+            req_test(one=Obj(), two=Bar(), three=Bar())
+        errors = get_logged_errors()
+        assert len(errors) == 4
+
+    def test_subclass_opt_args_filter_kwargs(self):
+        @SubClass((Foo, ObjFoo), Base, opt_args_filter=DecArgEnum.KWARGS, opt_logger=test_logger)
+        def req_test(*args, first, last, **kwargs):
+            pass
+        with self.assertRaises(TypeError):
+            req_test(1, 2, 3, first="1st",
+                     last="!", one='one', two=Bar())
+        with self.assertRaises(ValueError):
+            # too many args
+            req_test(1, 2, 3, first="1st", last="!",
+                     one=Foo(), two=Bar(), three=Foo())
+        errors = get_logged_errors()
+        assert len(errors) == 2
+
+    def test_subclass_opt_args_filter_args(self):
+        @SubClass((Foo, ObjFoo), Base, opt_args_filter=DecArgEnum.ARGS, opt_logger=test_logger)
+        def req_test(*args, first, last, **kwargs):
+            pass
+        with self.assertRaises(TypeError):
+            req_test(Foo(), 1, first="1st", last="!", one=1, two=2)
+        with self.assertRaises(ValueError):
+            # too many args
+           req_test(Foo(), Bar(), Foo(), first="1st", last="!", one=1, two=2)
+        errors = get_logged_errors()
+        assert len(errors) == 2
+
+    def test_subclass_opt_args_filter_named_args(self):
+        @SubClass((Foo, ObjFoo), Base, opt_args_filter=DecArgEnum.NAMED_ARGS, opt_logger=test_logger)
+        def req_test(*args, first, last, **kwargs):
+            pass
+        with self.assertRaises(TypeError):
+           req_test(1, 2, 3, first=Foo(), last=1, one=1, two=2)
+        errors = get_logged_errors()
+        assert len(errors) == 1
+
+    def test_subclass_opt_args_filter_no_args(self):
+        @SubClass((Foo, ObjFoo), Base, Foo, Base, opt_args_filter=DecArgEnum.NO_ARGS, opt_logger=test_logger)
+        def req_test(*args, first, last, **kwargs):
+            pass
+        with self.assertRaises(TypeError):
+            req_test(1, 2, 3, first=Foo(), last=Bar(), one=Foo(), two=ObjFoo())
+        with self.assertRaises(TypeError):
+            req_test(1, 2, 3, first=Foo(), last=ObjFoo(), one=Foo(), two=Bar())
+        with self.assertRaises(ValueError):
+            # too many args
+           req_test(1, 2, 3, first=Foo(), last=Bar(),
+                    one=Foo(), two=Bar(), three=Bar())
+        errors = get_logged_errors()
+        assert len(errors) == 3
+
+    def test_subclass_named_args(self):
+        @SubClass((Foo, ObjFoo), Base, opt_logger=test_logger)
+        def req_test(one, two):
+            pass
+        with self.assertRaises(TypeError):
+            req_test(one=Obj(), two=Bar())
+        with self.assertRaises(ValueError):
+            req_test(one=Obj(), two=Bar(), three=Bar())
+        errors = get_logged_errors()
+        assert len(errors) == 2
+
+    def test_subclass_instance_only_true(self):
+        @SubClass((Foo, ObjFoo), Base, instance_only=True, opt_logger=test_logger)
+        def req_test(**kwargs):
+            pass
+        with self.assertRaises(ValueError):
+            req_test(one=Foo())
+        with self.assertRaises(ValueError):
+            req_test(two=Bar())
+        with self.assertRaises(TypeError):
+            req_test(one=Obj(), two=Bar())
+        errors = get_logged_errors()
+        assert len(errors) == 3
+
+    def test_subclass_instance_only_false(self):
+        @SubClass((Foo, ObjFoo), Base, opt_inst_only=False, opt_logger=test_logger)
+        def req_test(**kwargs):
+            pass
+        with self.assertRaises(ValueError):
+            req_test(one=Foo)
+        with self.assertRaises(ValueError):
+            req_test(two=Bar)
+        with self.assertRaises(TypeError):
+            req_test(one=Obj(), two=Bar())
+        errors = get_logged_errors()
+        assert len(errors) == 3
+
+    def test_subclass_optional_args(self):
+        @SubClass(Foo, FooBar, Obj, opt_logger=test_logger)
+        def req_test(first, second=FooBar(), third=Obj()):
+            pass
+        with self.assertRaises(TypeError):
+            req_test(first=Obj())
+        with self.assertRaises(TypeError):
+            req_test(Obj())
+        with self.assertRaises(TypeError):
+            req_test(Foo(), FooBar(), Foo())
+        with self.assertRaises(TypeError):
+            req_test(first=Foo(), third=Foo())
+        errors = get_logged_errors()
+        assert len(errors) == 4
+
+    def test_subclass_args_optional_named(self):
+        @SubClass(Base, Base, Base, (Bar, Obj), (FooBar, Obj), Base, opt_logger=test_logger)
+        def req_test(*args, first, second=ObjFoo(), third=Bar()):
+            pass
+        with self.assertRaises(TypeError):
+            req_test(Foo(), Bar(), FooBar(), first=Base())
+        with self.assertRaises(TypeError):
+            req_test(Foo(), Bar(), FooBar(), first=ObjFoo(), third=Obj())
+        errors = get_logged_errors()
+        assert len(errors) == 2
+
+    def test_subclass_args_and_kwargs(self):
+        @SubClass(Base, Base, (Foo, ObjFoo), (Bar, Obj), opt_logger=test_logger)
+        def req_test(*args, **kwargs):
+            pass
+        with self.assertRaises(TypeError):
+            req_test(Base(), FooBar(), one=ObjFoo(), two=Base())
+        with self.assertRaises(TypeError):
+            req_test(Base(), "", one=ObjFoo(), two=Bar())
+        with self.assertRaises(ValueError):
+            req_test(*gen_args(5))
+        errors = get_logged_errors()
+        assert len(errors) == 3
+
+    def test_accept_required_with_args(self):
+        @RequireArgs("one", "two")
+        @SubClass(Base, Base, (Foo, ObjFoo), (Bar, Obj), opt_logger=test_logger)
+        def req_test(*args, **kwargs):
+            pass
+        with self.assertRaises(TypeError):
+            req_test(Base(), FooBar(), one=ObjFoo(), two=Base())
+        with self.assertRaises(TypeError):
+            req_test(Base(), "", one=ObjFoo(), two=Bar())
+        errors = get_logged_errors()
+        assert len(errors) == 2
+
+    def test_star_args_pos3_mix(self):
+        # Positional argument cannot appear after keyword arguments
+        # however positional arg can come after keword arguments if keyword argumnets are filled out
+        # as positional args.
+        # myfunc(1.33, "two", 3, Color.BLUE, 5) is allow
+        # myfunc(arg1=1.33, arg2="two", 3, Color.BLUE, 5,  kwonlyarg=True) not allowed
+        # result = myfunc(3, Color.BLUE, 5, arg1=1.33, arg2="two", kwonlyarg=True) not allowed
+
+        @SubClass(Bar, Base, Obj, [Color], Foo, ObjFoo, opt_logger=test_logger)
+        def myfunc(arg1, arg2, *args, last=ObjFoo()):
+            pass
+        with self.assertRaises(TypeError):
+            myfunc(Bar(), Obj(), Obj(), Color.RED, FooBar(), last=ObjFoo())
+        with self.assertRaises(TypeError):
+            myfunc(Bar(), Base(), Obj(), Foo(), FooBar())
+        with self.assertRaises(TypeError):
+            myfunc(Foo(), Base(), Obj(), Color.BLUE, FooBar())
+        with self.assertRaises(TypeError):
+            myfunc(Bar(), Base(), Obj(), Color.RED, FooBar(), last=Color.BLUE)
+        errors = get_logged_errors()
+        assert len(errors) == 4
 
 
 if __name__ == '__main__':

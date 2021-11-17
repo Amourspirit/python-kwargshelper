@@ -6,6 +6,7 @@ if __name__ == '__main__':
 from kwhelp.decorator import DecArgEnum, DecFuncEnum, RuleCheckAny
 from kwhelp import rules
 from kwhelp.exceptions import RuleError
+from tests.ex_logger import test_logger, clear_log, get_logged_errors
 
 
 class TestRuleCheckAny(unittest.TestCase):
@@ -336,6 +337,109 @@ class TestRuleCheckAnyClass(unittest.TestCase):
             b.add_positives(1, 4, 6.9, 3.9, last="7.3")
         with self.assertRaises(RuleError):
             b.add_positives(1, 4, 6.9, 3.9, last=-7.3)
+
+
+class TestRuleCheckAnyLogger(unittest.TestCase):
+    def setUp(self):
+        clear_log()
+
+    def tearDown(self):
+        pass
+
+    def test_rule_check_any_gen(self):
+        @RuleCheckAny(rules.RuleIntPositive, rules.RuleFloatPositive, opt_logger=test_logger)
+        def foo(first, last, **kwargs):
+            pass
+        with self.assertRaises(RuleError):
+            foo(first="1", last=100, hours=12.5, years=22)
+        with self.assertRaises(RuleError):
+            foo(first=1, last="100", hours=12.5, years=22)
+        with self.assertRaises(RuleError):
+            foo(first=1, last=100, hours="12.5", years=22)
+        with self.assertRaises(RuleError):
+            foo(first=1, last=100, hours=12.5, years="22")
+        with self.assertRaises(RuleError):
+            foo(first=-1, last=100, hours=12.5, years=22)
+        with self.assertRaises(RuleError):
+            foo(first=1, last=100, hours=-12.5, years=22)
+        errors = get_logged_errors()
+        assert len(errors) == 6
+
+    def test_rule_check_any_opt_args_filter_kwargs(self):
+        @RuleCheckAny(rules.RuleIntPositive, rules.RuleFloatPositive, opt_args_filter=DecArgEnum.KWARGS, opt_logger=test_logger)
+        def foo(*args, first, last, **kwargs):
+            pass
+        with self.assertRaises(RuleError):
+            foo("the", "quick", "brown", "fox",
+                first="1", last=-1, hours=-12.5, years=22)
+        with self.assertRaises(RuleError):
+            foo("the", "quick", "brown", "fox",
+                first="1", last=-1, hours=12.5, years="20th")
+        errors = get_logged_errors()
+        assert len(errors) == 2
+
+    def test_rule_check_any_opt_args_filter_args(self):
+        @RuleCheckAny(rules.RuleStrNotNullEmptyWs, opt_args_filter=DecArgEnum.ARGS, opt_logger=test_logger)
+        def foo(*args, first, last, **kwargs):
+            pass
+        with self.assertRaises(RuleError):
+            foo("the", "quick", "brown", "",
+                first="1st", last=-1, hours=12.5, years=22)
+        with self.assertRaises(RuleError):
+            foo("the", "quick", " ", "fox",
+                first="1st", last=-1, hours=12.5, years=22)
+        errors = get_logged_errors()
+        assert len(errors) == 2
+
+    def test_rule_check_any_opt_args_filter_no_args(self):
+        @RuleCheckAny(rules.RuleIntPositive, rules.RuleFloatPositive, opt_args_filter=DecArgEnum.NO_ARGS, opt_logger=test_logger)
+        def foo(*args, first, last, **kwargs):
+            pass
+        with self.assertRaises(RuleError):
+            foo("the", "quick", "brown", "fox",
+                first=1, last=100, hours=-12.5, years=22)
+        with self.assertRaises(RuleError):
+            foo("the", "quick", "brown", "fox",
+                first=-1, last=100, hours=12.5, years=22)
+        errors = get_logged_errors()
+        assert len(errors) == 2
+
+    def test_rule_check_any_opt_args_filter_named(self):
+        @RuleCheckAny(rules.RuleIntPositive, rules.RuleFloatPositive, opt_args_filter=DecArgEnum.NAMED_ARGS, opt_logger=test_logger)
+        def foo(*args, first, last, **kwargs):
+            pass
+        with self.assertRaises(RuleError):
+            foo("the", "quick", "brown", "fox",
+                first=1, last=-100, hours="Many", years="20th")
+        with self.assertRaises(RuleError):
+            foo("the", "quick", "brown", "fox",
+                first=-1, last=100, hours="Many", years="20th")
+        errors = get_logged_errors()
+        assert len(errors) == 2
+
+    def test_rule_check_any_args(self):
+        @RuleCheckAny(rules.RuleIntPositive, rules.RuleFloatPositive, opt_logger=test_logger)
+        def add_positives(*args):
+            pass
+        with self.assertRaises(RuleError):
+            add_positives(2, 1.2, -1)
+        errors = get_logged_errors()
+        assert len(errors) == 1
+
+    def test_rule_check_any_args_pos(self):
+        @RuleCheckAny(rules.RuleIntPositive, rules.RuleFloatPositive, opt_logger=test_logger)
+        def add_positives(first, second, *args, **kwargs):
+            pass
+        with self.assertRaises(RuleError):
+            add_positives(2, 1.2, -1)
+        with self.assertRaises(RuleError):
+            add_positives(-1, 4, 6.9, 3.9, 7.3)
+        with self.assertRaises(RuleError):
+            add_positives(1, 4, 6.9, 3.9, last="7.3")
+        with self.assertRaises(RuleError):
+            add_positives(1, 4, 6.9, 3.9, last=-7.3)
+        errors = get_logged_errors()
+        assert len(errors) == 4
 
 if __name__ == '__main__':
     unittest.main()

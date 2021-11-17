@@ -7,6 +7,7 @@ if __name__ == '__main__':
 from kwhelp.decorator import AcceptedTypes, DecFuncEnum, ReturnRuleAll
 from kwhelp import rules
 from kwhelp.exceptions import RuleError
+from tests.ex_logger import test_logger, clear_log, get_logged_errors
 
 
 class TestReturnRuleAllDecorators(unittest.TestCase):
@@ -121,6 +122,34 @@ class TestReturnRuleAllDecoratorsClass(unittest.TestCase):
         # t.tmp accepsts int or float when setting but only int as return
         with self.assertRaises(RuleError):
             result = t.tmp
+
+
+class TestReturnRuleAllDecoratorsLogger(unittest.TestCase):
+    def setUp(self):
+        clear_log()
+
+    def tearDown(self):
+        pass
+
+    def test_return_gen(self):
+        @ReturnRuleAll(rules.RuleInt, opt_logger=test_logger)
+        def req_test(*arg):
+            return sum(arg)
+        with self.assertRaises(RuleError):
+            req_test(2, 2.5)
+        errors = get_logged_errors()
+        assert len(errors) == 1
+
+
+    def test_return_none(self):
+        @ReturnRuleAll(rules.RuleNone, opt_logger=test_logger)
+        def req_test(arg):
+            return arg
+        with self.assertRaises(RuleError):
+            req_test(arg=self)
+        errors = get_logged_errors()
+        assert len(errors) == 1
+
 
 if __name__ == '__main__':
     unittest.main()
