@@ -1,6 +1,8 @@
 import logging
 import os
 from . import util
+import tempfile
+from pathlib import Path
 
 def _generate_log(path):
     """
@@ -24,10 +26,7 @@ def _generate_log(path):
     logger.addHandler(file_handler)
     return logger
 
-_log_path = util.get_project_root_dir()
-_log_path = _log_path / 'tmp'
-if os.path.exists(_log_path) == False:
-    os.mkdir(_log_path)
+_log_path = Path(tempfile.mkdtemp())
 _log_path = _log_path / 'test.log'
 
 test_logger = _generate_log(_log_path)
