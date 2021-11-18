@@ -7,6 +7,7 @@ or be a subclass of types specificed in constructor. Each arg can have seperate 
 Includes features:
 
     * :doc:`/source/general/dec_feature/ftype`
+    * :doc:`/source/general/dec_feature/opt_logger`
     * :doc:`/source/general/dec_feature/opt_return`
     * :doc:`/source/general/dec_feature/type_instance_check`
 

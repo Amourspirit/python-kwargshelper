@@ -7,7 +7,7 @@ if __name__ == '__main__':
 from kwhelp.decorator import AcceptedTypes, DecFuncEnum, ReturnRuleAny
 from kwhelp import rules
 from kwhelp.exceptions import RuleError
-
+from tests.ex_logger import test_logger, clear_log, get_logged_errors
 
 class TestReturnRuleAllDecorators(unittest.TestCase):
     def test_return_gen(self):
@@ -146,6 +146,34 @@ class TestReturnRuleAllDecoratorsClass(unittest.TestCase):
             # positive float is not accepted as return value
             result = t.tmp
 
+
+class TestReturnRuleAllDecoratorsLogger(unittest.TestCase):
+    def setUp(self):
+        clear_log()
+
+    def tearDown(self):
+        pass
+
+    def test_return_gen(self):
+        @ReturnRuleAny(rules.RuleInt, rules.RuleFloatNegative, opt_logger=test_logger)
+        def req_test(*arg):
+            return sum(arg)
+        with self.assertRaises(RuleError):
+            # return type not an int or a float negative
+            result = req_test(2, 2.4)
+        errors = get_logged_errors()
+        assert len(errors) == 1
+
+    def test_return_none(self):
+        @ReturnRuleAny(rules.RuleNone, rules.RuleIntZero, opt_logger=test_logger)
+        def req_test(arg):
+            return arg
+        with self.assertRaises(RuleError):
+            result = req_test(arg=self)
+        with self.assertRaises(RuleError):
+            result = req_test(arg=1)
+        errors = get_logged_errors()
+        assert len(errors) == 2
 
 if __name__ == '__main__':
     unittest.main()

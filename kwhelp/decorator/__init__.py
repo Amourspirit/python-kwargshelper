@@ -3,6 +3,7 @@ from typing import Any, Dict, Iterable, Iterator, List, Optional, Set, Tuple, Un
 from enum import Enum, IntEnum, IntFlag, auto
 from collections import OrderedDict
 from inspect import signature, isclass, Parameter, Signature
+from logging import Logger
 from ..checks import TypeChecker, RuleChecker, SubClassChecker
 from ..rules import IRule
 from ..helper import is_iterable, Formatter
@@ -500,8 +501,22 @@ class _CommonBase(object):
             opt_return (object, optional): Return value when decorator is invalid.
                 By default an error is rasied when validation fails. If ``opt_return`` is
                 supplied then it will be return when validation fails and no error will be raised.
+            opt_logger (Logger, optional): Logger that logs exceptions when validation fails.
         """
         self._opt_return = kwargs.get("opt_return", NO_THING)
+        self._logger: Optional[Logger] = kwargs.get("opt_logger", None)
+        # and option check for fn value in kwargs. can be used for testing
+        self._fn: Optional[callable] = kwargs.get('_option_fn', None)
+    
+    def _log_err(self, err: Exception):
+        """
+        [summary]
+
+        Args:
+            err (Exception): [description]
+        """
+        if isinstance(self._logger, Logger):
+            self._logger.exception(err)
 
     def _is_opt_return(self) -> bool:
         """
@@ -512,14 +527,30 @@ class _CommonBase(object):
         """
         return not self._opt_return is NO_THING
 
+    def _call_init(self, **kwargs):
+        """
+        Call Init. Provides args for base methhods.
 
+        Keyword Arguments:
+            func (callable): Function that is being wrapped
+        """
+        fn = kwargs.get('func', None)
+        if not fn is None:
+            self._fn = fn
+
+    # region Properties
+    @property
+    def fn(self) -> callable:
+        if self._fn is None:
+            raise ValueError(
+                "fn has not been set. Check if _call_init is called.")
+        return self._fn
+    # endregion Properties
 class _DecBase(_CommonBase):
 
     # region Init
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        # and option check for fn value in kwargs. can be used for testing
-        self._fn: Union[None, callable] = kwargs.get('_option_fn', None)
         self._ftype: DecFuncEnum = kwargs.get("ftype", None)
         if self._ftype is not None:
             if not isinstance(self._ftype, DecFuncEnum):
@@ -543,9 +574,7 @@ class _DecBase(_CommonBase):
         Keyword Arguments:
             func (callable): Function that is being wrapped
         """
-        fn = kwargs.get('func', None)
-        if not fn is None:
-            self._fn = fn
+        super()._call_init(**kwargs)
 
     def _wrapper_init(self, **kwargs):
         """
@@ -568,12 +597,7 @@ class _DecBase(_CommonBase):
     # endregion Init
 
     # region Property
-    @property
-    def fn(self) -> callable:
-        if self._fn is None:
-            raise ValueError(
-                "fn has not been set. Check if _call_init is called.")
-        return self._fn
+    
     # region Function cache Properties
 
     @property
@@ -804,6 +828,7 @@ class TypeCheck(_DecBase):
                 By default an error is rasied when validation fails. If ``opt_return`` is
                 supplied then it will be return when validation fails and no error will be raised.
             opt_args_filter (DecArgEnum, optional): Filters the arguments that are validated. Default ``DecArgEnum.ALL``.
+            opt_logger (Logger, optional): Logger that logs exceptions when validation fails.
         Raises:
             TypeError: If ``types`` arg is not a iterable object such as a list or tuple.
             TypeError: If any arg is not of a type listed in ``types``.
@@ -838,7 +863,9 @@ class TypeCheck(_DecBase):
                     return self._opt_return
                 msg = str(e)
                 msg = msg + self._get_class_dec_err()
-                raise TypeError(msg)
+                ex = TypeError(msg)
+                self._log_err(ex)
+                raise ex
             return func(*args, **kwargs)
         if self._typechecker.raise_error is False:
             wrapper.is_types_valid = True
@@ -881,6 +908,7 @@ class AcceptedTypes(_DecBase):
                 that decorator is applied to.
                 Default ``False``
             opt_args_filter (DecArgEnum, optional): Filters the arguments that are validated. Default ``DecArgEnum.ALL``.
+            opt_logger (Logger, optional): Logger that logs exceptions when validation fails.
         """
         super().__init__(**kwargs)
         self._tc = None
@@ -928,18 +956,22 @@ class AcceptedTypes(_DecBase):
             except TypeError:
                 if self._is_opt_return():
                     return self._opt_return
-                raise TypeError(self._get_err_msg(name=None, value=value,
+                ex = TypeError(self._get_err_msg(name=None, value=value,
                                                   types=types, arg_index=arg_index,
                                                   fn=func))
+                self._log_err(err=ex)
+                raise ex
         else:
             try:
                 tc.validate(**{key: value})
             except TypeError:
                 if self._is_opt_return():
                     return self._opt_return
-                raise TypeError(self._get_err_msg(name=key, value=value,
+                ex = TypeError(self._get_err_msg(name=key, value=value,
                                                   types=types, arg_index=arg_index,
                                                   fn=func))
+                self._log_err(err=ex)
+                raise ex
         return NO_THING
 
     def __call__(self, func: callable):
@@ -960,7 +992,9 @@ class AcceptedTypes(_DecBase):
                     msg = 'Invalid number of arguments for {0}()'.format(
                         func.__name__)
                     msg = msg + self._get_class_dec_err()
-                    raise ValueError(msg)
+                    ex = ValueError(msg)
+                    self._log_err(err=ex)
+                    raise ex
             arg_type = zip(arg_keys, self._types)
 
             for arg_info in arg_type:
@@ -1030,6 +1064,7 @@ class ArgsLen(_DecBase):
             opt_return (object, optional): Return value when decorator is invalid.
                 By default an error is rasied when validation fails. If ``opt_return`` is
                 supplied then it will be return when validation fails and no error will be raised.
+            opt_logger (Logger, optional): Logger that logs exceptions when validation fails.
         """
         super().__init__(**kwargs)
         self._ranges: Set[Tuple[int, int]] = set()
@@ -1104,7 +1139,9 @@ class ArgsLen(_DecBase):
                 msg = f"Invalid number of args pass into '{func.__name__}'.\n{self._get_valid_counts()}"
                 msg = msg + f" Got '{_args_len}' args."
                 msg = msg + self._get_class_dec_err()
-                raise ValueError(msg)
+                ex = ValueError(msg)
+                self._log_err(err=ex)
+                raise ex
             return func(*args, **kwargs)
         # wrapper.is_types_valid = self.is_valid
         return wrapper
@@ -1133,6 +1170,7 @@ class ArgsMinMax(_DecBase):
             opt_return (object, optional): Return value when decorator is invalid.
                 By default an error is rasied when validation fails. If ``opt_return`` is
                 supplied then it will be return when validation fails and no error will be raised.
+            opt_logger (Logger, optional): Logger that logs exceptions when validation fails.
         """
         super().__init__(**kwargs)
         self._min = int(min)
@@ -1185,7 +1223,9 @@ class ArgsMinMax(_DecBase):
                 if is_valid is False:
                     if self._is_opt_return():
                         return self._opt_return
-                    raise ValueError(self._get_error_msg(args_len=_args_len))
+                    ex = ValueError(self._get_error_msg(args_len=_args_len))
+                    self._log_err(err=ex)
+                    raise ex
             return func(*args, **kwargs)
         # wrapper.is_types_valid = self.is_valid
         return wrapper
@@ -1212,6 +1252,7 @@ class ReturnRuleAll(_RuleBase):
             opt_return (object, optional): Return value when decorator is invalid.
                 By default an error is rasied when validation fails. If ``opt_return`` is
                 supplied then it will be return when validation fails and no error will be raised.
+            opt_logger (Logger, optional): Logger that logs exceptions when validation fails.
         """
         super().__init__(**kwargs)
         self._rc = None
@@ -1235,6 +1276,7 @@ class ReturnRuleAll(_RuleBase):
                 if self._is_opt_return():
                     return self._opt_return
                 err = self._get_err(e=e)
+                self._log_err(err=err)
                 raise err
             return return_value
         return wrapper
@@ -1267,6 +1309,7 @@ class ReturnRuleAny(_RuleBase):
             opt_return (object, optional): Return value when decorator is invalid.
                 By default an error is rasied when validation fails. If ``opt_return`` is
                 supplied then it will be return when validation fails and no error will be raised.
+            opt_logger (Logger, optional): Logger that logs exceptions when validation fails.
         """
         super().__init__(**kwargs)
         self._rc = None
@@ -1291,6 +1334,7 @@ class ReturnRuleAny(_RuleBase):
                 if self._is_opt_return():
                     return self._opt_return
                 err = self._get_err(e=e)
+                self._log_err(err=err)
                 raise err
             return return_value
         return wrapper
@@ -1326,6 +1370,7 @@ class ReturnType(_DecBase):
             opt_return (object, optional): Return value when decorator is invalid.
                 By default an error is rasied when validation fails. If ``opt_return`` is
                 supplied then it will be return when validation fails and no error will be raised.
+            opt_logger (Logger, optional): Logger that logs exceptions when validation fails.
         """
         super().__init__(**kwargs)
         self._tc = None
@@ -1349,7 +1394,9 @@ class ReturnType(_DecBase):
                 if self._is_opt_return():
                     return self._opt_return
                 # catch type error and raise a new one so a more fitting message is raised.
-                raise TypeError(self._get_err_msg(return_value))
+                ex = TypeError(self._get_err_msg(return_value))
+                self._log_err(err=ex)
+                raise ex
             return return_value
         return wrapper
 
@@ -1400,6 +1447,7 @@ class TypeCheckKw(_DecBase):
             opt_return (object, optional): Return value when decorator is invalid.
                 By default an error is rasied when validation fails. If ``opt_return`` is
                 supplied then it will be return when validation fails and no error will be raised.
+            opt_logger (Logger, optional): Logger that logs exceptions when validation fails.
         """
         super().__init__(**kwargs)
         self._raise_error = bool(kwargs.get("raise_error", True))
@@ -1453,7 +1501,9 @@ class TypeCheckKw(_DecBase):
                             return self._opt_return
                         msg = str(e)
                         msg = msg + self._get_class_dec_err()
-                        raise TypeError(msg)
+                        ex = TypeError(msg)
+                        self._log_err(err=ex)
+                        raise ex
             if tc and tc.raise_error is False:
                 wrapper.is_types_kw_valid = is_valid
                 if is_valid == False and self._is_opt_return() == True:
@@ -1495,6 +1545,7 @@ class RuleCheckAny(_RuleBase):
                 By default an error is rasied when validation fails. If ``opt_return`` is
                 supplied then it will be return when validation fails and no error will be raised.
             opt_args_filter (DecArgEnum, optional): Filters the arguments that are validated. Default ``DecArgEnum.ALL``.
+            opt_logger (Logger, optional): Logger that logs exceptions when validation fails.
         """
         super().__init__(**kwargs)
         self._raise_error = bool(kwargs.get("raise_error", True))
@@ -1522,6 +1573,7 @@ class RuleCheckAny(_RuleBase):
                 if self._is_opt_return():
                     return self._opt_return
                 err_rule = self._get_err(e=err)
+                self._log_err(err=err_rule)
                 raise err_rule
             if self._raise_error is False:
                 wrapper.is_rules_any_valid = is_valid
@@ -1570,6 +1622,7 @@ class RuleCheckAll(_RuleBase):
                 By default an error is rasied when validation fails. If ``opt_return`` is
                 supplied then it will be return when validation fails and no error will be raised.
             opt_args_filter (DecArgEnum, optional): Filters the arguments that are validated. Default ``DecArgEnum.ALL``.
+            opt_logger (Logger, optional): Logger that logs exceptions when validation fails.
         """
         super().__init__(**kwargs)
         self._raise_error = bool(kwargs.get("raise_error", True))
@@ -1597,6 +1650,7 @@ class RuleCheckAll(_RuleBase):
                 if self._is_opt_return():
                     return self._opt_return
                 err_rule = self._get_err(e=err)
+                self._log_err(err=err_rule)
                 raise err_rule
             if self._rulechecker.raise_error is False:
                 wrapper.is_rules_all_valid = is_valid
@@ -1648,6 +1702,7 @@ class RuleCheckAllKw(_RuleBase):
             opt_return (object, optional): Return value when decorator is invalid.
                 By default an error is rasied when validation fails. If ``opt_return`` is
                 supplied then it will be return when validation fails and no error will be raised.
+            opt_logger (Logger, optional): Logger that logs exceptions when validation fails.
         """
         super().__init__(**kwargs)
         self._raise_error = bool(kwargs.get("raise_error", True))
@@ -1698,6 +1753,7 @@ class RuleCheckAllKw(_RuleBase):
                         if self._is_opt_return():
                             return self._opt_return
                         err_rule = self._get_err(e=err)
+                        self._log_err(err=err_rule)
                         raise err_rule
                     if is_valid is False:
                         break
@@ -1747,6 +1803,7 @@ class RuleCheckAnyKw(RuleCheckAllKw):
                         if self._is_opt_return():
                             return self._opt_return
                         err_rule = self._get_err(e=err)
+                        self._log_err(err=err_rule)
                         raise err_rule
                     if is_valid is False:
                         break
@@ -1781,6 +1838,7 @@ class RequireArgs(_DecBase):
             opt_return (object, optional): Return value when decorator is invalid.
                 By default an error is rasied when validation fails. If ``opt_return`` is
                 supplied then it will be return when validation fails and no error will be raised.
+            opt_logger (Logger, optional): Logger that logs exceptions when validation fails.
         """
         super().__init__(**kwargs)
         self._args = []
@@ -1800,8 +1858,10 @@ class RequireArgs(_DecBase):
                 if not key in arg_keys:
                     if self._is_opt_return():
                         return self._opt_return
-                    raise ValueError(
+                    ex = ValueError(
                         f"'{func.__name__}', '{key}' is a required arg.")
+                    self._log_err(err=ex)
+                    raise ex
             return func(*args, **kwargs)
         return wrapper
 
@@ -1825,6 +1885,7 @@ class DefaultArgs(_CommonBase):
         self._kwargs = {**kwargs}
 
     def __call__(self, func):
+        super()._call_init(func=func)
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             for key, value in self._kwargs.items():
@@ -2053,6 +2114,7 @@ class SubClass(_DecBase):
                 that decorator is applied to.
                 Default ``False``
             opt_args_filter (DecArgEnum, optional): Filters the arguments that are validated. Default ``DecArgEnum.ALL``.
+            opt_logger (Logger, optional): Logger that logs exceptions when validation fails.
         """
         super().__init__(**kwargs)
         self._types = []
@@ -2101,16 +2163,20 @@ class SubClass(_DecBase):
             except TypeError:
                 if self._is_opt_return():
                     return self._opt_return
-                raise TypeError(self._get_err_msg(name=None, value=value,
+                ex = TypeError(self._get_err_msg(name=None, value=value,
                                                   types=types, arg_index=arg_index))
+                self._log_err(err=ex)
+                raise ex
         else:
             try:
                 sc.validate(**{key: value})
             except TypeError:
                 if self._is_opt_return():
                     return self._opt_return
-                raise TypeError(self._get_err_msg(name=key, value=value,
+                ex = TypeError(self._get_err_msg(name=key, value=value,
                                                   types=types, arg_index=arg_index))
+                self._log_err(err=ex)
+                raise ex
         return NO_THING
 
     def __call__(self, func: callable):
@@ -2130,7 +2196,9 @@ class SubClass(_DecBase):
                     msg = 'Invalid number of arguments for {0}()'.format(
                         func.__name__)
                     msg = msg + self._get_class_dec_err()
-                    raise ValueError(msg)
+                    ex = ValueError(msg)
+                    self._log_err(err=ex)
+                    raise ex
             arg_type = zip(arg_keys, self._types)
             i = 0
             for arg_info in arg_type:
@@ -2201,6 +2269,7 @@ class SubClasskKw(_DecBase):
             opt_return (object, optional): Return value when decorator is invalid.
                 By default an error is rasied when validation fails. If ``opt_return`` is
                 supplied then it will be return when validation fails and no error will be raised.
+            opt_logger (Logger, optional): Logger that logs exceptions when validation fails.
         """
         super().__init__(**kwargs)
         self._arg_index = arg_info
@@ -2234,13 +2303,11 @@ class SubClasskKw(_DecBase):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             self._wrapper_init(args=args, kwargs=kwargs)
-            is_valid = True
             arg_name_values = self._get_args_dict()
             arg_keys = arg_name_values.keys()
             sc = False
             for key in self._arg_index.keys():
                 if key in arg_keys:
-                    is_valid = False
                     types = self._get_types(key=key)
                     if len(types) == 0:
                         continue
@@ -2255,6 +2322,8 @@ class SubClasskKw(_DecBase):
                             return self._opt_return
                         msg = str(e)
                         msg = msg + self._get_class_dec_err()
-                        raise TypeError(msg)
+                        ex = TypeError(msg)
+                        self._log_err(err=ex)
+                        raise ex
             return func(*args, **kwargs)
         return wrapper

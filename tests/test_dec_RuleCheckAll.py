@@ -6,6 +6,7 @@ if __name__ == '__main__':
 from kwhelp.decorator import DecArgEnum, DecFuncEnum, RuleCheckAll
 from kwhelp import rules
 from kwhelp.exceptions import RuleError
+from tests.ex_logger import test_logger, clear_log, get_logged_errors
 
 
 class TestRuleCheckAll(unittest.TestCase):
@@ -80,23 +81,23 @@ class TestRuleCheckAll(unittest.TestCase):
         with self.assertRaises(RuleError):
             foo(first=10, last="!", hours=-12, years=22)
 
-
     def test_rule_check_all_opt_args_filter_no_args(self):
       # test only **kwargs
         @RuleCheckAll(rules.RuleInt, rules.RuleIntPositive, opt_args_filter=DecArgEnum.NO_ARGS)
         def foo(*args, first, last, **kwargs):
             return [*args] + [first, last] + [v for _, v in kwargs.items()]
-        result = foo("the", "quick", "brown", "fox", first=10, last=12, hours=14, years=16)
+        result = foo("the", "quick", "brown", "fox",
+                     first=10, last=12, hours=14, years=16)
         assert result[4] == 10
         assert result[5] == 12
         assert result[6] == 14
         assert result[7] == 16
         with self.assertRaises(RuleError):
             foo("the", "quick", "brown", "fox",
-               first=10, last="12", hours=14, years=16)
+                first=10, last="12", hours=14, years=16)
         with self.assertRaises(RuleError):
             foo("the", "quick", "brown", "fox",
-               first=10, last=12, hours=14, years=-12)
+                first=10, last=12, hours=14, years=-12)
 
     def test_rule_check_all_opt_return(self):
         @RuleCheckAll(rules.RuleFloatPositive, opt_return=None)
@@ -346,6 +347,109 @@ class TestRuleCheckAllClass(unittest.TestCase):
             b.add_positives(1, 4, 7, 4, last="7")
         with self.assertRaises(RuleError):
             b.add_positives(1, 4, 6, 3, last=-7)
+
+
+class TestRuleCheckAllLogger(unittest.TestCase):
+    def setUp(self):
+        clear_log()
+
+    def tearDown(self):
+        pass
+
+    def test_rule_check_all_gen(self):
+        @RuleCheckAll(rules.RuleInt, rules.RuleIntPositive, opt_logger=test_logger)
+        def foo(first, last, **kwargs):
+            return None
+        with self.assertRaises(RuleError):
+            foo(first="1", last=100, hours=12, years=22)
+        with self.assertRaises(RuleError):
+            foo(first=1, last="100", hours=12, years=22)
+        with self.assertRaises(RuleError):
+            foo(first=1, last=100, hours="12", years=22)
+        with self.assertRaises(RuleError):
+            foo(first=1, last=100, hours=12, years="22")
+        with self.assertRaises(RuleError):
+            foo(first=-1, last=100, hours=12, years=22)
+        with self.assertRaises(RuleError):
+            foo(first=1, last=100, hours=-12, years=22)
+        errors = get_logged_errors()
+        assert len(errors) == 6
+
+    def test_rule_check_all_opt_args_filter_kwargs(self):
+        # test only **kwargs
+        @RuleCheckAll(rules.RuleInt, rules.RuleIntPositive, opt_args_filter=DecArgEnum.KWARGS, opt_logger=test_logger)
+        def foo(*args, first, last, **kwargs):
+            return [*args] + [first, last] + [v for _, v in kwargs.items()]
+        with self.assertRaises(RuleError):
+            foo(first=1, last=100, hours=12, years="22")
+        with self.assertRaises(RuleError):
+            foo(first="True", last=100, hours=-12, years=22)
+        errors = get_logged_errors()
+        assert len(errors) == 2
+
+    def test_rule_check_all_opt_args_filter_args(self):
+        # test only **kwargs
+        @RuleCheckAll(rules.RuleStrNotNullEmptyWs, opt_args_filter=DecArgEnum.ARGS, opt_logger=test_logger)
+        def foo(*args, first, last, **kwargs):
+            return [*args] + [first, last] + [v for _, v in kwargs.items()]
+        with self.assertRaises(RuleError):
+            foo("the", "", "brown", "fox",
+                first=1, last=100, hours=12.5, years=22)
+        with self.assertRaises(RuleError):
+            foo("the", "quick", " ", "fox",
+                first=1, last=100, hours=12.5, years=22)
+        errors = get_logged_errors()
+        assert len(errors) == 2
+
+    def test_rule_check_all_opt_args_filter_named(self):
+        # test only **kwargs
+        @RuleCheckAll(rules.RuleInt, rules.RuleIntPositive, opt_args_filter=DecArgEnum.NAMED_ARGS, opt_logger=test_logger)
+        def foo(*args, first, last, **kwargs):
+            return [*args] + [first, last] + [v for _, v in kwargs.items()]
+        with self.assertRaises(RuleError):
+            foo("a", "b", "c", first="one", last=100, hours=12, years="22")
+        with self.assertRaises(RuleError):
+            foo(first=10, last="!", hours=-12, years=22)
+        errors = get_logged_errors()
+        assert len(errors) == 2
+
+    def test_rule_check_all_opt_args_filter_no_args(self):
+      # test only **kwargs
+        @RuleCheckAll(rules.RuleInt, rules.RuleIntPositive, opt_args_filter=DecArgEnum.NO_ARGS, opt_logger=test_logger)
+        def foo(*args, first, last, **kwargs):
+            return [*args] + [first, last] + [v for _, v in kwargs.items()]
+        with self.assertRaises(RuleError):
+            foo("the", "quick", "brown", "fox",
+                first=10, last="12", hours=14, years=16)
+        with self.assertRaises(RuleError):
+            foo("the", "quick", "brown", "fox",
+                first=10, last=12, hours=14, years=-12)
+        errors = get_logged_errors()
+        assert len(errors) == 2
+
+    def test_rule_check_all_args(self):
+        @RuleCheckAll(rules.RuleIntPositive, opt_logger=test_logger)
+        def add_positives(*args) -> float:
+            pass
+        with self.assertRaises(RuleError):
+            add_positives(2, 1, -1)
+        errors = get_logged_errors()
+        assert len(errors) == 1
+
+    def test_rule_check_all_args_pos(self):
+        @RuleCheckAll(rules.RuleIntPositive, opt_logger=test_logger)
+        def add_positives(first, second, *args, **kwargs) -> float:
+            pass
+        with self.assertRaises(RuleError):
+            add_positives(2, 1, -1)
+        with self.assertRaises(RuleError):
+            add_positives(-1, 4, 7, 4, 7)
+        with self.assertRaises(RuleError):
+            add_positives(1, 4, 7, 4, last="7")
+        with self.assertRaises(RuleError):
+            add_positives(1, 4, 7, 4, last=-7)
+        errors = get_logged_errors()
+        assert len(errors) == 4
 
 
 if __name__ == '__main__':
