@@ -5,7 +5,7 @@ if __name__ == '__main__':
     import sys
     sys.path.append(os.path.realpath('.'))
 from kwhelp.decorator import DecArgEnum, DecFuncEnum, TypeCheck, ArgsLen
-
+from tests.ex_logger import test_logger, clear_log, get_logged_errors
 
 class Color(IntEnum):
     RED = 1
@@ -256,6 +256,49 @@ class TestTypeCheckClass(unittest.TestCase):
         assert result == 23.1
         assert f.add_numbers.is_types_valid == True
 
+
+class TestTypeCheckLogger(unittest.TestCase):
+    def setUp(self):
+        clear_log()
+
+    def tearDown(self):
+        pass
+
+    def test_type_check_gen(self):
+        @TypeCheck(int, float, opt_logger=test_logger)
+        def add_numbers(*args) -> float:
+            result = 0.0
+            for arg in args:
+                result += float(arg)
+            return result
+        with self.assertRaises(TypeError):
+            add_numbers(2, 1.2, "4")
+        with self.assertRaises(TypeError):
+            add_numbers(2, 1.2, 4, self)
+        errors = get_logged_errors()
+        assert len(errors) == 2
+
+    def test_type_check__opt_args_filter_args(self):
+        @TypeCheck(int, float, opt_args_filter=DecArgEnum.ARGS, opt_logger=test_logger)
+        def foo(*args, first, last, **kwargs):
+            pass
+
+        with self.assertRaises(TypeError):
+            foo(1, '2', 3.5, first="start", last="!",
+                one="1st", two="2nd", three="3rd")
+        errors = get_logged_errors()
+        assert len(errors) == 1
+
+    def test_type_check__opt_args_filter_named_args(self):
+        @TypeCheck(int, float, opt_args_filter=DecArgEnum.NAMED_ARGS, opt_logger=test_logger)
+        def foo(*args, first, last, **kwargs):
+            pass
+
+        with self.assertRaises(TypeError):
+            foo("a", "b", "c", first=1, last="!",
+                one="1st", two="2nd", three="3rd")
+        errors = get_logged_errors()
+        assert len(errors) == 1
 
 if __name__ == '__main__':
     unittest.main()

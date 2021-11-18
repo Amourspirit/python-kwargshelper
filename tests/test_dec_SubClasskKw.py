@@ -5,6 +5,7 @@ if __name__ == '__main__':
     import sys
     sys.path.append(os.path.realpath('.'))
 from kwhelp.decorator import DecFuncEnum, SubClasskKw, TypeCheck, ReturnType
+from tests.ex_logger import test_logger, clear_log, get_logged_errors
 
 
 class Color(IntEnum):
@@ -270,6 +271,73 @@ class TestSubClasskKwClass(unittest.TestCase):
             b.foo(first=1, last=100, hours="2", name="test")
         with self.assertRaises(TypeError):
             b.foo(first=1, last=100, hours=12.5, name=7)
+
+
+class TestSubClasskKwLogger(unittest.TestCase):
+    def setUp(self):
+        clear_log()
+
+    def tearDown(self):
+        pass
+
+    def test_type_checkkw_gen(self):
+        @SubClasskKw(arg_info={"first": 0, "last": 0, "hours": 0, "name": 1},
+                     types=[(int, float), str], opt_logger=test_logger)
+        def foo(first, last, **kwargs):
+            pass
+        with self.assertRaises(TypeError):
+            foo(first="First", last=100, hours=12.5, name="test")
+        with self.assertRaises(TypeError):
+            foo(first=1, last="100", hours=12.5, name="test")
+        with self.assertRaises(TypeError):
+            foo(first=1, last=100, hours="2", name="test")
+        with self.assertRaises(TypeError):
+            foo(first=1, last=100, hours=12.5, name=7)
+        errors = get_logged_errors()
+        assert len(errors) == 4
+
+    def test_type_checkkw_mix(self):
+        @SubClasskKw(arg_info={"first": 0, "last": 0, "hours": 0, "name": str},
+                     types=[(int, float)], opt_logger=test_logger)
+        def foo(first, last, **kwargs):
+            pass
+        with self.assertRaises(TypeError):
+            foo(first="First", last=100, hours=12.5, name="test")
+        with self.assertRaises(TypeError):
+            foo(first=1, last="100", hours=12.5, name="test")
+        with self.assertRaises(TypeError):
+            foo(first=1, last=100, hours="2", name="test")
+        with self.assertRaises(TypeError):
+            foo(first=1, last=100, hours=12.5, name=7)
+        errors = get_logged_errors()
+        assert len(errors) == 4
+
+    def test_type_checkkw_arg_info(self):
+        @SubClasskKw(arg_info={"first": int, "last": int, "hours": float, "name": str}, opt_logger=test_logger)
+        def foo(first, last, **kwargs):
+            pass
+        with self.assertRaises(TypeError):
+            foo(first="First", last=100, hours=12.5, name="test")
+        with self.assertRaises(TypeError):
+            foo(first=1, last="100", hours=12.5, name="test")
+        with self.assertRaises(TypeError):
+            foo(first=1, last=100, hours="2", name="test")
+        with self.assertRaises(TypeError):
+            foo(first=1, last=100, hours=12.5, name=7)
+        errors = get_logged_errors()
+        assert len(errors) == 4
+
+    def test_kw_type_checker_dec_arg_index_three_list(self):
+
+        @SubClasskKw(arg_info={"one": 0, "two": 0, "three": [int]}, types=[(int, float)], opt_logger=test_logger)
+        def type_test(one, two, three) -> float:
+            pass
+        with self.assertRaises(TypeError):
+            type_test(19, 1, 3.4)
+        with self.assertRaises(TypeError):
+            type_test(two=19, one=2.2, three="2")
+        errors = get_logged_errors()
+        assert len(errors) == 2
 
 
 if __name__ == '__main__':

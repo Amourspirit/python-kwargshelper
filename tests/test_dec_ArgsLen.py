@@ -7,6 +7,7 @@ if __name__ == '__main__':
     import sys
     sys.path.append(os.path.realpath('.'))
 from kwhelp.decorator import ArgsLen, DecFuncEnum
+from tests.ex_logger import test_logger, clear_log, get_logged_errors
 
 class Color(IntEnum):
     RED = auto()
@@ -599,6 +600,166 @@ class TestArgsLenClass(unittest.TestCase):
         b = Bar()
         result = b.foo()
         assert result == False
+
+
+class TestArgsLenLogger(unittest.TestCase):
+    def setUp(self):
+        clear_log()
+
+    def tearDown(self):
+        pass
+
+    def test_gen(self):
+        @ArgsLen(3, opt_logger=test_logger)
+        def foo(*args):
+            return len(args)
+        with self.assertRaises(ValueError):
+            result = foo()
+        with self.assertRaises(ValueError):
+            foo("a", "b")
+        with self.assertRaises(ValueError):
+            foo("a")
+        errors = get_logged_errors()
+        assert len(errors) == 3
+
+    def test_incorrect_args(self):
+        with self.assertRaises(ValueError):
+            @ArgsLen()
+            def foo(*args): pass
+
+
+    def test_enum(self):
+        @ArgsLen(0, 2, opt_logger=test_logger)
+        def foo(*args):
+            return len(args)
+        with self.assertRaises(ValueError):
+            foo(Color.RED, Color.BLUE, Color.GREEN)
+        with self.assertRaises(ValueError):
+            foo(Color.RED)
+        errors = get_logged_errors()
+        assert len(errors) == 2
+
+    def test_tuple(self):
+        @ArgsLen(3, opt_logger=test_logger)
+        def foo(*args):
+            return len(args)
+        with self.assertRaises(ValueError):
+            foo()
+        with self.assertRaises(ValueError):
+            foo("a", "b")
+        with self.assertRaises(ValueError):
+            foo("a")
+        errors = get_logged_errors()
+        assert len(errors) == 3
+
+    def test_repeat_lens(self):
+        @ArgsLen(3, 3, 3, 3, 3, opt_logger=test_logger)
+        def foo(*args):
+            return len(args)
+        with self.assertRaises(ValueError):
+            result = foo()
+        with self.assertRaises(ValueError):
+            foo("a", "b")
+        with self.assertRaises(ValueError):
+            foo("a")
+        errors = get_logged_errors()
+        assert len(errors) == 3
+
+    def test_two_lens(self):
+        @ArgsLen(3, 5, opt_logger=test_logger)
+        def foo(*args):
+            return len(args)
+        with self.assertRaises(ValueError):
+            foo()
+        with self.assertRaises(ValueError):
+            foo("a", "b")
+        with self.assertRaises(ValueError):
+            foo("a")
+        with self.assertRaises(ValueError):
+            foo("a", "b", "c", "d")
+        errors = get_logged_errors()
+        assert len(errors) == 4
+
+    def test_three_lens(self):
+        @ArgsLen(3, 5, 7, opt_logger=test_logger)
+        def foo(*args):
+            return len(args)
+        with self.assertRaises(ValueError):
+            foo()
+        with self.assertRaises(ValueError):
+            foo("a", "b")
+        with self.assertRaises(ValueError):
+            foo("a")
+        with self.assertRaises(ValueError):
+            foo("a", "b", "c", "d")
+        with self.assertRaises(ValueError):
+            foo("a", "b", "c", "d", "e", "f")
+        errors = get_logged_errors()
+        assert len(errors) == 5
+
+    def test_ranges(self):
+        @ArgsLen((3, 5), (7, 9), opt_logger=test_logger)
+        def foo(*args):
+            return len(args)
+        with self.assertRaises(ValueError):
+            foo()
+        with self.assertRaises(ValueError):
+            foo("a", "b")
+        with self.assertRaises(ValueError):
+            foo("a", "b", "c", "d", "e", "f")
+        errors = get_logged_errors()
+        assert len(errors) == 3
+
+    def test_int_range(self):
+        @ArgsLen(2, (5, 7), opt_logger=test_logger)
+        def foo(*args):
+            return len(args)
+        with self.assertRaises(ValueError):
+            foo()
+        with self.assertRaises(ValueError):
+            foo("a")
+        with self.assertRaises(ValueError):
+            foo("a", "b", "c")
+        errors = get_logged_errors()
+        assert len(errors) == 3
+
+    def test_int_range_kwargs(self):
+        @ArgsLen(2, (5, 7), opt_logger=test_logger)
+        def foo(*args, **kwargs):
+            return len(args), len(kwargs)
+        with self.assertRaises(ValueError):
+            foo()
+        with self.assertRaises(ValueError):
+            foo(a=1, b=2)
+        with self.assertRaises(ValueError):
+            foo("a")
+        with self.assertRaises(ValueError):
+            foo("a", a=1, b=2)
+        with self.assertRaises(ValueError):
+            foo("a", "b", "c")
+        with self.assertRaises(ValueError):
+            foo("a", "b", "c", a=1, b=2)
+        errors = get_logged_errors()
+        assert len(errors) == 6
+
+    def test_int_range_names_kwargs(self):
+        @ArgsLen(2, (5, 7), opt_logger=test_logger)
+        def foo(*args, a, b, **kwargs):
+            return len(args), len(kwargs), a, b
+        with self.assertRaises(ValueError):
+            foo(a=1, b=2)
+        with self.assertRaises(ValueError):
+            foo(a=1, b=2, one="one", two="two")
+        with self.assertRaises(ValueError):
+            foo("a", a=1, b=2)
+        with self.assertRaises(ValueError):
+            foo("a", a=1, b=2, one="one", two="two")
+        with self.assertRaises(ValueError):
+            foo("a", "b", "c", a=1, b=2)
+        with self.assertRaises(ValueError):
+            foo("a", "b", "c", a=1, b=2, one="one", two="two")
+        errors = get_logged_errors()
+        assert len(errors) == 6
 
 if __name__ == '__main__':
     unittest.main()
