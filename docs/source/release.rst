@@ -1,6 +1,12 @@
 Release Notes
 =============
 
+Version 2.7.0
+-------------
+
+Added option ``opt_logger`` to many decorators.
+See :doc:`/source/general/dec_feature/opt_logger`.
+
 Versoin 2.6.0
 -------------
 

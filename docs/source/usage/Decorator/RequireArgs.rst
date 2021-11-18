@@ -6,6 +6,7 @@ RequireArgs Usage
 Includes features:
 
     * :doc:`/source/general/dec_feature/ftype`
+    * :doc:`/source/general/dec_feature/opt_logger`
     * :doc:`/source/general/dec_feature/opt_return`
 
 .. code-block:: python

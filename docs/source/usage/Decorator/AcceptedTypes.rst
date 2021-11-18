@@ -10,6 +10,7 @@ Includes features:
     * :doc:`/source/general/dec_feature/ftype`
     * :doc:`/source/general/dec_feature/opt_all_args`
     * :doc:`/source/general/dec_feature/opt_args_filter`
+    * :doc:`/source/general/dec_feature/opt_logger`
     * :doc:`/source/general/dec_feature/opt_return`
 
 

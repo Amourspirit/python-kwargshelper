@@ -6,8 +6,9 @@ TypeCheck Usage
 Includes features:
 
     * :doc:`/source/general/dec_feature/ftype`
-    * :doc:`/source/general/dec_feature/opt_return`
     * :doc:`/source/general/dec_feature/opt_args_filter`
+    * :doc:`/source/general/dec_feature/opt_logger`
+    * :doc:`/source/general/dec_feature/opt_return`
     * :doc:`/source/general/dec_feature/raise_error`
     * :doc:`/source/general/dec_feature/type_instance_check`
 
