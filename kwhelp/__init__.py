@@ -7,7 +7,7 @@ from .exceptions import CancelEventError, ReservedAttributeError, RuleError
 from typing import Iterable, List, Optional, Callable
 from collections import UserList
 from typing import Any, Dict, List, Optional, Set, Callable, Union
-VERSION = __version__ = '2.7.0'
+VERSION = __version__ = '2.7.1'
 
 # region class HelperArgs
 

@@ -8,6 +8,7 @@ from kwhelp.decorator import AcceptedTypes, DecFuncEnum, ReturnRuleAny
 from kwhelp import rules
 from kwhelp.exceptions import RuleError
 from tests.ex_logger import test_logger, clear_log, get_logged_errors
+from tests.ex_log_adapter import LogIndentAdapter
 
 class TestReturnRuleAllDecorators(unittest.TestCase):
     def test_return_gen(self):
@@ -148,32 +149,55 @@ class TestReturnRuleAllDecoratorsClass(unittest.TestCase):
 
 
 class TestReturnRuleAllDecoratorsLogger(unittest.TestCase):
+    # region setup/teardown
+    @classmethod
+    def setUpClass(cls):
+        cls.log_adapt = LogIndentAdapter(test_logger, {})
+        cls.logger = test_logger
+
+    @classmethod
+    def tearDownClass(cls):
+        pass
+
     def setUp(self):
-        clear_log()
+        pass
 
     def tearDown(self):
         pass
+    # endregion setup/teardown
 
     def test_return_gen(self):
-        @ReturnRuleAny(rules.RuleInt, rules.RuleFloatNegative, opt_logger=test_logger)
-        def req_test(*arg):
-            return sum(arg)
-        with self.assertRaises(RuleError):
-            # return type not an int or a float negative
-            result = req_test(2, 2.4)
-        errors = get_logged_errors()
-        assert len(errors) == 1
+        for i in range(2):
+            clear_log()
+            if i == 0:
+                log = self.logger
+            else:
+                log = self.log_adapt
+            @ReturnRuleAny(rules.RuleInt, rules.RuleFloatNegative, opt_logger=log)
+            def req_test(*arg):
+                return sum(arg)
+            with self.assertRaises(RuleError):
+                # return type not an int or a float negative
+                result = req_test(2, 2.4)
+            errors = get_logged_errors()
+            assert len(errors) == 1
 
     def test_return_none(self):
-        @ReturnRuleAny(rules.RuleNone, rules.RuleIntZero, opt_logger=test_logger)
-        def req_test(arg):
-            return arg
-        with self.assertRaises(RuleError):
-            result = req_test(arg=self)
-        with self.assertRaises(RuleError):
-            result = req_test(arg=1)
-        errors = get_logged_errors()
-        assert len(errors) == 2
+        for i in range(2):
+            clear_log()
+            if i == 0:
+                log = self.logger
+            else:
+                log = self.log_adapt
+            @ReturnRuleAny(rules.RuleNone, rules.RuleIntZero, opt_logger=log)
+            def req_test(arg):
+                return arg
+            with self.assertRaises(RuleError):
+                result = req_test(arg=self)
+            with self.assertRaises(RuleError):
+                result = req_test(arg=1)
+            errors = get_logged_errors()
+            assert len(errors) == 2
 
 if __name__ == '__main__':
     unittest.main()

@@ -8,6 +8,7 @@ if __name__ == '__main__':
     sys.path.append(os.path.realpath('.'))
 from kwhelp.decorator import ArgsMinMax, DecFuncEnum
 from tests.ex_logger import test_logger, clear_log, get_logged_errors
+from tests.ex_log_adapter import LogIndentAdapter
 
 class Color(IntEnum):
     RED = auto()
@@ -336,74 +337,117 @@ class TestArgsMinMaxClass(unittest.TestCase):
 
 
 class TestArgsMinMaxLogger(unittest.TestCase):
+    # region setup/teardown
+    @classmethod
+    def setUpClass(cls):
+        cls.log_adapt = LogIndentAdapter(test_logger, {})
+        cls.logger = test_logger
+
+    @classmethod
+    def tearDownClass(cls):
+        pass
+
     def setUp(self):
-        clear_log()
+        pass
 
     def tearDown(self):
         pass
+    # endregion setup/teardown
 
     def test_no_max(self):
-        @ArgsMinMax(min=3, opt_logger=test_logger)
-        def foo(*args):
-            return len(args)
-        with self.assertRaises(ValueError):
-            foo()
-        with self.assertRaises(ValueError):
-            foo("a", "b")
-        with self.assertRaises(ValueError):
-            foo("a")
-        errors = get_logged_errors()
-        assert len(errors) == 3
+        for i in range(2):
+            clear_log()
+            if i == 0:
+                log = self.logger
+            else:
+                log = self.log_adapt
+
+            @ArgsMinMax(min=3, opt_logger=log)
+            def foo(*args):
+                return len(args)
+            with self.assertRaises(ValueError):
+                foo()
+            with self.assertRaises(ValueError):
+                foo("a", "b")
+            with self.assertRaises(ValueError):
+                foo("a")
+            errors = get_logged_errors()
+            assert len(errors) == 3
 
     def test_enum(self):
-        @ArgsMinMax(max=2, opt_logger=test_logger)
-        def foo(*args):
-            return len(args)
-        with self.assertRaises(ValueError):
-            foo(Color.RED, Color.BLUE, Color.GREEN)
-        errors = get_logged_errors()
-        assert len(errors) == 1
+        for i in range(2):
+            clear_log()
+            if i == 0:
+                log = self.logger
+            else:
+                log = self.log_adapt
+
+            @ArgsMinMax(max=2, opt_logger=log)
+            def foo(*args):
+                return len(args)
+            with self.assertRaises(ValueError):
+                foo(Color.RED, Color.BLUE, Color.GREEN)
+            errors = get_logged_errors()
+            assert len(errors) == 1
 
     def test_tuple(self):
-        @ArgsMinMax(min=3, opt_logger=test_logger)
-        def foo(*args):
-            return len(args)
-        with self.assertRaises(ValueError):
-            result = foo()
-        with self.assertRaises(ValueError):
-            foo(*gen_args(2))
-        with self.assertRaises(ValueError):
-            foo(*gen_args(1))
-        errors = get_logged_errors()
-        assert len(errors) == 3
+        for i in range(2):
+            clear_log()
+            if i == 0:
+                log = self.logger
+            else:
+                log = self.log_adapt
+            @ArgsMinMax(min=3, opt_logger=log)
+            def foo(*args):
+                return len(args)
+            with self.assertRaises(ValueError):
+                result = foo()
+            with self.assertRaises(ValueError):
+                foo(*gen_args(2))
+            with self.assertRaises(ValueError):
+                foo(*gen_args(1))
+            errors = get_logged_errors()
+            assert len(errors) == 3
 
     def test_int_range_kwargs(self):
-        @ArgsMinMax(min=2, max=7, opt_logger=test_logger)
-        def foo(*args, **kwargs):
-            return len(args), len(kwargs)
-        with self.assertRaises(ValueError):
-            foo()
-        with self.assertRaises(ValueError):
-            foo(a=1, b=2)
-        with self.assertRaises(ValueError):
-            foo(*gen_args(1))
-        with self.assertRaises(ValueError):
-            foo(*gen_args(1), a=1, b=2)
-        with self.assertRaises(ValueError):
-            foo(*gen_args(8))
-        with self.assertRaises(ValueError):
-            foo(*gen_args(8), a=1, b=2)
-        errors = get_logged_errors()
-        assert len(errors) == 6
+        for i in range(2):
+            clear_log()
+            if i == 0:
+                log = self.logger
+            else:
+                log = self.log_adapt
+            @ArgsMinMax(min=2, max=7, opt_logger=log)
+            def foo(*args, **kwargs):
+                return len(args), len(kwargs)
+            with self.assertRaises(ValueError):
+                foo()
+            with self.assertRaises(ValueError):
+                foo(a=1, b=2)
+            with self.assertRaises(ValueError):
+                foo(*gen_args(1))
+            with self.assertRaises(ValueError):
+                foo(*gen_args(1), a=1, b=2)
+            with self.assertRaises(ValueError):
+                foo(*gen_args(8))
+            with self.assertRaises(ValueError):
+                foo(*gen_args(8), a=1, b=2)
+            errors = get_logged_errors()
+            assert len(errors) == 6
 
     def test_star_args_third(self):
-        @ArgsMinMax(min=2, max=4, opt_logger=test_logger)
-        def foo(arg1, arg2, *args, a, b, **kwargs):
-            return len(args), len(kwargs), (a, b), (arg1, arg2)
-        with self.assertRaises(ValueError):
-            foo(*gen_args(7), a=1, b=2, opt1="one", opt2="two")
-        errors = get_logged_errors()
-        assert len(errors) == 1
+        for i in range(2):
+            clear_log()
+            if i == 0:
+                log = self.logger
+            else:
+                log = self.log_adapt
+            @ArgsMinMax(min=2, max=4, opt_logger=log)
+            def foo(arg1, arg2, *args, a, b, **kwargs):
+                return len(args), len(kwargs), (a, b), (arg1, arg2)
+            with self.assertRaises(ValueError):
+                foo(*gen_args(7), a=1, b=2, opt1="one", opt2="two")
+            errors = get_logged_errors()
+            assert len(errors) == 1
 
 
 

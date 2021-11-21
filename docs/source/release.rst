@@ -1,6 +1,12 @@
 Release Notes
 =============
 
+Version 2.7.1
+-------------
+
+Update ``opt_logger`` accept ``Logger`` or a ``LoggerAdapter``.
+See :doc:`/source/general/dec_feature/opt_logger`.
+
 Version 2.7.0
 -------------
 
