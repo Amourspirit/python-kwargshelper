@@ -3,7 +3,7 @@ from typing import Any, Dict, Iterable, Iterator, List, Optional, Set, Tuple, Un
 from enum import Enum, IntEnum, IntFlag, auto
 from collections import OrderedDict
 from inspect import signature, isclass, Parameter, Signature
-from logging import Logger
+from logging import Logger, LoggerAdapter
 from ..checks import TypeChecker, RuleChecker, SubClassChecker
 from ..rules import IRule
 from ..helper import is_iterable, Formatter
@@ -501,10 +501,10 @@ class _CommonBase(object):
             opt_return (object, optional): Return value when decorator is invalid.
                 By default an error is rasied when validation fails. If ``opt_return`` is
                 supplied then it will be return when validation fails and no error will be raised.
-            opt_logger (Logger, optional): Logger that logs exceptions when validation fails.
+            opt_logger (Union[Logger, LoggerAdapter], optional): Logger that logs exceptions when validation fails.
         """
         self._opt_return = kwargs.get("opt_return", NO_THING)
-        self._logger: Optional[Logger] = kwargs.get("opt_logger", None)
+        self._logger: Optional[Union[Logger, LoggerAdapter]] = kwargs.get("opt_logger", None)
         # and option check for fn value in kwargs. can be used for testing
         self._fn: Optional[callable] = kwargs.get('_option_fn', None)
     
@@ -516,6 +516,12 @@ class _CommonBase(object):
             err (Exception): [description]
         """
         if isinstance(self._logger, Logger):
+            self._logger.exception(err)
+            return
+ 
+        sbc = SubClassChecker(LoggerAdapter, raise_error=False)
+        is_valid = sbc.validate(self._logger)
+        if is_valid:
             self._logger.exception(err)
 
     def _is_opt_return(self) -> bool:
@@ -828,7 +834,7 @@ class TypeCheck(_DecBase):
                 By default an error is rasied when validation fails. If ``opt_return`` is
                 supplied then it will be return when validation fails and no error will be raised.
             opt_args_filter (DecArgEnum, optional): Filters the arguments that are validated. Default ``DecArgEnum.ALL``.
-            opt_logger (Logger, optional): Logger that logs exceptions when validation fails.
+            opt_logger (Union[Logger, LoggerAdapter], optional): Logger that logs exceptions when validation fails.
         Raises:
             TypeError: If ``types`` arg is not a iterable object such as a list or tuple.
             TypeError: If any arg is not of a type listed in ``types``.
@@ -908,7 +914,7 @@ class AcceptedTypes(_DecBase):
                 that decorator is applied to.
                 Default ``False``
             opt_args_filter (DecArgEnum, optional): Filters the arguments that are validated. Default ``DecArgEnum.ALL``.
-            opt_logger (Logger, optional): Logger that logs exceptions when validation fails.
+            opt_logger (Union[Logger, LoggerAdapter], optional): Logger that logs exceptions when validation fails.
         """
         super().__init__(**kwargs)
         self._tc = None
@@ -1064,7 +1070,7 @@ class ArgsLen(_DecBase):
             opt_return (object, optional): Return value when decorator is invalid.
                 By default an error is rasied when validation fails. If ``opt_return`` is
                 supplied then it will be return when validation fails and no error will be raised.
-            opt_logger (Logger, optional): Logger that logs exceptions when validation fails.
+            opt_logger (Union[Logger, LoggerAdapter], optional): Logger that logs exceptions when validation fails.
         """
         super().__init__(**kwargs)
         self._ranges: Set[Tuple[int, int]] = set()
@@ -1170,7 +1176,7 @@ class ArgsMinMax(_DecBase):
             opt_return (object, optional): Return value when decorator is invalid.
                 By default an error is rasied when validation fails. If ``opt_return`` is
                 supplied then it will be return when validation fails and no error will be raised.
-            opt_logger (Logger, optional): Logger that logs exceptions when validation fails.
+            opt_logger (Union[Logger, LoggerAdapter], optional): Logger that logs exceptions when validation fails.
         """
         super().__init__(**kwargs)
         self._min = int(min)
@@ -1252,7 +1258,7 @@ class ReturnRuleAll(_RuleBase):
             opt_return (object, optional): Return value when decorator is invalid.
                 By default an error is rasied when validation fails. If ``opt_return`` is
                 supplied then it will be return when validation fails and no error will be raised.
-            opt_logger (Logger, optional): Logger that logs exceptions when validation fails.
+            opt_logger (Union[Logger, LoggerAdapter], optional): Logger that logs exceptions when validation fails.
         """
         super().__init__(**kwargs)
         self._rc = None
@@ -1309,7 +1315,7 @@ class ReturnRuleAny(_RuleBase):
             opt_return (object, optional): Return value when decorator is invalid.
                 By default an error is rasied when validation fails. If ``opt_return`` is
                 supplied then it will be return when validation fails and no error will be raised.
-            opt_logger (Logger, optional): Logger that logs exceptions when validation fails.
+            opt_logger (Union[Logger, LoggerAdapter], optional): Logger that logs exceptions when validation fails.
         """
         super().__init__(**kwargs)
         self._rc = None
@@ -1370,7 +1376,7 @@ class ReturnType(_DecBase):
             opt_return (object, optional): Return value when decorator is invalid.
                 By default an error is rasied when validation fails. If ``opt_return`` is
                 supplied then it will be return when validation fails and no error will be raised.
-            opt_logger (Logger, optional): Logger that logs exceptions when validation fails.
+            opt_logger (Union[Logger, LoggerAdapter], optional): Logger that logs exceptions when validation fails.
         """
         super().__init__(**kwargs)
         self._tc = None
@@ -1447,7 +1453,7 @@ class TypeCheckKw(_DecBase):
             opt_return (object, optional): Return value when decorator is invalid.
                 By default an error is rasied when validation fails. If ``opt_return`` is
                 supplied then it will be return when validation fails and no error will be raised.
-            opt_logger (Logger, optional): Logger that logs exceptions when validation fails.
+            opt_logger (Union[Logger, LoggerAdapter], optional): Logger that logs exceptions when validation fails.
         """
         super().__init__(**kwargs)
         self._raise_error = bool(kwargs.get("raise_error", True))
@@ -1545,7 +1551,7 @@ class RuleCheckAny(_RuleBase):
                 By default an error is rasied when validation fails. If ``opt_return`` is
                 supplied then it will be return when validation fails and no error will be raised.
             opt_args_filter (DecArgEnum, optional): Filters the arguments that are validated. Default ``DecArgEnum.ALL``.
-            opt_logger (Logger, optional): Logger that logs exceptions when validation fails.
+            opt_logger (Union[Logger, LoggerAdapter], optional): Logger that logs exceptions when validation fails.
         """
         super().__init__(**kwargs)
         self._raise_error = bool(kwargs.get("raise_error", True))
@@ -1622,7 +1628,7 @@ class RuleCheckAll(_RuleBase):
                 By default an error is rasied when validation fails. If ``opt_return`` is
                 supplied then it will be return when validation fails and no error will be raised.
             opt_args_filter (DecArgEnum, optional): Filters the arguments that are validated. Default ``DecArgEnum.ALL``.
-            opt_logger (Logger, optional): Logger that logs exceptions when validation fails.
+            opt_logger (Union[Logger, LoggerAdapter], optional): Logger that logs exceptions when validation fails.
         """
         super().__init__(**kwargs)
         self._raise_error = bool(kwargs.get("raise_error", True))
@@ -1702,7 +1708,7 @@ class RuleCheckAllKw(_RuleBase):
             opt_return (object, optional): Return value when decorator is invalid.
                 By default an error is rasied when validation fails. If ``opt_return`` is
                 supplied then it will be return when validation fails and no error will be raised.
-            opt_logger (Logger, optional): Logger that logs exceptions when validation fails.
+            opt_logger (Union[Logger, LoggerAdapter], optional): Logger that logs exceptions when validation fails.
         """
         super().__init__(**kwargs)
         self._raise_error = bool(kwargs.get("raise_error", True))
@@ -1838,7 +1844,7 @@ class RequireArgs(_DecBase):
             opt_return (object, optional): Return value when decorator is invalid.
                 By default an error is rasied when validation fails. If ``opt_return`` is
                 supplied then it will be return when validation fails and no error will be raised.
-            opt_logger (Logger, optional): Logger that logs exceptions when validation fails.
+            opt_logger (Union[Logger, LoggerAdapter], optional): Logger that logs exceptions when validation fails.
         """
         super().__init__(**kwargs)
         self._args = []
@@ -2114,7 +2120,7 @@ class SubClass(_DecBase):
                 that decorator is applied to.
                 Default ``False``
             opt_args_filter (DecArgEnum, optional): Filters the arguments that are validated. Default ``DecArgEnum.ALL``.
-            opt_logger (Logger, optional): Logger that logs exceptions when validation fails.
+            opt_logger (Union[Logger, LoggerAdapter], optional): Logger that logs exceptions when validation fails.
         """
         super().__init__(**kwargs)
         self._types = []
@@ -2269,7 +2275,7 @@ class SubClasskKw(_DecBase):
             opt_return (object, optional): Return value when decorator is invalid.
                 By default an error is rasied when validation fails. If ``opt_return`` is
                 supplied then it will be return when validation fails and no error will be raised.
-            opt_logger (Logger, optional): Logger that logs exceptions when validation fails.
+            opt_logger (Union[Logger, LoggerAdapter], optional): Logger that logs exceptions when validation fails.
         """
         super().__init__(**kwargs)
         self._arg_index = arg_info

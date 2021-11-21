@@ -7,7 +7,7 @@ if __name__ == '__main__':
 from kwhelp.decorator import AcceptedTypes, DecFuncEnum, ReturnType
 from enum import IntEnum, auto
 from tests.ex_logger import test_logger, clear_log, get_logged_errors
-
+from tests.ex_log_adapter import LogIndentAdapter
 
 class Color(IntEnum):
     RED = auto()
@@ -153,41 +153,69 @@ class TestReturnTypesClsDecorators(unittest.TestCase):
 
 
 class TestReturnTypesDecoratorsLogger(unittest.TestCase):
+    # region setup/teardown
+    @classmethod
+    def setUpClass(cls):
+        cls.log_adapt = LogIndentAdapter(test_logger, {})
+        cls.logger = test_logger
+
+    @classmethod
+    def tearDownClass(cls):
+        pass
+
     def setUp(self):
-        clear_log()
+        pass
 
     def tearDown(self):
         pass
+    # endregion setup/teardown
 
     def test_return_gen(self):
-        @ReturnType(int, opt_logger=test_logger)
-        def req_test(*arg):
-            return sum(arg)
-        with self.assertRaises(TypeError):
-            result = req_test(2, 2.5)
-        errors = get_logged_errors()
-        assert len(errors) == 1
+        for i in range(2):
+            clear_log()
+            if i == 0:
+                log = self.logger
+            else:
+                log = self.log_adapt
+            @ReturnType(int, opt_logger=log)
+            def req_test(*arg):
+                return sum(arg)
+            with self.assertRaises(TypeError):
+                result = req_test(2, 2.5)
+            errors = get_logged_errors()
+            assert len(errors) == 1
 
     def test_return_multi(self):
-
-        @ReturnType(int, float, type_instance_check=False, opt_logger=test_logger)
-        def req_test(arg):
-            return arg
-        with self.assertRaises(TypeError):
-            req_test("Hello")
-        with self.assertRaises(TypeError):
-            req_test(self)
-        errors = get_logged_errors()
-        assert len(errors) == 2
+        for i in range(2):
+            clear_log()
+            if i == 0:
+                log = self.logger
+            else:
+                log = self.log_adapt
+            @ReturnType(int, float, type_instance_check=False, opt_logger=log)
+            def req_test(arg):
+                return arg
+            with self.assertRaises(TypeError):
+                req_test("Hello")
+            with self.assertRaises(TypeError):
+                req_test(self)
+            errors = get_logged_errors()
+            assert len(errors) == 2
 
     def test_return_none(self):
-        @ReturnType(type(None), opt_logger=test_logger)
-        def req_test(arg):
-            return arg
-        with self.assertRaises(TypeError):
-            result = req_test(arg=self)
-        errors = get_logged_errors()
-        assert len(errors) == 1
+        for i in range(2):
+            clear_log()
+            if i == 0:
+                log = self.logger
+            else:
+                log = self.log_adapt
+            @ReturnType(type(None), opt_logger=log)
+            def req_test(arg):
+                return arg
+            with self.assertRaises(TypeError):
+                result = req_test(arg=self)
+            errors = get_logged_errors()
+            assert len(errors) == 1
 
 if __name__ == '__main__':
     unittest.main()
