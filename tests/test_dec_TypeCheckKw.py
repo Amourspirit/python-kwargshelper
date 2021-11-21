@@ -6,7 +6,7 @@ if __name__ == '__main__':
     sys.path.append(os.path.realpath('.'))
 from kwhelp.decorator import DecFuncEnum, TypeCheckKw, TypeCheck, ReturnType
 from tests.ex_logger import test_logger, clear_log, get_logged_errors
-
+from tests.ex_log_adapter import LogIndentAdapter
 
 class Color(IntEnum):
     RED = 1
@@ -305,70 +305,104 @@ class TestTypeCheckKwClass(unittest.TestCase):
 
 
 class TestTypeCheckKwLogger(unittest.TestCase):
+    # region setup/teardown
+    @classmethod
+    def setUpClass(cls):
+        cls.log_adapt = LogIndentAdapter(test_logger, {})
+        cls.logger = test_logger
+
+    @classmethod
+    def tearDownClass(cls):
+        pass
+
     def setUp(self):
-        clear_log()
+        pass
 
     def tearDown(self):
         pass
+    # endregion setup/teardown
 
     def test_type_checkkw_gen(self):
-        @TypeCheckKw(arg_info={"first": 0, "last": 0, "hours": 0, "name": 1},
-                     types=[(int, float), str], opt_logger=test_logger)
-        def foo(first, last, **kwargs):
-            pass
-        with self.assertRaises(TypeError):
-            foo(first="First", last=100, hours=12.5, name="test")
-        with self.assertRaises(TypeError):
-            foo(first=1, last="100", hours=12.5, name="test")
-        with self.assertRaises(TypeError):
-            foo(first=1, last=100, hours="2", name="test")
-        with self.assertRaises(TypeError):
-            foo(first=1, last=100, hours=12.5, name=7)
-        errors = get_logged_errors()
-        assert len(errors) == 4
+        for i in range(2):
+            clear_log()
+            if i == 0:
+                log = self.logger
+            else:
+                log = self.log_adapt
+            @TypeCheckKw(arg_info={"first": 0, "last": 0, "hours": 0, "name": 1},
+                        types=[(int, float), str], opt_logger=log)
+            def foo(first, last, **kwargs):
+                pass
+            with self.assertRaises(TypeError):
+                foo(first="First", last=100, hours=12.5, name="test")
+            with self.assertRaises(TypeError):
+                foo(first=1, last="100", hours=12.5, name="test")
+            with self.assertRaises(TypeError):
+                foo(first=1, last=100, hours="2", name="test")
+            with self.assertRaises(TypeError):
+                foo(first=1, last=100, hours=12.5, name=7)
+            errors = get_logged_errors()
+            assert len(errors) == 4
 
     def test_type_checkkw_mix(self):
-        @TypeCheckKw(arg_info={"first": 0, "last": 0, "hours": 0, "name": str},
-                     types=[(int, float)], opt_logger=test_logger)
-        def foo(first, last, **kwargs):
-            pass
-        with self.assertRaises(TypeError):
-            foo(first="First", last=100, hours=12.5, name="test")
-        with self.assertRaises(TypeError):
-            foo(first=1, last="100", hours=12.5, name="test")
-        with self.assertRaises(TypeError):
-            foo(first=1, last=100, hours="2", name="test")
-        with self.assertRaises(TypeError):
-            foo(first=1, last=100, hours=12.5, name=7)
-        errors = get_logged_errors()
-        assert len(errors) == 4
+        for i in range(2):
+            clear_log()
+            if i == 0:
+                log = self.logger
+            else:
+                log = self.log_adapt
+            @TypeCheckKw(arg_info={"first": 0, "last": 0, "hours": 0, "name": str},
+                        types=[(int, float)], opt_logger=log)
+            def foo(first, last, **kwargs):
+                pass
+            with self.assertRaises(TypeError):
+                foo(first="First", last=100, hours=12.5, name="test")
+            with self.assertRaises(TypeError):
+                foo(first=1, last="100", hours=12.5, name="test")
+            with self.assertRaises(TypeError):
+                foo(first=1, last=100, hours="2", name="test")
+            with self.assertRaises(TypeError):
+                foo(first=1, last=100, hours=12.5, name=7)
+            errors = get_logged_errors()
+            assert len(errors) == 4
 
     def test_type_checkkw_arg_info(self):
-        @TypeCheckKw(arg_info={"first": int, "last": int, "hours": float, "name": str}, opt_logger=test_logger)
-        def foo(first, last, **kwargs):
-            pass
-        with self.assertRaises(TypeError):
-            foo(first="First", last=100, hours=12.5, name="test")
-        with self.assertRaises(TypeError):
-            foo(first=1, last="100", hours=12.5, name="test")
-        with self.assertRaises(TypeError):
-            foo(first=1, last=100, hours="2", name="test")
-        with self.assertRaises(TypeError):
-            foo(first=1, last=100, hours=12.5, name=7)
-        errors = get_logged_errors()
-        assert len(errors) == 4
+        for i in range(2):
+            clear_log()
+            if i == 0:
+                log = self.logger
+            else:
+                log = self.log_adapt
+            @TypeCheckKw(arg_info={"first": int, "last": int, "hours": float, "name": str}, opt_logger=log)
+            def foo(first, last, **kwargs):
+                pass
+            with self.assertRaises(TypeError):
+                foo(first="First", last=100, hours=12.5, name="test")
+            with self.assertRaises(TypeError):
+                foo(first=1, last="100", hours=12.5, name="test")
+            with self.assertRaises(TypeError):
+                foo(first=1, last=100, hours="2", name="test")
+            with self.assertRaises(TypeError):
+                foo(first=1, last=100, hours=12.5, name=7)
+            errors = get_logged_errors()
+            assert len(errors) == 4
 
     def test_kw_type_checker_dec_arg_index_three_list(self):
-
-        @TypeCheckKw(arg_info={"one": 0, "two": 0, "three": [int]}, types=[(int, float)], opt_logger=test_logger)
-        def type_test(one, two, three):
-            pass
-        with self.assertRaises(TypeError):
-            type_test(19, 1, 3.4)
-        with self.assertRaises(TypeError):
-            type_test(two=19, one=2.2, three="2")
-        errors = get_logged_errors()
-        assert len(errors) == 2
+        for i in range(2):
+            clear_log()
+            if i == 0:
+                log = self.logger
+            else:
+                log = self.log_adapt
+            @TypeCheckKw(arg_info={"one": 0, "two": 0, "three": [int]}, types=[(int, float)], opt_logger=log)
+            def type_test(one, two, three):
+                pass
+            with self.assertRaises(TypeError):
+                type_test(19, 1, 3.4)
+            with self.assertRaises(TypeError):
+                type_test(two=19, one=2.2, three="2")
+            errors = get_logged_errors()
+            assert len(errors) == 2
 
 
 if __name__ == '__main__':

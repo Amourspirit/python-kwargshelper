@@ -7,6 +7,7 @@ if __name__ == '__main__':
 from enum import IntEnum, auto
 from kwhelp.decorator import AcceptedTypes, DecFuncEnum, DecArgEnum, RequireArgs, ReturnType
 from tests.ex_logger import test_logger, clear_log, get_logged_errors
+from tests.ex_log_adapter import LogIndentAdapter
 
 def gen_int_float(length: int) -> list:
     r = []
@@ -630,115 +631,168 @@ class TestAcceptedTypesClassFilter(unittest.TestCase):
             foo(*args_lst, first='1st', second='2nd', one=1, two='2')
 
 
-class TestAcceptedTypesDecoratorsLogger(unittest.TestCase):
+class TestAcceptedTypesDecoratorsLog(unittest.TestCase):
+    # region setup/teardown
+    @classmethod
+    def setUpClass(cls):
+        cls.log_adapt = LogIndentAdapter(test_logger, {})
+        cls.logger = test_logger
+
+    @classmethod
+    def tearDownClass(cls):
+        pass
+
     def setUp(self):
-        clear_log()
+        pass
 
     def tearDown(self):
         pass
+    # endregion setup/teardown
 
     def test_accepted_gen(self):
-        @AcceptedTypes((int, str), (int, str), opt_logger=test_logger)
-        def req_test(**kwargs):
-            return (kwargs.get("one"), kwargs.get("two"))
+    
+        for i in range(2):
+            clear_log()
+            if i == 0:
+                log = self.logger
+            else:
+                log = self.log_adapt
+            @AcceptedTypes((int, str), (int, str), opt_logger=log)
+            def req_test(**kwargs):
+                pass
 
-        with self.assertRaises(ValueError):
-            req_test(one=1)
-        with self.assertRaises(ValueError):
-            req_test(two=2)
-        with self.assertRaises(TypeError):
-            req_test(one=4.5, two=2)
-        errors = get_logged_errors()
-        assert len(errors) == 3
+            with self.assertRaises(ValueError):
+                req_test(one=1)
+            with self.assertRaises(ValueError):
+                req_test(two=2)
+            with self.assertRaises(TypeError):
+                req_test(one=4.5, two=2)
+            errors = get_logged_errors()
+            assert len(errors) == 3
 
     def test_accepted_all_args(self):
-        @AcceptedTypes((float, int), opt_all_args=True, opt_logger=test_logger)
-        def sum_num(*args):
-            return sum(args)
+        for i in range(2):
+            clear_log()
+            if i == 0:
+                log = self.logger
+            else:
+                log = self.log_adapt
+            @AcceptedTypes((float, int), opt_all_args=True, opt_logger=log)
+            def sum_num(*args):
+                return sum(args)
 
-        args = gen_int_float(20)
-        result = sum_num(*args)
-        assert result == 197.0
-        args.append("33")
-        with self.assertRaises(TypeError):
-            sum_num(*args)
-        with self.assertRaises(TypeError):
-            sum_num(self)
-        errors = get_logged_errors()
-        assert len(errors) == 2
+            args = gen_int_float(20)
+            result = sum_num(*args)
+            assert result == 197.0
+            args.append("33")
+            with self.assertRaises(TypeError):
+                sum_num(*args)
+            with self.assertRaises(TypeError):
+                sum_num(self)
+            errors = get_logged_errors()
+            assert len(errors) == 2
 
     def test_accepted_optional_args(self):
-        @AcceptedTypes((int, str), (int, str), int, opt_logger=test_logger)
-        def req_test(first, second=2, third=3):
-            return (first, second, third)
+        for i in range(2):
+            clear_log()
+            if i == 0:
+                log = self.logger
+            else:
+                log = self.log_adapt
+            @AcceptedTypes((int, str), (int, str), int, opt_logger=log)
+            def req_test(first, second=2, third=3):
+                return (first, second, third)
 
-        with self.assertRaises(TypeError):
-            req_test(first=33.44)
-        with self.assertRaises(TypeError):
-            req_test(33.44)
-        with self.assertRaises(TypeError):
-            req_test(5, 6, "7")
-        with self.assertRaises(TypeError):
-            req_test(first=5, third="7")
-        errors = get_logged_errors()
-        assert len(errors) == 4
+            with self.assertRaises(TypeError):
+                req_test(first=33.44)
+            with self.assertRaises(TypeError):
+                req_test(33.44)
+            with self.assertRaises(TypeError):
+                req_test(5, 6, "7")
+            with self.assertRaises(TypeError):
+                req_test(first=5, third="7")
+            errors = get_logged_errors()
+            assert len(errors) == 4
 
     def test_accepted_args_optional_named(self):
-        @AcceptedTypes(int, int, int, (int, str), (int, str), int, opt_logger=test_logger)
-        def req_test(*args, first, second=2, third=3):
-            return [*args] + [first, second, third]
-        with self.assertRaises(TypeError):
-            req_test(1, 2.2, 3, first=77)
-        with self.assertRaises(TypeError):
-            req_test(1, 2, 3, first=77, third="yes")
-        errors = get_logged_errors()
-        assert len(errors) == 2
+        for i in range(2):
+            clear_log()
+            if i == 0:
+                log = self.logger
+            else:
+                log = self.log_adapt
+            @AcceptedTypes(int, int, int, (int, str), (int, str), int, opt_logger=log)
+            def req_test(*args, first, second=2, third=3):
+                pass
+            with self.assertRaises(TypeError):
+                req_test(1, 2.2, 3, first=77)
+            with self.assertRaises(TypeError):
+                req_test(1, 2, 3, first=77, third="yes")
+            errors = get_logged_errors()
+            assert len(errors) == 2
 
     def test_accept_args_and_kwargs(self):
-        @AcceptedTypes(str, str, (int, str), (int, str), opt_logger=test_logger)
-        def req_test(*args, **kwargs):
-            return (*args, kwargs.get("one", None), kwargs.get("two", None))
-        with self.assertRaises(TypeError):
-            req_test("start", "", one=1, two=2.5)
-        with self.assertRaises(TypeError):
-            req_test("start", 3, one=1, two=2)
-        errors = get_logged_errors()
-        assert len(errors) == 2
+        for i in range(2):
+            clear_log()
+            if i == 0:
+                log = self.logger
+            else:
+                log = self.log_adapt
+            @AcceptedTypes(str, str, (int, str), (int, str), opt_logger=log)
+            def req_test(*args, **kwargs):
+                return (*args, kwargs.get("one", None), kwargs.get("two", None))
+            with self.assertRaises(TypeError):
+                req_test("start", "", one=1, two=2.5)
+            with self.assertRaises(TypeError):
+                req_test("start", 3, one=1, two=2)
+            errors = get_logged_errors()
+            assert len(errors) == 2
 
     def test_accept_required_with_args(self):
+        for i in range(2):
+            clear_log()
+            if i == 0:
+                log = self.logger
+            else:
+                log = self.log_adapt
+            @RequireArgs("one", "two", opt_logger=log)
+            @AcceptedTypes(str, str, (int, str), (int, str), opt_logger=log)
+            def req_test(first, second, **kwargs):
+                pass
 
-        @RequireArgs("one", "two", opt_logger=test_logger)
-        @AcceptedTypes(str, str, (int, str), (int, str), opt_logger=test_logger)
-        def req_test(first, second, **kwargs):
-            return (first, second, kwargs.get("one", None), kwargs.get("two", None))
-
-        with self.assertRaises(ValueError):
-            req_test(first="start", second="", one=1)
-        with self.assertRaises(ValueError):
-            req_test(first="start", second="", two=2)
-        with self.assertRaises(TypeError):
-            req_test(first="start", second="", one=1, two=2.5)
-        errors = get_logged_errors()
-        assert len(errors) == 3
+            with self.assertRaises(ValueError):
+                req_test(first="start", second="", one=1)
+            with self.assertRaises(ValueError):
+                req_test(first="start", second="", two=2)
+            with self.assertRaises(TypeError):
+                req_test(first="start", second="", one=1, two=2.5)
+            errors = get_logged_errors()
+            assert len(errors) == 3
 
     def test_star_args_pos3_mix(self):
-        @AcceptedTypes(float, str, int, [Color], int, bool, opt_logger=test_logger)
-        def myfunc(arg1, arg2, *args, kwonlyarg=True):
-            return [arg1, arg2] + [*args] + [kwonlyarg]
-        with self.assertRaises(TypeError):
-            myfunc(1.33, "two", 3, Color.BLUE, 5, kwonlyarg=22)
-        with self.assertRaises(TypeError):
-            myfunc(1, "two", 3, Color.BLUE, 5)
-        with self.assertRaises(TypeError):
-            myfunc(1.33, 2, 3, Color.BLUE, 5)
-        with self.assertRaises(TypeError):
-            myfunc(1.33, "two", "three", Color.BLUE, 5)
-        with self.assertRaises(TypeError):
-            myfunc(1.33, "two", 3, 22, 5)
-        with self.assertRaises(TypeError):
-            myfunc(1.33, "two", 3, Color.BLUE, 5.5)
-        errors = get_logged_errors()
-        assert len(errors) == 6
+        for i in range(2):
+            clear_log()
+            if i == 0:
+                log = self.logger
+            else:
+                log = self.log_adapt
+            @AcceptedTypes(float, str, int, [Color], int, bool, opt_logger=log)
+            def myfunc(arg1, arg2, *args, kwonlyarg=True):
+                pass
+            with self.assertRaises(TypeError):
+                myfunc(1.33, "two", 3, Color.BLUE, 5, kwonlyarg=22)
+            with self.assertRaises(TypeError):
+                myfunc(1, "two", 3, Color.BLUE, 5)
+            with self.assertRaises(TypeError):
+                myfunc(1.33, 2, 3, Color.BLUE, 5)
+            with self.assertRaises(TypeError):
+                myfunc(1.33, "two", "three", Color.BLUE, 5)
+            with self.assertRaises(TypeError):
+                myfunc(1.33, "two", 3, 22, 5)
+            with self.assertRaises(TypeError):
+                myfunc(1.33, "two", 3, Color.BLUE, 5.5)
+            errors = get_logged_errors()
+            assert len(errors) == 6
 
 if __name__ == '__main__':
     unittest.main()
